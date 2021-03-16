@@ -1,0 +1,216 @@
+{
+    "filemd5": "0F94BB87C561B21083F7646B2FB9B0B5",
+    "filename": "ooex8.exe",
+    "structures": {
+        "cls_0x411590": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "cls_0x4116a0_0x0",
+                    "offset": "0x0",
+                    "parent": true,
+                    "size": 15,
+                    "struc": "cls_0x4116a0",
+                    "type": "struc",
+                    "usages": [
+                        "0x4115bc"
+                    ]
+                },
+                "0x10": {
+                    "base": true,
+                    "name": "mbr_0x10",
+                    "offset": "0x10",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4115f1"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "cls_0x411720_0x8",
+                    "offset": "0x8",
+                    "parent": true,
+                    "size": 15,
+                    "struc": "cls_0x411720",
+                    "type": "struc",
+                    "usages": [
+                        "0x4115c5"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411590": {
+                    "demangled_name": "",
+                    "ea": "0x411590",
+                    "import": false,
+                    "name": "ctor_0x411590",
+                    "type": "ctor"
+                }
+            },
+            "name": "cls_0x411590",
+            "size": 27,
+            "vftables": {}
+        },
+        "cls_0x411640": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411666"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 2,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411674"
+                    ]
+                },
+                "0x6": {
+                    "base": false,
+                    "name": "mbr_0x6",
+                    "offset": "0x6",
+                    "parent": false,
+                    "size": 1,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x41167b"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411640": {
+                    "demangled_name": "",
+                    "ea": "0x411640",
+                    "import": false,
+                    "name": "ctor_0x411640",
+                    "type": "ctor"
+                }
+            },
+            "name": "cls_0x411640",
+            "size": 7,
+            "vftables": {}
+        },
+        "cls_0x4116a0": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4116cc"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4116e0"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "cls_0x411640_0x8",
+                    "offset": "0x8",
+                    "parent": true,
+                    "size": 7,
+                    "struc": "cls_0x411640",
+                    "type": "struc",
+                    "usages": []
+                }
+            },
+            "methods": {
+                "0x4116a0": {
+                    "demangled_name": "",
+                    "ea": "0x4116a0",
+                    "import": false,
+                    "name": "ctor_0x4116a0",
+                    "type": "ctor"
+                }
+            },
+            "name": "cls_0x4116a0",
+            "size": 15,
+            "vftables": {}
+        },
+        "cls_0x411720": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x41174c"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411760"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "cls_0x411640_0x8",
+                    "offset": "0x8",
+                    "parent": true,
+                    "size": 7,
+                    "struc": "cls_0x411640",
+                    "type": "struc",
+                    "usages": []
+                }
+            },
+            "methods": {
+                "0x411720": {
+                    "demangled_name": "",
+                    "ea": "0x411720",
+                    "import": false,
+                    "name": "ctor_0x411720",
+                    "type": "ctor"
+                }
+            },
+            "name": "cls_0x411720",
+            "size": 15,
+            "vftables": {}
+        }
+    },
+    "vcalls": {},
+    "version": "2.2.0"
+}

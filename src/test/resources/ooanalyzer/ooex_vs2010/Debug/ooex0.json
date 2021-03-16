@@ -1,0 +1,91 @@
+{
+    "filemd5": "E13EFD11DDCA7D2340AF1545E54A6E55",
+    "filename": "ooex0.exe",
+    "structures": {
+        "cls_0x411650": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411620",
+                        "0x411746"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411616",
+                        "0x41174b"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 2,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x41162e"
+                    ]
+                }
+            },
+            "methods": {
+                "0x4115f0": {
+                    "demangled_name": "",
+                    "ea": "0x4115f0",
+                    "import": false,
+                    "name": "ctor_0x4115f0",
+                    "type": "ctor"
+                },
+                "0x411650": {
+                    "demangled_name": "",
+                    "ea": "0x411650",
+                    "import": false,
+                    "name": "dtor_0x411650",
+                    "type": "dtor"
+                },
+                "0x4116c0": {
+                    "demangled_name": "",
+                    "ea": "0x4116c0",
+                    "import": false,
+                    "name": "meth_0x4116c0",
+                    "type": "meth"
+                },
+                "0x411720": {
+                    "demangled_name": "",
+                    "ea": "0x411720",
+                    "import": false,
+                    "name": "meth_0x411720",
+                    "type": "meth"
+                },
+                "0x411770": {
+                    "demangled_name": "",
+                    "ea": "0x411770",
+                    "import": false,
+                    "name": "deldtor_0x411770",
+                    "type": "deldtor"
+                }
+            },
+            "name": "cls_0x411650",
+            "size": 16,
+            "vftables": {}
+        }
+    },
+    "vcalls": {},
+    "version": "2.2.0"
+}

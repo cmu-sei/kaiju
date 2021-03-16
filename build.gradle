@@ -1,0 +1,232 @@
+/***
+ * CERT Kaiju
+ * Copyright 2021 Carnegie Mellon University.
+ *
+ * NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ * INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY
+ * MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER
+ * INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR
+ * MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE MATERIAL.
+ * CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND WITH RESPECT
+ * TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
+ *
+ * Released under a BSD (SEI)-style license, please see LICENSE.md or contact permission@sei.cmu.edu for full terms.
+ *
+ * [DISTRIBUTION STATEMENT A] This material has been approved for public release and unlimited distribution.
+ * Please see Copyright notice for non-US Government use and distribution.
+ *
+ * Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent and Trademark Office by Carnegie Mellon University.
+ *
+ * This Software includes and/or makes use of the following Third-Party Software subject to its own license:
+ * 1. OpenJDK (http://openjdk.java.net/legal/gplv2+ce.html) Copyright 2021 Oracle.
+ * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
+ * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
+ * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ *
+ * DM21-0087
+ */
+
+// Builds a Ghidra Extension for a given Ghidra installation.
+//
+// An absolute path to the Ghidra installation directory must be supplied either by setting the 
+// GHIDRA_INSTALL_DIR environment variable or Gradle project property:
+//
+//     > export GHIDRA_INSTALL_DIR=<Absolute path to Ghidra> 
+//     > gradle
+//
+//         or
+//
+//     > gradle -PGHIDRA_INSTALL_DIR=<Absolute path to Ghidra>
+//
+// Gradle should be invoked from the directory of the project to build.  Please see the
+// application.gradle.version property in <GHIDRA_INSTALL_DIR>/Ghidra/application.properties
+// for the correction version of Gradle to use for the Ghidra installation you specify.
+
+//----------------------START "DO NOT MODIFY" SECTION------------------------------
+def ghidraInstallDir
+
+if (System.env.GHIDRA_INSTALL_DIR) {
+	ghidraInstallDir = System.env.GHIDRA_INSTALL_DIR
+}
+else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
+	ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
+}
+
+if (ghidraInstallDir) {
+	apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
+}
+else {
+	throw new GradleException("GHIDRA_INSTALL_DIR is not defined!")
+}
+//----------------------END "DO NOT MODIFY" SECTION-------------------------------
+
+
+// allow installation using:
+// > gradle -PGHIDRA_INSTALL_DIR=/path/to/ghidra install
+// you can also allow removal of the any previous Kaiju install prior to
+// reinstalling by adding -PKAIJU_AUTO_REMOVE
+
+import org.gradle.util.VersionNumber
+
+apply plugin: 'java' // adds 'test' task
+
+if (VersionNumber.parse( gradle.gradleVersion ) <= VersionNumber.parse ("5.6.0")) {
+    throw new GradleException("CERT Kaiju requires at least gradle version 5.6.0. Please update gradle and retry.")
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.4.2')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.4.2')
+    testRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.4.2')
+    //testRuntimeOnly('org.opentest4j:opentest4j:1.1.1')
+}
+
+task copyToLib(type: Copy) {
+    outputs.file file("lib/gson-2.8.6.jar")
+    if (!file("lib/gson-2.8.6.jar").exists()) {
+        configurations {
+            gsonDependency
+        }
+
+        dependencies {
+            gsonDependency group: 'com.google.code.gson', name: 'gson', version: '2.8.6'
+        }
+
+        from configurations.gsonDependency
+        into "lib"
+    }
+    
+    dependsOn copyToLib
+}
+
+task uninstallPreviousOOAnalyzerPlugin {
+
+    group = "Installation"
+    description = "Removes a previous OOAnalyzerPlugin installation, or notifies user of previous installation"
+    
+    doLast {
+        
+        // check if a previous OOAnalyzer installation exists
+        if (file(ghidraInstallDir + '/Ghidra/Extensions/' + 'OOAnalyzerPlugin/').exists()) {
+        
+            // automatically remove past install if user specifies
+            if (project.hasProperty('KAIJU_AUTO_REMOVE')) {
+                //delete ghidraInstallDir + '/Ghidra/Extensions/' + 'OOAnalyzerPlugin/'
+                def ooDir = new File(ghidraInstallDir + '/Ghidra/Extensions/' + 'OOAnalyzerPlugin/')
+                ooDir.deleteDir()
+                logger.quiet("SUCCESS! Previous standalone OOAnalyzerPlugin installation was removed automatically by gradle.")
+            } else {
+                throw new GradleException("FATAL ERROR! A previous installation of the standalone OOAnalyzerPlugin was detected. It is recommended that you either manually remove this installation before re-installing Kaiju, or re-run this gradle installation script with the -PKAIJU_AUTO_REMOVE option. Please note that the standalone plugin is now deprecated; we recommend you use the latest version included with Kaiju instead.")
+            }
+        }
+    }
+    
+    outputs.upToDateWhen { false } // ensures never cached, always runs if user enables
+    
+    dependsOn buildExtension
+}
+
+task uninstallPreviousKaiju {
+
+    group = "Installation"
+    description = "Removes a previous Kaiju installation, or notifies user of previous installation"
+    
+    doLast {
+    
+        // check first if a previous Kaiju installation exists
+        if (file(ghidraInstallDir + '/Ghidra/Extensions/' + 'kaiju/').exists()) {
+        
+            // automatically remove past install if user specifies
+            if (project.hasProperty('KAIJU_AUTO_REMOVE')) {
+                //delete ghidraInstallDir + '/Ghidra/Extensions/' + 'kaiju/'
+                def kaijuDir = new File(ghidraInstallDir + '/Ghidra/Extensions/' + 'kaiju/')
+                kaijuDir.deleteDir()
+                logger.quiet("SUCCESS! Previous Kaiju installation was removed automatically by gradle.")
+            } else {
+                throw new GradleException("FATAL ERROR! A previous installation of Kaiju was detected. It is recommended that you either manually remove this installation before re-installing Kaiju, or re-run this gradle installation script with the -PKAIJU_AUTO_REMOVE option.")
+            }
+        }
+    }
+    
+    outputs.upToDateWhen { false } // ensures never cached, always runs if user enables
+    
+    dependsOn uninstallPreviousOOAnalyzerPlugin
+}
+
+task copyZip(type: Copy) {
+
+    group = "Installation"
+    description = "Copies zip contents into special Extensions directory so user may enable or disable easily with reinstalling from gradle each time."
+
+    from "$buildExtension.destinationDir/$buildExtension.baseName.$buildExtension.extension"
+    into ghidraInstallDir + '/Extensions/Ghidra'
+    
+    dependsOn uninstallPreviousKaiju
+}
+
+task installZip(type: Exec) {
+    
+    group = "Installation"
+    description = "Installs the zip package in installed Ghidra's default extension directory"
+
+    workingDir ghidraInstallDir + '/Ghidra/Extensions'
+    commandLine 'unzip', '-o', "$buildExtension.destinationDir/$buildExtension.baseName.$buildExtension.extension"
+    
+    dependsOn copyZip
+    mustRunAfter copyZip
+}
+
+task install() {
+     dependsOn installZip
+
+     group = "Installation"
+     description = "Alternate name for installZip task"
+     //title = "Install zip"
+
+     doLast {
+        // Empty action list
+        logger.quiet("Installed CERT Kaiju from zip!")
+     }
+}
+
+test {
+
+    useJUnitPlatform()
+    
+    maxHeapSize = '2G'
+    
+    failFast = false
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+    
+    beforeSuite { descriptor ->
+    // check that user has specified the property AND set it (not empty)
+    if (!project.hasProperty('KAIJU_AUTOCATS_DIR') || project.getProperty('KAIJU_AUTOCATS_DIR') == '') {
+        throw new GradleException("FATAL ERROR! Kaiju requires specification of the directory where the AUTOCATS tests may be found. Please re-run the tests with the -PKAIJU_AUTOCATS_DIR=<path/to/autocats/dir> command option. Please consult the README.md for more information on AUTOCATS and how to obtain the AUTOCATS tests.")
+    }
+    
+    // check that the specified directory actually exists
+    if (!file(project.property('KAIJU_AUTOCATS_DIR')).exists()) {
+        throw new GradleException("FATAL ERROR! The AUTOCATS path provided to Kaiju does not appear to exist. Please re-check the path then retry the -PKAIJU_AUTOCATS_DIR=<path/to/autocats/dir> command option. You may wish to provide the full absolute path to reduce errors. Please consult the README.md for more information on AUTOCATS and how to obtain the AUTOCATS tests.")
+    }
+    
+    // TODO: how can we check if this path is actually an AUTOCATS path?
+    // for now, just passing along the path and hoping for the best!
+    }
+    
+    // only pass on the environment variable if was specified
+    // this doesn't matter if it wasn't set, because the beforeSuite will execute
+    // and abort if it wasn't set before running tests, and if you're not
+    // running tests then it doesn't matter if it was set or not
+    if (project.hasProperty('KAIJU_AUTOCATS_DIR')) {
+        environment "KAIJU_AUTOCATS_DIR", project.property('KAIJU_AUTOCATS_DIR')
+    }
+    
+    outputs.upToDateWhen { false } // ensures never cached, always runs if user enables
+}

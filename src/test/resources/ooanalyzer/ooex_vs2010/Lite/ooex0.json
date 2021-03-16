@@ -1,0 +1,403 @@
+{
+    "filemd5": "4D67D16A6890A6F353A22530DB995336",
+    "filename": "ooex0.exe",
+    "structures": {
+        ".?AVbad_alloc@std@@": {
+            "demangled_name": "std::bad_alloc",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": ".?AVexception@std@@_0x0",
+                    "offset": "0x0",
+                    "parent": true,
+                    "size": 9,
+                    "struc": ".?AVexception@std@@",
+                    "type": "struc",
+                    "usages": [
+                        "0x4011c9",
+                        "0x4011dc",
+                        "0x40120b"
+                    ]
+                }
+            },
+            "methods": {
+                "0x4011c9": {
+                    "demangled_name": "",
+                    "ea": "0x4011c9",
+                    "import": false,
+                    "name": "meth_0x4011c9",
+                    "type": "meth"
+                },
+                "0x4011d4": {
+                    "demangled_name": "",
+                    "ea": "0x4011d4",
+                    "import": false,
+                    "name": "virt_deldtor_0x4011d4",
+                    "type": "deldtor"
+                },
+                "0x4011fb": {
+                    "demangled_name": "",
+                    "ea": "0x4011fb",
+                    "import": false,
+                    "name": "ctor_0x4011fb",
+                    "type": "ctor"
+                }
+            },
+            "name": ".?AVbad_alloc@std@@",
+            "size": 9,
+            "vftables": {
+                "0x408170": {
+                    "ea": "0x408170",
+                    "entries": {
+                        "0": {
+                            "demangled_name": "",
+                            "ea": "0x4011d4",
+                            "import": false,
+                            "name": "virt_deldtor_0x4011d4",
+                            "offset": 0,
+                            "type": "deldtor"
+                        }
+                    },
+                    "length": 2,
+                    "vftptr": "0x0"
+                }
+            }
+        },
+        ".?AVexception@std@@": {
+            "demangled_name": "std::exception",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "vftptr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "vftptr",
+                    "usages": [
+                        "0x402c37",
+                        "0x402cea",
+                        "0x402cfd",
+                        "0x402d2b"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x402c3f",
+                        "0x402c4a",
+                        "0x402c79",
+                        "0x402ca2",
+                        "0x402cab",
+                        "0x402cdf",
+                        "0x402d27"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 1,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x402c42",
+                        "0x402c8d",
+                        "0x402c9c",
+                        "0x402caf",
+                        "0x402d31"
+                    ]
+                }
+            },
+            "methods": {
+                "0x402c2d": {
+                    "demangled_name": "",
+                    "ea": "0x402c2d",
+                    "import": false,
+                    "name": "ctor_0x402c2d",
+                    "type": "ctor"
+                },
+                "0x402c4a": {
+                    "demangled_name": "",
+                    "ea": "0x402c4a",
+                    "import": false,
+                    "name": "virt_meth_0x402c4a",
+                    "type": "meth"
+                },
+                "0x402c57": {
+                    "demangled_name": "",
+                    "ea": "0x402c57",
+                    "import": false,
+                    "name": "meth_0x402c57",
+                    "type": "meth"
+                },
+                "0x402c97": {
+                    "demangled_name": "",
+                    "ea": "0x402c97",
+                    "import": false,
+                    "name": "meth_0x402c97",
+                    "type": "meth"
+                },
+                "0x402cb5": {
+                    "demangled_name": "",
+                    "ea": "0x402cb5",
+                    "import": false,
+                    "name": "meth_0x402cb5",
+                    "type": "meth"
+                },
+                "0x402cea": {
+                    "demangled_name": "",
+                    "ea": "0x402cea",
+                    "import": false,
+                    "name": "dtor_0x402cea",
+                    "type": "dtor"
+                },
+                "0x402cf5": {
+                    "demangled_name": "",
+                    "ea": "0x402cf5",
+                    "import": false,
+                    "name": "virt_deldtor_0x402cf5",
+                    "type": "deldtor"
+                },
+                "0x402d1c": {
+                    "demangled_name": "",
+                    "ea": "0x402d1c",
+                    "import": false,
+                    "name": "ctor_0x402d1c",
+                    "type": "ctor"
+                }
+            },
+            "name": ".?AVexception@std@@",
+            "size": 9,
+            "vftables": {
+                "0x408248": {
+                    "ea": "0x408248",
+                    "entries": {
+                        "0": {
+                            "demangled_name": "",
+                            "ea": "0x402cf5",
+                            "import": false,
+                            "name": "virt_deldtor_0x402cf5",
+                            "offset": 0,
+                            "type": "deldtor"
+                        },
+                        "1": {
+                            "demangled_name": "",
+                            "ea": "0x402c4a",
+                            "import": false,
+                            "name": "virt_meth_0x402c4a",
+                            "offset": 1,
+                            "type": "meth"
+                        }
+                    },
+                    "length": 2,
+                    "vftptr": "0x0"
+                }
+            }
+        },
+        ".?AVtype_info@@": {
+            "demangled_name": "type_info",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "vftptr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "vftptr",
+                    "usages": [
+                        "0x402d44"
+                    ]
+                }
+            },
+            "methods": {
+                "0x402d41": {
+                    "demangled_name": "",
+                    "ea": "0x402d41",
+                    "import": false,
+                    "name": "dtor_0x402d41",
+                    "type": "dtor"
+                },
+                "0x402d51": {
+                    "demangled_name": "",
+                    "ea": "0x402d51",
+                    "import": false,
+                    "name": "virt_deldtor_0x402d51",
+                    "type": "deldtor"
+                }
+            },
+            "name": ".?AVtype_info@@",
+            "size": 4,
+            "vftables": {
+                "0x408268": {
+                    "ea": "0x408268",
+                    "entries": {
+                        "0": {
+                            "demangled_name": "",
+                            "ea": "0x402d51",
+                            "import": false,
+                            "name": "virt_deldtor_0x402d51",
+                            "offset": 0,
+                            "type": "deldtor"
+                        }
+                    },
+                    "length": 1,
+                    "vftptr": "0x0"
+                }
+            }
+        },
+        "cls_0x401000": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x40100e",
+                        "0x401043"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x401007",
+                        "0x401040"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 2,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x401014"
+                    ]
+                }
+            },
+            "methods": {
+                "0x401000": {
+                    "demangled_name": "",
+                    "ea": "0x401000",
+                    "import": false,
+                    "name": "ctor_0x401000",
+                    "type": "ctor"
+                },
+                "0x401040": {
+                    "demangled_name": "",
+                    "ea": "0x401040",
+                    "import": false,
+                    "name": "meth_0x401040",
+                    "type": "meth"
+                },
+                "0x401050": {
+                    "demangled_name": "",
+                    "ea": "0x401050",
+                    "import": false,
+                    "name": "deldtor_0x401050",
+                    "type": "deldtor"
+                }
+            },
+            "name": "cls_0x401000",
+            "size": 16,
+            "vftables": {}
+        },
+        "cls_0x4016b1": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4016cf",
+                        "0x4016d7",
+                        "0x4016f1",
+                        "0x401729"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4016d4",
+                        "0x4016f3",
+                        "0x401711",
+                        "0x40172e"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4016c9",
+                        "0x4016fe",
+                        "0x401714"
+                    ]
+                },
+                "0xc": {
+                    "base": false,
+                    "name": "mbr_0xc",
+                    "offset": "0xc",
+                    "parent": false,
+                    "size": 1,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4016bc",
+                        "0x401721"
+                    ]
+                }
+            },
+            "methods": {
+                "0x4016b1": {
+                    "demangled_name": "",
+                    "ea": "0x4016b1",
+                    "import": false,
+                    "name": "ctor_0x4016b1",
+                    "type": "ctor"
+                }
+            },
+            "name": "cls_0x4016b1",
+            "size": 13,
+            "vftables": {}
+        }
+    },
+    "vcalls": {},
+    "version": "2.2.0"
+}

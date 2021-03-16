@@ -1,0 +1,130 @@
+{
+    "filemd5": "BB356F28F177143D437FD48E415A5AF2",
+    "filename": "ooex2.exe",
+    "structures": {
+        "cls_0x4114f0": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "cls_0x411590_0x0",
+                    "offset": "0x0",
+                    "parent": true,
+                    "size": 12,
+                    "struc": "cls_0x411590",
+                    "type": "struc",
+                    "usages": []
+                },
+                "0x8": {
+                    "base": true,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x41154c"
+                    ]
+                },
+                "0xc": {
+                    "base": false,
+                    "name": "mbr_0xc",
+                    "offset": "0xc",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411541",
+                        "0x41154f",
+                        "0x411666"
+                    ]
+                }
+            },
+            "methods": {
+                "0x4114f0": {
+                    "demangled_name": "",
+                    "ea": "0x4114f0",
+                    "import": false,
+                    "name": "ctor_0x4114f0",
+                    "type": "ctor"
+                },
+                "0x411640": {
+                    "demangled_name": "",
+                    "ea": "0x411640",
+                    "import": false,
+                    "name": "meth_0x411640",
+                    "type": "meth"
+                }
+            },
+            "name": "cls_0x4114f0",
+            "size": 16,
+            "vftables": {}
+        },
+        "cls_0x411590": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4115b6",
+                        "0x41161d"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 1,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4115bf",
+                        "0x411616"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4115c6"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411590": {
+                    "demangled_name": "",
+                    "ea": "0x411590",
+                    "import": false,
+                    "name": "ctor_0x411590",
+                    "type": "ctor"
+                },
+                "0x4115f0": {
+                    "demangled_name": "",
+                    "ea": "0x4115f0",
+                    "import": false,
+                    "name": "meth_0x4115f0",
+                    "type": "meth"
+                }
+            },
+            "name": "cls_0x411590",
+            "size": 12,
+            "vftables": {}
+        }
+    },
+    "vcalls": {},
+    "version": "2.2.0"
+}

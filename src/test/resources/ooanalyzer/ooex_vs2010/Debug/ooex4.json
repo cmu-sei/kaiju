@@ -1,0 +1,250 @@
+{
+    "filemd5": "86692C314D0DDC9337A34D05E4742C33",
+    "filename": "ooex4.exe",
+    "structures": {
+        ".?AVBase@@": {
+            "demangled_name": "Base",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "vftptr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "vftptr",
+                    "usages": [
+                        "0x411626"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x41162f",
+                        "0x411696",
+                        "0x4116f6",
+                        "0x411711"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 1,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411639",
+                        "0x4116a0",
+                        "0x4116b1",
+                        "0x411700"
+                    ]
+                },
+                "0xc": {
+                    "base": false,
+                    "name": "mbr_0xc",
+                    "offset": "0xc",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411640",
+                        "0x4116a7",
+                        "0x411707"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411600": {
+                    "demangled_name": "",
+                    "ea": "0x411600",
+                    "import": false,
+                    "name": "ctor_0x411600",
+                    "type": "ctor"
+                },
+                "0x411670": {
+                    "demangled_name": "",
+                    "ea": "0x411670",
+                    "import": false,
+                    "name": "virt_meth_0x411670",
+                    "type": "meth"
+                },
+                "0x4116d0": {
+                    "demangled_name": "",
+                    "ea": "0x4116d0",
+                    "import": false,
+                    "name": "virt_meth_0x4116d0",
+                    "type": "meth"
+                }
+            },
+            "name": ".?AVBase@@",
+            "size": 16,
+            "vftables": {
+                "0x416754": {
+                    "ea": "0x416754",
+                    "entries": {
+                        "0": {
+                            "demangled_name": "",
+                            "ea": "0x411670",
+                            "import": false,
+                            "name": "virt_meth_0x411670",
+                            "offset": 0,
+                            "type": "meth"
+                        },
+                        "1": {
+                            "demangled_name": "",
+                            "ea": "0x4116d0",
+                            "import": false,
+                            "name": "virt_meth_0x4116d0",
+                            "offset": 1,
+                            "type": "meth"
+                        }
+                    },
+                    "length": 3,
+                    "vftptr": "0x0"
+                }
+            }
+        },
+        ".?AVDerived@@": {
+            "demangled_name": "Derived",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": ".?AVBase@@_0x0",
+                    "offset": "0x0",
+                    "parent": true,
+                    "size": 16,
+                    "struc": ".?AVBase@@",
+                    "type": "struc",
+                    "usages": [
+                        "0x41157e"
+                    ]
+                },
+                "0x10": {
+                    "base": false,
+                    "name": "mbr_0x10",
+                    "offset": "0x10",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4115aa",
+                        "0x4115ba",
+                        "0x411756"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411550": {
+                    "demangled_name": "",
+                    "ea": "0x411550",
+                    "import": false,
+                    "name": "ctor_0x411550",
+                    "type": "ctor"
+                },
+                "0x411730": {
+                    "demangled_name": "",
+                    "ea": "0x411730",
+                    "import": false,
+                    "name": "virt_meth_0x411730",
+                    "type": "meth"
+                }
+            },
+            "name": ".?AVDerived@@",
+            "size": 20,
+            "vftables": {
+                "0x416740": {
+                    "ea": "0x416740",
+                    "entries": {
+                        "2": {
+                            "demangled_name": "",
+                            "ea": "0x411730",
+                            "import": false,
+                            "name": "virt_meth_0x411730",
+                            "offset": 2,
+                            "type": "meth"
+                        }
+                    },
+                    "length": 3,
+                    "vftptr": "0x0"
+                }
+            }
+        },
+        ".?AVtype_info@@": {
+            "demangled_name": "type_info",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "vftptr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "vftptr",
+                    "usages": [
+                        "0x411a1c"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411a10": {
+                    "demangled_name": "",
+                    "ea": "0x411a10",
+                    "import": false,
+                    "name": "ctor_0x411a10",
+                    "type": "ctor"
+                },
+                "0x411a40": {
+                    "demangled_name": "",
+                    "ea": "0x411a40",
+                    "import": false,
+                    "name": "virt_deldtor_0x411a40",
+                    "type": "deldtor"
+                },
+                "0x419278": {
+                    "demangled_name": "_type_info_dtor_internal_method",
+                    "ea": "0x419278",
+                    "import": true,
+                    "name": "?_type_info_dtor_internal_method@type_info@@QAEXXZ",
+                    "type": "meth"
+                }
+            },
+            "name": ".?AVtype_info@@",
+            "size": 4,
+            "vftables": {
+                "0x416768": {
+                    "ea": "0x416768",
+                    "entries": {
+                        "0": {
+                            "demangled_name": "",
+                            "ea": "0x411a40",
+                            "import": false,
+                            "name": "virt_deldtor_0x411a40",
+                            "offset": 0,
+                            "type": "deldtor"
+                        }
+                    },
+                    "length": 1,
+                    "vftptr": "0x0"
+                }
+            }
+        }
+    },
+    "vcalls": {
+        "0x4114c3": {
+            "targets": [
+                "0x411730"
+            ]
+        }
+    },
+    "version": "2.2.0"
+}

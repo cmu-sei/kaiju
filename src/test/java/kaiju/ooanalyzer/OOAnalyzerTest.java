@@ -1,0 +1,98 @@
+/***
+ * CERT Kaiju
+ * Copyright 2021 Carnegie Mellon University.
+ *
+ * NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ * INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY
+ * MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER
+ * INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR
+ * MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE MATERIAL.
+ * CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND WITH RESPECT
+ * TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
+ *
+ * Released under a BSD (SEI)-style license, please see LICENSE.md or contact permission@sei.cmu.edu for full terms.
+ *
+ * [DISTRIBUTION STATEMENT A] This material has been approved for public release and unlimited distribution.
+ * Please see Copyright notice for non-US Government use and distribution.
+ *
+ * Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent and Trademark Office by Carnegie Mellon University.
+ *
+ * This Software includes and/or makes use of the following Third-Party Software subject to its own license:
+ * 1. OpenJDK (http://openjdk.java.net/legal/gplv2+ce.html) Copyright 2021 Oracle.
+ * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
+ * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
+ * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ *
+ * DM21-0087
+ */
+
+package kaiju.ooanalyzer;
+
+//import static org.junit.Assert.assertTrue;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import java.io.File;
+import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
+
+import ghidra.program.util.GhidraProgramUtilities;
+import ghidra.program.model.listing.Program;
+import ghidra.test.AbstractGhidraHeadedIntegrationTest;
+import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
+import ghidra.test.TestEnv;
+import ghidra.util.Msg;
+import ghidra.util.task.TaskMonitor;
+
+import kaiju.ooanalyzer.OOAnalyzerGhidraPlugin;
+
+import resources.ResourceManager;
+
+class OOAnalyzerTest extends AbstractGhidraHeadedIntegrationTest {
+
+    private TestEnv env;
+    private OOAnalyzerGhidraPlugin plugin;
+    private Path testDir;
+
+    OOAnalyzerTest () throws Exception {
+    }
+
+    public void doTest (Path exe, Path json, Boolean useNs) throws Exception {
+        env = new TestEnv();
+        setErrorGUIEnabled (false);
+
+        // Import the program
+        Program p = env.getGhidraProject ().importProgram (exe.toFile ());
+
+        // Open in the tool
+        env.open (p);
+
+        // Analyze it
+        // NOTE: get heap exhaustion errors when doing analysis with Fn2Hash, etc.
+        // Not necessary to analyze to check JSON importer, but consider
+        // for future tests.
+        //env.getGhidraProject ().analyze (p, false);
+
+        // And mark it as analyzed?  Ok ghidra whatever.
+        GhidraProgramUtilities.setAnalyzedFlag (p, true);
+
+        plugin = env.addPlugin(OOAnalyzerGhidraPlugin.class);
+
+        // Import json.
+        OOAnalyzerGhidraPlugin.ImportCommand cmd = plugin.configureAndExecute (json.toFile (), useNs);
+
+        // Use a semaphore or something. Get the tool's TaskMonitor?
+        while (!cmd.getCompleted ()) {
+            Msg.debug (this, "Sleeping until completed.");
+            Thread.sleep(1000);
+        }
+
+        Msg.info (this, "We didn't crash!");
+
+        env.dispose ();
+
+    }
+
+}

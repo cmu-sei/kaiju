@@ -1,0 +1,182 @@
+{
+    "filemd5": "1BEDD522957A3D7A4C0CABD6B6816EBD",
+    "filename": "ooex3.exe",
+    "structures": {
+        "cls_0x411560": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "cls_0x411610_0x0",
+                    "offset": "0x0",
+                    "parent": true,
+                    "size": 12,
+                    "struc": "cls_0x411610",
+                    "type": "struc",
+                    "usages": []
+                },
+                "0x18": {
+                    "base": false,
+                    "name": "mbr_0x18",
+                    "offset": "0x18",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4115bc",
+                        "0x4115cf"
+                    ]
+                },
+                "0xc": {
+                    "base": false,
+                    "name": "cls_0x411670_0xc",
+                    "offset": "0xc",
+                    "parent": true,
+                    "size": 12,
+                    "struc": "cls_0x411670",
+                    "type": "struc",
+                    "usages": []
+                }
+            },
+            "methods": {
+                "0x411560": {
+                    "demangled_name": "",
+                    "ea": "0x411560",
+                    "import": false,
+                    "name": "ctor_0x411560",
+                    "type": "ctor"
+                }
+            },
+            "name": "cls_0x411560",
+            "size": 28,
+            "vftables": {}
+        },
+        "cls_0x411610": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x41153d",
+                        "0x411636"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 1,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411536",
+                        "0x41163f"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411646"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411510": {
+                    "demangled_name": "",
+                    "ea": "0x411510",
+                    "import": false,
+                    "name": "meth_0x411510",
+                    "type": "meth"
+                },
+                "0x411610": {
+                    "demangled_name": "",
+                    "ea": "0x411610",
+                    "import": false,
+                    "name": "ctor_0x411610",
+                    "type": "ctor"
+                }
+            },
+            "name": "cls_0x411610",
+            "size": 12,
+            "vftables": {}
+        },
+        "cls_0x411670": {
+            "demangled_name": "",
+            "members": {
+                "0x0": {
+                    "base": false,
+                    "name": "mbr_0x0",
+                    "offset": "0x0",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x411696",
+                        "0x4116fd"
+                    ]
+                },
+                "0x4": {
+                    "base": false,
+                    "name": "mbr_0x4",
+                    "offset": "0x4",
+                    "parent": false,
+                    "size": 1,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x41169f",
+                        "0x4116f6"
+                    ]
+                },
+                "0x8": {
+                    "base": false,
+                    "name": "mbr_0x8",
+                    "offset": "0x8",
+                    "parent": false,
+                    "size": 4,
+                    "struc": "",
+                    "type": "",
+                    "usages": [
+                        "0x4116a6"
+                    ]
+                }
+            },
+            "methods": {
+                "0x411670": {
+                    "demangled_name": "",
+                    "ea": "0x411670",
+                    "import": false,
+                    "name": "ctor_0x411670",
+                    "type": "ctor"
+                },
+                "0x4116d0": {
+                    "demangled_name": "",
+                    "ea": "0x4116d0",
+                    "import": false,
+                    "name": "meth_0x4116d0",
+                    "type": "meth"
+                }
+            },
+            "name": "cls_0x411670",
+            "size": 12,
+            "vftables": {}
+        }
+    },
+    "vcalls": {},
+    "version": "2.2.0"
+}
