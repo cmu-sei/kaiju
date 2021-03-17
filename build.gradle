@@ -99,9 +99,8 @@ task copyToLib(type: Copy) {
         from configurations.gsonDependency
         into "lib"
     }
-    
-    dependsOn copyToLib
 }
+buildExtension.dependsOn(copyToLib)
 
 task uninstallPreviousOOAnalyzerPlugin {
 
