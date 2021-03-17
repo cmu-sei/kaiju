@@ -3,20 +3,14 @@ schedules:
   displayName: Weekly Sunday build
   branches:
     include:
-    - master
+    - main
   always: true
-
-variables:
-  CCACHE_DIR: $(Pipeline.Workspace)/cache
-  CHOCLATEY_CACHE_DIR: $(Pipeline.Workspace)/choclatey_cache
-  PREFIX: /usr/local/pharos-build
-  CXXFLAGS: -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=1
 
 jobs:
 - job: Build_Kaiju
-  condition: and(succeeded(), variables.buildNormal)
   variables:
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
+    AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
   strategy:
     matrix:
       ghidra-git:
@@ -39,18 +33,6 @@ jobs:
       ghidra91:
         ghidraUrl: "https://ghidra-sre.org/ghidra_9.1_PUBLIC_20191023.zip"
         ghidraVersion: "9.1"
-      ghidra904:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.0.4_PUBLIC_20190516.zip"
-        ghidraVersion: "9.0.4"
-      # ghidra902:
-      #   ghidraUrl: "https://ghidra-sre.org/ghidra_9.0.2_PUBLIC_20190403.zip"
-      #   ghidraVersion: "9.0.2"
-      # ghidra901:
-      #   ghidraUrl: "https://ghidra-sre.org/ghidra_9.0.1_PUBLIC_20190325.zip"
-      #   ghidraVersion: "9.0.1"
-      # ghidra90:
-      #   ghidraUrl: "https://ghidra-sre.org/ghidra_9.0_PUBLIC_20190228.zip"
-      #   ghidraVersion: "9.0"
   pool:
     vmImage: 'Ubuntu-20.04'
   steps:
@@ -72,6 +54,11 @@ jobs:
       restoreKeys: gradle
       path: $(GRADLE_USER_HOME)
     displayName: Gradle build cache
+  - task: Cache@2
+    inputs:
+      key: '"$(AUTOCATS_DIR)" | autocats'
+      path: $(AUTOCATS_DIR)
+    displayName: Cache AUTOCATS
 
   - bash: |
       set -e
@@ -120,10 +107,15 @@ jobs:
     env:
       WS: $(Pipeline.Workspace)
   - bash: |
+      test -d $AUTOCATS_DIR || git clone https://github.com/cmu-sei/autocats $AUTOCATS_DIR
+    displayName: Download AUTOCATS
+  - bash: |
       set -e
       # Needs a head
       Xvfb :1 &
-      DISPLAY=:1 GHIDRA_INSTALL_DIR=$(find $WS -maxdepth 1 -type d -name 'ghidra_*') gradle --build-cache test
+      echo $AUTOCATS_DIR
+      #env
+      DISPLAY=:1 GHIDRA_INSTALL_DIR=$(find $WS -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache test
       kill %%
     displayName: Run Kaiju tests
     workingDirectory: .
@@ -132,7 +124,7 @@ jobs:
   - script: gradle --stop
   - publish: dist/
   - task: GitHubRelease@0
-    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'master'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
     inputs:
       gitHubConnection: gh
       repositoryName: $(Build.Repository.Name)
@@ -141,7 +133,7 @@ jobs:
       tag: ghidra-$(ghidraVersion)
     continueOnError: true
   - task: DownloadSecureFile@1
-    condition: eq(variables['Build.SourceBranchName'], 'master')
+    condition: eq(variables['Build.SourceBranchName'], 'main')
     name: deployKey
     inputs:
       secureFile: 'deploy.key'
@@ -151,18 +143,18 @@ jobs:
       ssh-agent -a $SSH_AUTH_SOCK > /dev/null
       chmod og-r $(deployKey.secureFilePath)
       ssh-add $(deployKey.secureFilePath)
-      git config --global user.email "gwassermann@cert.org"
-      git config --global user.name "gwasser"
-      git remote add ssh-origin git@github.com:gwasser/kaiju.git
+      git config --global user.email "eschwartz@cert.org"
+      git config --global user.name "eschwartz"
+      git remote add ssh-origin git@github.com:sei-eschwartz/kaiju.git
       git push --delete ssh-origin ghidra-$(ghidraVersion)
       rm -f $(deployKey.secureFilePath)
-    condition: eq(variables['Build.SourceBranchName'], 'master')
+    condition: eq(variables['Build.SourceBranchName'], 'main')
     env:
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     continueOnError: true
     displayName: Delete old git tag ghidra-$(ghidraVersion)
   - task: GitHubRelease@0
-    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'master'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
     inputs:
       gitHubConnection: gh
       repositoryName: $(Build.Repository.Name)
