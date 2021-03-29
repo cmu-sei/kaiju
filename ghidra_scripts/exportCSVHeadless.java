@@ -88,8 +88,8 @@ public class exportCSVHeadless extends GhidraScript {
             csv_fields_joined.add(fnhash.getMnemonicCountHash().toUpperCase()); // mnemonic_count_hash
             csv_fields_joined.add(fnhash.getMnemonicCategoryHash().toUpperCase()); // mnemonic_category_hash
             csv_fields_joined.add(fnhash.getMnemonicCategoryCountHash().toUpperCase()); // mnemonic_category_counts_hash
-            csv_fields_joined.add(fnhash.getMnemonicCountString()); // mnemonic_count_string
-            csv_fields_joined.add(fnhash.getMnemonicCategoryCountString()); // mnemonic_category_count_string        
+            csv_fields_joined.add(fnhash.getMnemonicCountString().toUpperCase()); // mnemonic_count_string
+            csv_fields_joined.add(fnhash.getMnemonicCategoryCountString().toUpperCase()); // mnemonic_category_count_string
         
             csvFileWriter.write(csv_fields_joined.toString()+"\n");
         }
