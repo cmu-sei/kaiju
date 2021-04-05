@@ -73,7 +73,7 @@ import kaiju.ooanalyzer.jsontypes.OOAnalyzerJsonRoot;
 public class OOAnalyzerGhidraPlugin extends ProgramPlugin {
 
   private static final String CERT_MENU = "&CERT";
-  public static final String NAME = "OOAnalyzer";
+  public static final String NAME = "OOAnalyzer Importer";
   private DockingAction ooaAction = null;
 
   /**

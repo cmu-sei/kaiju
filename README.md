@@ -1,6 +1,7 @@
 # CERT Kaiju Binary Analysis Framework for GHIDRA
 
-CERT Kaiju is a collection of binary analysis tools for Ghidra.
+CERT Kaiju is a collection of binary analysis tools for
+[Ghidra](https://ghidra-sre.org).
 
 This is a Ghidra/Java implementation of some features
 of the [CERT Pharos Binary Analysis Framework][pharos], 
@@ -32,9 +33,9 @@ fn2hash.
 
 ## Quick Installation
 
-[Pre-built Kaiju packages](https://github.com/sei-eschwartz/kaiju/releases)
-are available. Simply download the ZIP
-file corresponding with your version of Ghidra and install.
+[Pre-built Kaiju packages][prebuilts] are available. Simply download
+the ZIP file corresponding with your version of Ghidra and install
+according to the instructions below.
 
 CERT Kaiju requires the following runtime dependencies:
 - [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended)
@@ -110,15 +111,24 @@ Auto Analysis twice to ensure all of the metadata is produced
 to create correct partitioning and disassembly information, which
 in turn can influence the hashing results.
 
-Analyzers include:
+Analyzers are automatically run during Ghidra's analysis phase and include:
 - **DisasmImprovements** = improves the function partitioning of the
   disassembly compared to the standard Ghidra partitioning.
-- **Fn2Hash** = calculates function hashes for all functions in a program.
+- **Fn2Hash** = calculates function hashes for all functions in a program
+  and is used to generate YARA signatures for programs.
 
 The GUI tools include:
 - **Function Hash Viewer** = a plugin that displays an interactive list
-of functions in a program, and their hashes. Analysts can use this
+of functions in a program and several types of hashes. Analysts can use this
 to export one or more functions from a program into YARA signatures.
+    - Select `Window > CERT Function Hash Viewer` from the menu to get started
+    with this tool if it is not already visible. A new window will appear
+    displaying a table of hashes and other data. Buttons along the top
+    of the window can refresh the table or export data to file or
+    a YARA signature. This window may also be docked into the main
+    Ghidra CodeBrowser for easier use alongside other plugins.
+    More extensive usage documentation can be found in
+    Ghidra's `Help > Contents` menu when using the tool.
 - **OOAnalyzer JSON Importer** = a plugin that can
 load, parse, and apply Pharos-generated OOAnalyzer results to object
 oriented C++ executables in a Ghidra project. When launched, the
@@ -129,8 +139,13 @@ symbols found by OOAnalyzer are updated in the Ghidra Code
 Browser. The plugin's design and implementation details are described
 in our SEI blog post titled [Using OOAnalyzer to Reverse Engineer
 Object Oriented Code with Ghidra][ooanalyzer-blog].
+    - Select `CERT > OOAnalyzer Importer` from the menu to get started
+    with this tool. A simple dialog popup will ask you to
+    locate the JSON file you wish to import.
+    More extensive usage documentation can be found in
+    Ghidra's `Help > Contents` menu when using the tool.
 
-**NOTE**: for details on usage of these GUI tools, please see
+**REMINDER**: for details on usage of these GUI tools, please see
 the Kaiju help under Ghidra's built-in help system. To access
 these help docs, from the Ghidra menu, go to `Help > Contents`
 and then select `CERT Kaiju` from the tree navigation on the
@@ -234,8 +249,10 @@ In either case, the newly-built Kaiju extension will appear as a
 it was built. If all goes well, you should see a message like the
 following that tells you the name of your built plugin.
 ```
-Created ghidra_9.2.2_PUBLIC_20210309_kaiju.zip in /home/user/Documents/kaiju/dist
+Created ghidra_X.Y.Z_PUBLIC_YYYYMMDD_kaiju.zip in <path/to>/kaiju/dist
 ```
+where `X.Y.Z` is the version of Ghidra you are using, and
+`YYYYMMDD` is the date you built this Kaiju extension.
 
 ### Optional: Running Tests With AUTOCATS
 
@@ -337,5 +354,6 @@ Please find full details of this license in the `LICENSE.md` file
 in the root of this repository.
 
 [pharos]: https://github.com/cmu-sei/pharos
+[prebuilts]: https://github.com/certcc/kaiju/releases
 [ooanalyzer-blog]: https://insights.sei.cmu.edu/sei_blog/2019/07/using-ooanalyzer-to-reverse-engineer-object-oriented-code-with-ghidra.html
 
