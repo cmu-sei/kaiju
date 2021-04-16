@@ -42,6 +42,14 @@
 // application.gradle.version property in <GHIDRA_INSTALL_DIR>/Ghidra/application.properties
 // for the correction version of Gradle to use for the Ghidra installation you specify.
 
+//apply plugin: 'java' // adds 'test' task
+//apply plugin: MarkdownPlugin // adds a markdownToHtml task, see buildSrc/ directory
+
+plugins {
+    id 'java'
+    id 'kaiju.gradle.ghidrahtml'
+}
+
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
 def ghidraInstallDir
 
@@ -68,10 +76,9 @@ else {
 
 import org.gradle.util.VersionNumber
 
-apply plugin: 'java' // adds 'test' task
-
-if (VersionNumber.parse( gradle.gradleVersion ) <= VersionNumber.parse ("5.6.0")) {
-    throw new GradleException("CERT Kaiju requires at least gradle version 5.6.0. Please update gradle and retry.")
+// Gradle 6.4+ is needed to compile the markdown gradle plugin written in groovy
+if (VersionNumber.parse( gradle.gradleVersion ) <= VersionNumber.parse ("6.4.0")) {
+    throw new GradleException("CERT Kaiju requires at least gradle version 6.4.0. Please update gradle and retry.")
 }
 
 repositories {
@@ -83,6 +90,13 @@ dependencies {
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.4.2')
     testRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.4.2')
     //testRuntimeOnly('org.opentest4j:opentest4j:1.1.1')
+}
+
+// TODO: this tries to leave out the gradle plugin unnecessary for runtime Kaiju,
+// but seems to fail. is there another way to configure this task defined by Ghidra?
+// for now including the plugin source/binaries isn't harmful but is unnecessary.
+buildExtension {
+    excludes ['buildSrc/**']
 }
 
 task copyToLib(type: Copy) {
@@ -101,6 +115,9 @@ task copyToLib(type: Copy) {
     }
 }
 buildExtension.dependsOn(copyToLib)
+buildHelp.dependsOn(markdownToGhidraHtml)
+markdownToGhidraHtml.sourceDir = file('docs/')
+markdownToGhidraHtml.outputDir = file('src/main/help/help/topics/kaiju/')
 
 task uninstallPreviousOOAnalyzerPlugin {
 

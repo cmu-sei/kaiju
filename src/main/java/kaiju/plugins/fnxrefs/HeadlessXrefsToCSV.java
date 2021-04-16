@@ -37,9 +37,11 @@ import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.*;
+import ghidra.program.model.mem.Memory;
 import ghidra.program.model.symbol.*;
 
 import ghidra.util.Msg;
+import kaiju.util.AddressUtils;
 
 public final class HeadlessXrefsToCSV {
 
@@ -47,13 +49,27 @@ public final class HeadlessXrefsToCSV {
 
         FileWriter csvFileWriter = new FileWriter(csvFile,true);
         
+        StringJoiner csv_fields_joined_header = new StringJoiner(",");
+                
+        csv_fields_joined_header.add("Fn Entry Address");
+        csv_fields_joined_header.add("Code Ref Count");
+        csv_fields_joined_header.add("Data Ref Count");
+        csv_fields_joined_header.add("As BE?");
+        csv_fields_joined_header.add("As LE?");
+            
+        csvFileWriter.write(csv_fields_joined_header.toString()+"\n");
+        
+        Memory mem = currentProgram.getMemory();
+        Address minAddr = currentProgram.getMinAddress();
         ReferenceManager refman = currentProgram.getReferenceManager();
 
         // TODO: loop over all function entry point address
         for (Function fn : currentProgram.getFunctionManager().getFunctions(true)) {
             Address fnEntryAddress = fn.getEntryPoint();
             ReferenceIterator refiter = refman.getReferencesTo(fnEntryAddress);
-                
+            
+            // the following uses ghidra's internal functions for identifying references
+            
             int dataRefCnt = 0;
             int codeRefCnt = 0;
             for (Reference xref : refiter) {
@@ -63,6 +79,21 @@ public final class HeadlessXrefsToCSV {
                     codeRefCnt++;
                 }
             }
+            
+            // we also do a search over the entire binary for this,
+            // searches forward from the minimum address of the program thru entire program
+            byte[] val = AddressUtils.addressToByteArray(fnEntryAddress);
+            Address query = null;
+            if (minAddr != null) {
+                query = mem.findBytes​(minAddr, val, null, true, null);
+            }
+            String queryStr = (query == null) ? "false" : "true";
+            // search for address in little endian format
+            byte[] valLE = AddressUtils.addressToByteArrayLE(fnEntryAddress);
+            if (minAddr != null) {
+                query = mem.findBytes​(minAddr, valLE, null, true, null);
+            }
+            String leQueryStr = (query == null) ? "false" : "true";
 
             /*
             * Build CSV Line
@@ -73,6 +104,8 @@ public final class HeadlessXrefsToCSV {
             csv_fields_joined.add("0x"+fnEntryAddress.toString().toUpperCase());
             csv_fields_joined.add(Integer.toString(codeRefCnt));
             csv_fields_joined.add(Integer.toString(dataRefCnt));
+            csv_fields_joined.add(queryStr);
+            csv_fields_joined.add(leQueryStr);
             
             csvFileWriter.write(csv_fields_joined.toString()+"\n");
         }

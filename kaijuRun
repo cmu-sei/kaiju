@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+
+#----------------------------------------------------------------------
+# CERT Kaiju Headless launcher (see HEADLESS_README.md)
+#----------------------------------------------------------------------
+
+###
+ # CERT Kaiju
+ # Copyright 2021 Carnegie Mellon University.
+ #
+ # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
+ # INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY
+ # MAKES NO WARRANTIES OF ANY KIND, EITHER EXPRESSED OR IMPLIED, AS TO ANY MATTER
+ # INCLUDING, BUT NOT LIMITED TO, WARRANTY OF FITNESS FOR PURPOSE OR
+ # MERCHANTABILITY, EXCLUSIVITY, OR RESULTS OBTAINED FROM USE OF THE MATERIAL.
+ # CARNEGIE MELLON UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND WITH RESPECT
+ # TO FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
+ #
+ # Released under a BSD (SEI)-style license, please see LICENSE.md or contact permission@sei.cmu.edu for full terms.
+ #
+ # [DISTRIBUTION STATEMENT A] This material has been approved for public release and unlimited distribution.
+ # Please see Copyright notice for non-US Government use and distribution.
+ #
+ # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent and Trademark Office by Carnegie Mellon University.
+ #
+ # This Software includes and/or makes use of the following Third-Party Software subject to its own license:
+ # 1. OpenJDK (http://openjdk.java.net/legal/gplv2+ce.html) Copyright 2021 Oracle.
+ # 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
+ # 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
+ # 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ #
+ # DM21-0087
+ ###
+
+# Make sure some kind of java is on the path.  It's required to run the LaunchSupport program.
+if ! [ -x "$(command -v java)" ] ; then
+    echo "Java runtime not found.  Please refer to the Ghidra Installation Guide's Troubleshooting section."
+    exit -1
+fi
+
+# Make sure this script can find the Ghidra installation.
+if [ -z "$GHIDRA_INSTALL_DIR" ] ; then
+    echo "GHIDRA_INSTALL_DIR environment variable not set. Please refer to the Ghidra Installation Guide."
+    exit -1
+fi
+
+ProgName=$(basename $0)
+  
+sub_help(){
+    echo "Usage: $ProgName <subcommand> [options]"
+    echo "Subcommands:"
+    echo "  fn2hash     Export function hashes to CSV file"
+    echo "  fn2yara     Export function signatures to YARA file"
+    echo "  xrefs       Export function XREFS to CSV file"
+    echo ""
+    echo "For help with each subcommand run:"
+    echo "$ProgName <subcommand> -h|--help"
+    echo ""
+}
+  
+sub_fn2hash(){
+    if [ $# -eq 0 ]; then
+        echo "fn2hash: Need an input file to import and analyze."
+        echo "For help run:"
+        echo "$ProgName fn2hash -h|--help"
+        exit -1
+    fi
+    if [ "$#" -ne 1 ]; then
+        echo "fn2hash: Illegal number of parameters"
+        echo "For help run:"
+        echo "$ProgName fn2hash -h|--help"
+        exit -1
+    fi
+    case $1 in
+        "-h" | "--help")
+            echo "Usage: $ProgName fn2hash <exe>"
+            echo "  <exe>       path to exe to analyze"
+            echo "Output: a CSV file with function hash data"
+            ;;
+        *)
+            echo "Running 'fn2hash' subcommand."
+            echo "First arg is '$1'."
+            $GHIDRA_INSTALL_DIR/support/analyzeHeadless /tmp tmpGhidraProj -okToDelete -deleteProject -import $1 -preScript KaijuSetupScript.java -postScript KaijuExportCSVHeadless.java $1.FnHashes.csv
+            ;;
+    esac
+}
+
+sub_fn2yara(){
+    if [ $# -eq 0 ]; then
+        echo "fn2yara: Need an input file to import and analyze."
+        echo "For help run:"
+        echo "$ProgName fn2yara -h|--help"
+        exit -1
+    fi
+    if [ "$#" -ne 1 ]; then
+        echo "fn2yara: Illegal number of parameters"
+        echo "For help run:"
+        echo "$ProgName fn2yara -h|--help"
+        exit -1
+    fi
+    case $1 in
+        "-h" | "--help")
+            echo "Usage: $ProgName fn2yara <exe>"
+            echo "  <exe>       path to exe to analyze"
+            echo "Output: a YARA format file with function signatures"
+            ;;
+        *)
+            echo "Running 'fn2yara' subcommand."
+            echo "First arg is '$1'."
+            $GHIDRA_INSTALL_DIR/support/analyzeHeadless /tmp tmpGhidraProj -okToDelete -deleteProject -import $1 -preScript KaijuSetupScript.java -postScript KaijuExportYaraHeadless.java $1.yara
+            ;;
+    esac
+}
+  
+sub_xrefs(){
+    if [ $# -eq 0 ]; then
+        echo "xrefs: Need an input file to import and analyze."
+        echo "For help run:"
+        echo "$ProgName xrefs -h|--help"
+        exit -1
+    fi
+    if [ "$#" -ne 1 ]; then
+        echo "xrefs: Illegal number of parameters"
+        echo "For help run:"
+        echo "$ProgName xrefs -h|--help"
+        exit -1
+    fi
+    case $1 in
+        "-h" | "--help")
+            echo "Usage: $ProgName xrefs <exe>"
+            echo "  <exe>       path to exe to analyze"
+            echo "Output: a CSV file with xref data"
+            ;;
+        *)
+            echo "Running 'xrefs' subcommand."
+            echo "First arg is '$1'."
+            $GHIDRA_INSTALL_DIR/support/analyzeHeadless /tmp tmpGhidraProj -okToDelete -deleteProject -import $1 -preScript KaijuSetupScript.java -postScript KaijuExportXrefsToCSVHeadless.java $1.Xref.csv
+            ;;
+    esac
+}
+  
+subcommand=$1
+case $subcommand in
+    "" | "-h" | "--help")
+        sub_help
+        ;;
+    "fn2hash" | "fn2yara" | "xrefs")
+        shift
+        sub_${subcommand} $@
+        ;;
+    *)
+        echo "Error: '$subcommand' is not a known subcommand." >&2
+        echo "  Run '$ProgName --help' for a list of known subcommands." >&2
+        exit -1
+        ;;
+esac
+

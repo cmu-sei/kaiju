@@ -15,6 +15,9 @@ jobs:
     matrix:
       ghidra-git:
         ghidraVersion: "master"
+      ghidra923:
+        ghidraUrl: "https://ghidra-sre.org/ghidra_9.2.3_PUBLIC_20210325.zip"
+        ghidraVersion: "9.2.3"
       ghidra922:
         ghidraUrl: "https://ghidra-sre.org/ghidra_9.2.2_PUBLIC_20201229.zip"
         ghidraVersion: "9.2.2"

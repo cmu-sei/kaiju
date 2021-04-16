@@ -35,7 +35,9 @@ fn2hash.
 
 [Pre-built Kaiju packages][prebuilts] are available. Simply download
 the ZIP file corresponding with your version of Ghidra and install
-according to the instructions below.
+according to the instructions below. It is recommended to install via
+Ghidra's graphical interface, but it is also possible to manually
+unzip into the appropriate directory to install.
 
 CERT Kaiju requires the following runtime dependencies:
 - [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended)
@@ -44,10 +46,6 @@ CERT Kaiju requires the following runtime dependencies:
 **NOTE**: It is also possible to build the extension package
 on your own and install it. Please see the instructions
 under the "Build Kaiju Yourself" section below.
-
-The extension .zip file may be installed either interactively through
-the graphical interface of Ghidra, or manually by unzipping the extension
-into the appropriate directory in your Ghidra installation.
 
 ### Graphical Installation
 
@@ -145,13 +143,6 @@ Object Oriented Code with Ghidra][ooanalyzer-blog].
     More extensive usage documentation can be found in
     Ghidra's `Help > Contents` menu when using the tool.
 
-**REMINDER**: for details on usage of these GUI tools, please see
-the Kaiju help under Ghidra's built-in help system. To access
-these help docs, from the Ghidra menu, go to `Help > Contents`
-and then select `CERT Kaiju` from the tree navigation on the
-left-hand side of the help window.
-
-
 ### Command-line "Headless" Mode
 
 Ghidra also supports a "headless" mode allowing tools to be run
@@ -170,28 +161,52 @@ and export all hash data as YARA signatures to the file specified
 based on entry point address that have cross-references in
 data or other parts of the Program
 
-A simple shell launch script named `runKaiju` has been included to run
+A simple shell launch script named `kaijuRun` has been included to run
 these headless commands for simple scenarios, such as outputing the
 function hashes for every function in a single executable.
 Assuming the `GHIDRA_INSTALL_DIR` variable is set, one might
 for example run the launch script on a single executable as follows:
 
 ```
-$GHIDRA_INSTALL_DIR/Ghidra/Extensions/kaiju/runKaiju fn2hash example.exe
+$GHIDRA_INSTALL_DIR/Ghidra/Extensions/kaiju/kaijuRun fn2hash example.exe
 ```
 
 This command would output the results to an automatically named file as
 `example.exe.Hashes.csv`.
 
-Basic help for the `runKaiju` script is available by running:
+Basic help for the `kaijuRun` script is available by running:
 
 ```
-$GHIDRA_INSTALL_DIR/Ghidra/Extensions/kaiju/runKaiju --help
+$GHIDRA_INSTALL_DIR/Ghidra/Extensions/kaiju/kaijuRun --help
 ```
 
-Please see the `HEADLESS_README.md` file in the `ghidra_scripts/`
-directory for more information on using this mode and
-the `runKaiju` launcher script.
+Please see `docs/HeadlessKaiju.md` file in the repository
+for more information on using this mode and
+the `kaijuRun` launcher script.
+
+### Further Documentation and Help
+
+More comprehensive documentation and help is available, in one
+of two formats.
+
+See the `docs/` directory for Markdown-formatted documentation
+and help for all Kaiju tools and components. These documents
+are easy to maintain and edit and read even from a command line.
+
+Alternatively, you may find the same documentation in Ghidra's
+built-in help system. To access these help docs,
+from the Ghidra menu, go to `Help > Contents`
+and then select `CERT Kaiju` from the tree navigation on the
+left-hand side of the help window.
+
+Please note that the Ghidra Help documentation is the exact
+same content as the Markdown files in the `docs/` directory;
+thanks to an in-tree gradle plugin, gradle will automatically
+parse the Markdown and export into Ghidra HTML during the build
+process. This allows even simpler maintenance (update docs in
+just one place, not two) and keeps the two in sync.
+
+All new documentation should be added to the `docs/` directory.
 
 
 ## Building Kaiju Yourself Using Gradle
@@ -203,7 +218,7 @@ Kaiju yourself.
 
 CERT Kaiju requires the following build dependencies:
 - [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended)
-- [gradle](https://gradle.org/install/) 5.6+ (gradle 6.x recommended)
+- [gradle](https://gradle.org/install/) 6.4+ (latest gradle 6.x recommended, 7.x not supported)
 - [GSON](https://github.com/google/gson) 2.8.6
 - Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
 
@@ -215,9 +230,6 @@ installation problems.
 you.  If you find that you need to obtain it manually, you can download
 [gson-2.8.6.jar](https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.6/gson-2.8.6.jar)
 and place it in the `kaiju/lib` directory.
-
-This framework has been tested with the following build:
-- 9.2.2 (public release), gradle 6.8.3, OpenJDK 11
 
 ### Build Instructions
 
@@ -345,6 +357,7 @@ If you'd prefer to remove your old installation manually, perform a command like
 ```bash
 rm -rf $GHIDRA_INSTALL_DIR/Extensions/Ghidra/*kaiju*.zip $GHIDRA_INSTALL_DIR/Ghidra/Extensions/kaiju
 ```
+
 
 ## License
 This software is licensed under a simplified BSD-style license

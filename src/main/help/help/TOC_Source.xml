@@ -51,9 +51,9 @@
 <tocroot>
 	<tocref id="Root">
 		<tocdef id="CERT Kaiju" text="CERT Kaiju" target="help/topics/kaiju/kaiju.html">
-            <tocdef id="Disassembly Improvements" sortgroup="a" text="Disassembly Improvements"  target="help/topics/kaiju/improveddisasm/improveddisasm.htm" />
-            <tocdef id="OOAnalyzer JSON Importer" sortgroup="b" text="OOAnalyzer JSON Importer"  target="help/topics/kaiju/ooanalyzer/OoanalyzerJsonImporter.htm" />
-            <tocdef id="Function Hashing" sortgroup="c" text="Function Hashing"  target="help/topics/kaiju/fnhashing/fn2hash.htm" />
+            <tocdef id="Function Hashing" sortgroup="a" text="Function Hashing"  target="help/topics/kaiju/FnHashing.html" />
+            <tocdef id="OOAnalyzer JSON Importer" sortgroup="b" text="OOAnalyzer JSON Importer"  target="help/topics/kaiju/OOAnalyzerImporter.html" />
+            <tocdef id="Disassembly Improvements" sortgroup="c" text="Disassembly Improvements"  target="help/topics/kaiju/DisAsmImprovements.html" />
         </tocdef>
 	</tocref>
 </tocroot>

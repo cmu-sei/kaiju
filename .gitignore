@@ -9,7 +9,13 @@
 *.jar
 .gradle/*
 build/*
+buildSrc/build/*
+buildSrc/.gradle/*
 dist/*
 *.code-workspace
 *.vscode/*
+
+# ignore the gradle-generated help files, see originals in docs/ folder
+src/main/help/help/topics/kaiju/*.html
+src/main/help/help/topics/kaiju/images/*
 
