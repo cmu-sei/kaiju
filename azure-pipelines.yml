@@ -11,6 +11,9 @@ jobs:
   variables:
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
+    GRADLE_VERSION: gradle-6.8.3
+    GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
+    GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
   strategy:
     matrix:
       ghidra-git:
@@ -42,8 +45,9 @@ jobs:
 
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$(JAVA_HOME_11_X64)"
-      echo "##vso[task.setvariable variable=PATH]$(JAVA_HOME_11_X64)/bin:$(PATH)"
+      echo "##vso[task.prependpath]$(JAVA_HOME_11_X64)/bin:$(PATH)"
     displayName: "Set java version"
+
   - task: Cache@2
     condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     inputs:
@@ -63,23 +67,25 @@ jobs:
       path: $(AUTOCATS_DIR)
     displayName: Cache AUTOCATS
 
+  - task: Cache@2
+    inputs:
+      key: '"$(GRADLE_URL)" | gradle'
+      path: $(GRADLE_INSTALL_DIR)
+    displayName: Cache Gradle 6.x
+
   - bash: |
       set -e
-      test -d zip || (mkdir zip && cd zip && wget $URL)
+      test -d zip || (mkdir zip && cd zip && wget $(ghidraUrl))
       unzip zip/*.zip
     condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     workingDirectory: $(Pipeline.Workspace)
     displayName: Download Ghidra binary from $(ghidraUrl)
-    env:
-      URL: $(ghidraUrl)
   - bash: |
       set -e
       sudo apt-get -y install bison flex xvfb
       git clone --depth 1 https://github.com/NationalSecurityAgency/ghidra
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
     workingDirectory: $(Pipeline.Workspace)
-    env:
-      WS: $(Pipeline.Workspace)
     displayName: Download and build Ghidra from git part 1
 
   - task: Cache@2
@@ -89,26 +95,30 @@ jobs:
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
 
   - bash: |
+      echo "##vso[task.prependpath]$(GRADLE_INSTALL_DIR)/$(GRADLE_VERSION)/bin"
+      test -d $(GRADLE_INSTALL_DIR) && exit 0
+      wget $(GRADLE_URL) -O gradle.zip
+      unzip -d $(GRADLE_INSTALL_DIR) gradle.zip
+      rm gradle.zip
+    workingDirectory: $(Pipeline.Workspace)
+    displayName: Download gradle 6.x binary from $(GRADLE_URL)
+  - bash: |
       set -e
       cd ghidra
       gradle --build-cache --init-script gradle/support/fetchDependencies.gradle init
       gradle --build-cache buildGhidra -x ip
-      mkdir -p $WS/zip
-      cp build/dist/*.zip $WS/zip/
-      cd $WS
+      mkdir -p $(Pipeline.Workspace)/zip
+      cp build/dist/*.zip $(Pipeline.Workspace)/zip/
+      cd $(Pipeline.Workspace)
       unzip zip/*.zip
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
     workingDirectory: $(Pipeline.Workspace)
-    env:
-      WS: $(Pipeline.Workspace)
     displayName: Download and build Ghidra from git part 2
   - bash: |
       set -e
-      GHIDRA_INSTALL_DIR=$(find $WS -maxdepth 1 -type d -name 'ghidra_*') gradle --build-cache
+      GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle --build-cache
     displayName: Build Kaiju extension and plugins
     workingDirectory: .
-    env:
-      WS: $(Pipeline.Workspace)
   - bash: |
       test -d $AUTOCATS_DIR || git clone https://github.com/cmu-sei/autocats $AUTOCATS_DIR
     displayName: Download AUTOCATS
@@ -117,13 +127,10 @@ jobs:
       # Needs a head
       Xvfb :1 &
       echo $AUTOCATS_DIR
-      #env
-      DISPLAY=:1 GHIDRA_INSTALL_DIR=$(find $WS -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache test
+      DISPLAY=:1 GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache test
       kill %%
     displayName: Run Kaiju tests
     workingDirectory: .
-    env:
-      WS: $(Pipeline.Workspace)
   - script: gradle --stop
   - publish: dist/
   - task: GitHubRelease@0
