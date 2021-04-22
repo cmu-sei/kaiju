@@ -107,8 +107,8 @@ jobs:
       cd ghidra
       gradle --build-cache --init-script gradle/support/fetchDependencies.gradle init
       gradle --build-cache buildGhidra -x ip
-      mkdir -p $WS/zip
-      cp build/dist/*.zip $WS/zip/
+      mkdir -p $(Pipeline.Workspace)/zip
+      cp build/dist/*.zip $(Pipeline.Workspace)/zip/
       cd $(Pipeline.Workspace)
       unzip zip/*.zip
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
