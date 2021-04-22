@@ -11,6 +11,9 @@ jobs:
   variables:
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
+    GRADLE_VERSION: gradle-6.8.3
+    GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
+    GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
   strategy:
     matrix:
       ghidra-git:
@@ -44,6 +47,7 @@ jobs:
       echo "##vso[task.setvariable variable=JAVA_HOME]$(JAVA_HOME_11_X64)"
       echo "##vso[task.setvariable variable=PATH]$(JAVA_HOME_11_X64)/bin:$(PATH)"
     displayName: "Set java version"
+
   - task: Cache@2
     condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     inputs:
@@ -62,6 +66,12 @@ jobs:
       key: '"$(AUTOCATS_DIR)" | autocats'
       path: $(AUTOCATS_DIR)
     displayName: Cache AUTOCATS
+
+  - task: Cache@2
+    inputs:
+      key: '"$(GRADLE_URL)" | gradle'
+      path: $(GRADLE_INSTALL_DIR)
+    displayName: Cache Gradle 6.x
 
   - bash: |
       set -e
@@ -89,8 +99,17 @@ jobs:
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
 
   - bash: |
+      echo "##vso[task.prependpath]$(GRADLE_INSTALL_DIR)/$(GRADLE_VERSION)/bin"
+      test -d $(GRADLE_INSTALL_DIR) && exit 0
+      wget $(GRADLE_URL) -O gradle.zip
+      unzip -d $(GRADLE_INSTALL_DIR) gradle.zip
+      rm gradle.zip
+    workingDirectory: $(Pipeline.Workspace)
+    displayName: Download gradle 6.x binary from $(GRADLE_URL)
+  - bash: |
       set -e
       cd ghidra
+      which gradle
       gradle --build-cache --init-script gradle/support/fetchDependencies.gradle init
       gradle --build-cache buildGhidra -x ip
       mkdir -p $WS/zip
@@ -151,7 +170,7 @@ jobs:
       git remote add ssh-origin git@github.com:sei-eschwartz/kaiju.git
       git push --delete ssh-origin ghidra-$(ghidraVersion)
       rm -f $(deployKey.secureFilePath)
-    condition: eq(variables['Build.SourceBranchName'], 'main')
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
     env:
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     continueOnError: true
