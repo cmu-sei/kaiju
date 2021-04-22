@@ -105,7 +105,6 @@ jobs:
   - bash: |
       set -e
       cd ghidra
-      which gradle
       gradle --build-cache --init-script gradle/support/fetchDependencies.gradle init
       gradle --build-cache buildGhidra -x ip
       mkdir -p $WS/zip
@@ -159,7 +158,7 @@ jobs:
       git remote add ssh-origin git@github.com:sei-eschwartz/kaiju.git
       git push --delete ssh-origin ghidra-$(ghidraVersion)
       rm -f $(deployKey.secureFilePath)
-    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+    condition: eq(variables['Build.SourceBranchName'], 'main')
     env:
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     continueOnError: true
