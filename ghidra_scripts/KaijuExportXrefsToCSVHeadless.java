@@ -31,7 +31,7 @@ import java.util.StringJoiner;
 
 import ghidra.app.script.GhidraScript;
 
-import kaiju.plugins.fnxrefs.HeadlessXrefsToCSV;
+import kaiju.tools.fnxrefs.HeadlessXrefsToCSV;
 
 public class exportXrefsToCSVHeadless extends GhidraScript {
     public File csvFile;

@@ -40,7 +40,7 @@ Ghidra's graphical interface, but it is also possible to manually
 unzip into the appropriate directory to install.
 
 CERT Kaiju requires the following runtime dependencies:
-- [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended)
+- [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended) or 10.0+
 - Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
 
 **NOTE**: It is also possible to build the extension package
@@ -116,6 +116,9 @@ Analyzers are automatically run during Ghidra's analysis phase and include:
   and is used to generate YARA signatures for programs.
 
 The GUI tools include:
+- **GhiHorn** = a plugin to calculate paths and reachability in
+control flow graphs, utilizing Z3.
+    - Select `CERT > GhiHorn` to access this tool from Ghidra's CodeBrowser.
 - **Function Hash Viewer** = a plugin that displays an interactive list
 of functions in a program and several types of hashes. Analysts can use this
 to export one or more functions from a program into YARA signatures.
@@ -142,6 +145,7 @@ Object Oriented Code with Ghidra][ooanalyzer-blog].
     locate the JSON file you wish to import.
     More extensive usage documentation can be found in
     Ghidra's `Help > Contents` menu when using the tool.
+
 
 ### Command-line "Headless" Mode
 
@@ -217,9 +221,10 @@ Kaiju yourself.
 ### Build Dependencies
 
 CERT Kaiju requires the following build dependencies:
-- [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended)
-- [gradle](https://gradle.org/install/) 6.4+ (latest gradle 6.x recommended, 7.x not supported)
-- [GSON](https://github.com/google/gson) 2.8.6
+- [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended) or 10.0+
+- [gradle](https://gradle.org/install/) 6.8+ (latest gradle 6.x recommended, 7.x not supported by Ghidra 9.x)
+- [GSON](https://github.com/google/gson) 2.8.6 (bundled with Kaiju)
+- [Z3](https://github.com/Z3Prover/z3) 4.8.11+, built with the Java API
 - Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
 
 **NOTE ABOUT GRADLE**: Please ensure that gradle is building against the same
@@ -236,12 +241,14 @@ and place it in the `kaiju/lib` directory.
 Once dependencies are installed, Kaiju may be built as a Ghidra
 extension by using the `gradle` build tool. It is recommended to
 first set a Ghidra environment variable, as Ghidra installation
-instructions specify.
+instructions specify. You will also need to identify where to find
+your local build of Z3's Java API .jar.
 
-In short: set `GHIDRA_INSTALL_DIR` as an environment
-variable first, then run `gradle` without any options:
+In short: set `GHIDRA_INSTALL_DIR`and `Z3CLASSPATH` as environment
+variables first, then run `gradle` without any options:
 ```bash
 export GHIDRA_INSTALL_DIR=<Absolute path to Ghidra install dir>
+export Z3CLASSPATH=<Absolute path to dir with Z3 .jar file>
 gradle
 ```
 
@@ -252,7 +259,7 @@ the Ghidra release distribution into the location of your choice.)
 If for some reason your environment variable is not or can not be set,
 you can also specify it on the command like with:
 ```bash
-gradle -PGHIDRA_INSTALL_DIR=<Absolute path to Ghidra install dir>
+gradle -PGHIDRA_INSTALL_DIR=<Absolute path to Ghidra install dir> -PZ3CLASSPATH=<Absolute path to dir with Z3 .jar file>
 ```
 
 In either case, the newly-built Kaiju extension will appear as a
@@ -359,14 +366,27 @@ rm -rf $GHIDRA_INSTALL_DIR/Extensions/Ghidra/*kaiju*.zip $GHIDRA_INSTALL_DIR/Ghi
 ```
 
 
-## License
+## Licensing
+    
 This software is licensed under a simplified BSD-style license
 by the Software Engineering Institute at Carnegie Mellon University.
-
 Please find full details of this license in the `LICENSE.md` file
 in the root of this repository.
+
+To build this software, we make use of a modified version of
+the `markdown-gradle-plugin` plugin for `gradle`.
+[`markdown-gradle-plugin`](https://github.com/kordamp/markdown-gradle-plugin)
+is Copyright (C) 2013-2020 Andres Almiray and licensed under terms of
+the [Apache 2.0 license](https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt).
+
+The CERT Kaiju logo is based on [art][logo] created by Cameron Spahn,
+originally released under terms of
+[Creative Commons Attribution-Share Alike 4.0 International license][logo-license].
+
 
 [pharos]: https://github.com/cmu-sei/pharos
 [prebuilts]: https://github.com/certcc/kaiju/releases
 [ooanalyzer-blog]: https://insights.sei.cmu.edu/sei_blog/2019/07/using-ooanalyzer-to-reverse-engineer-object-oriented-code-with-ghidra.html
+[logo]: https://commons.wikimedia.org/wiki/File:RapatorCameronSpahn.jpg
+[logo-license]: https://creativecommons.org/licenses/by-sa/4.0/
 

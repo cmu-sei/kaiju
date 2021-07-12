@@ -8,6 +8,7 @@
 *.zip
 *.jar
 .gradle/*
+gradle.properties
 build/*
 buildSrc/build/*
 buildSrc/.gradle/*

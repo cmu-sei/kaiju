@@ -1,0 +1,20 @@
+{
+    "Signatures": [
+        {
+            "Name": "File Open/Close",
+            "Description": "Open and close a file",
+            "Sequence": [
+                "Kernel32.DLL::CreateFileA",
+                "Kernel32.DLL::CloseHandle"
+            ]
+        },
+        {
+            "Name": "Read/Write a file",
+            "Description": "Read/Write a file",
+            "Sequence": [
+                "Kernel32.DLL::ReadFile",
+                "Kernel32.DLL::WriteFile"
+            ]
+        }
+    ]
+}

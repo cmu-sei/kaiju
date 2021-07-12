@@ -71,7 +71,16 @@ class MarkdownToGhidraHtmlTask extends DefaultTask {
         }
     }
     
-    private static File outputDirFor(File source, String basePath, File outputDir) {
+//     private static File outputDirFor(String sourcePath, String basePath, String outputPath) {
+//         File source = new File(sourcePath)
+//         String filePath = source.directory ? source.absolutePath : source.parentFile.absolutePath
+//         String relativeFilePath = filePath - basePath
+//         File destinationParentDir = new File(outputPath+"/${relativeFilePath}")
+//         if (!destinationParentDir.exists()) destinationParentDir.mkdirs()
+//         destinationParentDir
+//     }
+    
+    public static File outputDirFor(File source, String basePath, File outputDir) {
         String filePath = source.directory ? source.absolutePath : source.parentFile.absolutePath
         String relativeFilePath = filePath - basePath
         File destinationParentDir = new File("${outputDir}/${relativeFilePath}")
@@ -87,7 +96,7 @@ class MarkdownToGhidraHtmlTask extends DefaultTask {
      * @return the path with stripped filename extension,
      *         or <code>null</code> if none
      */
-    private static String stripFilenameExtension(String path) {
+    public static String stripFilenameExtension(String path) {
         if (path == null) {
             return null
         }

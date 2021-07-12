@@ -26,7 +26,7 @@
  * DM21-0087
  */
 
-package kaiju.ooanalyzer;
+package kaiju.tools.ooanalyzer;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +54,7 @@ import java.nio.file.NoSuchFileException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
-import kaiju.ooanalyzer.OOAnalyzerTest;
+import kaiju.tools.ooanalyzer.OOAnalyzerTest;
 
 import resources.ResourceManager;
 

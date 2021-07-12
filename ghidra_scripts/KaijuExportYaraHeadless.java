@@ -46,7 +46,7 @@ import ghidra.util.task.*;
 
 import kaiju.fnhash.internal.FnHashSaveable;
 import kaiju.fnhash.internal.FnUtils;
-import kaiju.plugins.fnhashviewer.HashViewerTableModel;
+import kaiju.tools.fnhash.HashViewerTableModel;
 import kaiju.util.ByteArrayList;
 import kaiju.util.HexUtils;
 

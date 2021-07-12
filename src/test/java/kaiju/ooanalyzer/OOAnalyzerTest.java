@@ -26,7 +26,7 @@
  * DM21-0087
  */
 
-package kaiju.ooanalyzer;
+package kaiju.tools.ooanalyzer;
 
 //import static org.junit.Assert.assertTrue;
 
@@ -46,7 +46,7 @@ import ghidra.test.TestEnv;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
 
-import kaiju.ooanalyzer.OOAnalyzerGhidraPlugin;
+import kaiju.tools.ooanalyzer.OOAnalyzerGhidraPlugin;
 
 import resources.ResourceManager;
 
