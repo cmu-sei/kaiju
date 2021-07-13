@@ -14,6 +14,7 @@ jobs:
     GRADLE_VERSION: gradle-6.9
     GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
     GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
+    Z3_VERSION: z3-4.8.11
   strategy:
     matrix:
       ghidra-git:
@@ -57,6 +58,13 @@ jobs:
   - task: Cache@2
     condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     inputs:
+      key: '"$(Z3_VERSION)" | z3'
+      path: $(Pipeline.Workspace)/z3
+    displayName: Cache z3 dir
+
+  - task: Cache@2
+    condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
+    inputs:
       key: '"$(ghidraUrl)" | binary'
       path: $(Pipeline.Workspace)/zip
     displayName: Cache ghidra binary
@@ -78,6 +86,18 @@ jobs:
       key: '"$(GRADLE_URL)" | gradle'
       path: $(GRADLE_INSTALL_DIR)
     displayName: Cache Gradle 6.x
+
+  - bash: |
+      set -e
+      sudo apt-get -y install ninja-build
+      test -d $(Pipeline.Workspace)/z3 || git clone -b $(Z3_VERSION) --depth 1 https://github.com/Z3Prover/z3.git z3
+      mkdir -p z3/build
+      cd z3/build
+      cmake -GNinja -DZ3_BUILD_JAVA_BINDINGS=On ..
+      ninja
+    condition: succeeded()
+    workingDirectory: $(Pipeline.Workspace)
+    displayName: Build Z3
 
   - bash: |
       set -e
@@ -122,7 +142,7 @@ jobs:
     displayName: Download and build Ghidra from git part 2
   - bash: |
       set -e
-      GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle --build-cache
+      Z3CLASSPATH=$(Pipeline.Workspace)/z3/build GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle --build-cache
     displayName: Build Kaiju extension and plugins
     workingDirectory: .
   - bash: |
@@ -133,7 +153,7 @@ jobs:
       # Needs a head
       Xvfb :1 &
       echo $AUTOCATS_DIR
-      DISPLAY=:1 GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache test
+      DISPLAY=:1 Z3CLASSPATH=$(Pipeline.Workspace)/z3/build GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache test
       kill %%
     displayName: Run Kaiju tests
     workingDirectory: .
