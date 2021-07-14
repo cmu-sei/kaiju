@@ -779,8 +779,9 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
             service.removeHighlightProvider(highlightProvider, program);
         }
     }
-    
-    @Override
+
+    //@Override
+    // This is not present in older Ghidras, so don't include @Override.
     public String getTextSelection() {
         return null;
     }
