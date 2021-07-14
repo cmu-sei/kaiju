@@ -19,9 +19,12 @@ jobs:
     matrix:
       ghidra-git:
         ghidraVersion: "master"
+      ghidra101:
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0.1_build/ghidra_10.0.1_PUBLIC_20210708.zip"
+        ghidraVersion: "10.1"
       ghidra100:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0_build/ghidra_10.0_PUBLIC_20210621.zip"
-        ghidraversion: "10.0"
+        ghidraVersion: "10.0"
       ghidra924:
         ghidraUrl: "https://ghidra-sre.org/ghidra_9.2.4_PUBLIC_20210427.zip"
         ghidraVersion: "9.2.4"
@@ -37,15 +40,6 @@ jobs:
       ghidra92:
         ghidraUrl: "https://ghidra-sre.org/ghidra_9.2_PUBLIC_20201113.zip"
         ghidraVersion: "9.2"
-      ghidra912:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.1.2_PUBLIC_20200212.zip"
-        ghidraVersion: "9.1.2"
-      ghidra911:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.1.1_PUBLIC_20191218.zip"
-        ghidraVersion: "9.1.1"
-      ghidra91:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.1_PUBLIC_20191023.zip"
-        ghidraVersion: "9.1"
   pool:
     vmImage: 'Ubuntu-20.04'
   steps:
