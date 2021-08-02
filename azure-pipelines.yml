@@ -65,7 +65,6 @@ jobs:
     displayName: "Set java version"
 
   - task: Cache@2
-    condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     inputs:
       key: '"$(Z3_VERSION)" | z3'
       path: $(Pipeline.Workspace)/z3
