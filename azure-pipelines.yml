@@ -109,9 +109,10 @@ jobs:
     displayName: Download and build Ghidra from git part 1
 
   - task: Cache@2
+    displayName: Cache Ghidra dependencies
     inputs:
       key: 'gradle deps'
-      path: $(Pipeline.Workspace)/ghidra/build/downloads
+      path: $(Pipeline.Workspace)/ghidra/dependencies
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
 
   - bash: |
@@ -123,7 +124,7 @@ jobs:
     workingDirectory: $(Pipeline.Workspace)
     displayName: Download gradle 6.x binary from $(GRADLE_URL)
   - bash: |
-      set -e
+      set -ex
       cd ghidra
       gradle --build-cache --init-script gradle/support/fetchDependencies.gradle init
       gradle --build-cache buildGhidra -x ip
