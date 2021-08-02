@@ -9,6 +9,7 @@ schedules:
 jobs:
 - job: Build_Kaiju
   variables:
+    CCACHE_DIR: $(Pipeline.Workspace)/cache
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
     GRADLE_VERSION: gradle-6.9
@@ -43,6 +44,20 @@ jobs:
   pool:
     vmImage: 'Ubuntu-20.04'
   steps:
+
+  - bash: |
+      set -e
+      sudo apt-get -y update
+      sudo apt-get install ccache -y
+      echo "##vso[task.prependpath]/usr/lib/ccache"
+    displayName: Install ccache and update PATH to use linked versions of gcc, cc, etc
+
+  - task: Cache@2
+    inputs:
+      key: 'ccache | "$(System.JobDisplayName)"' # Same for each version of Ghidra more or less
+      restoreKeys: 'ccache'
+      path: $(CCACHE_DIR)
+    displayName: ccache
 
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$(JAVA_HOME_11_X64)"
