@@ -54,7 +54,7 @@ jobs:
 
   - task: Cache@2
     inputs:
-      key: 'ccache | "$(System.JobDisplayName)"' # Same for each version of Ghidra more or less
+      key: 'ccache | "$(System.JobDisplayName)" ' # Same for each version of Ghidra more or less
       restoreKeys: 'ccache'
       path: $(CCACHE_DIR)
     displayName: ccache
@@ -79,7 +79,7 @@ jobs:
 
   - task: Cache@2
     inputs:
-      key: 'gradle | "$(Agent.OS)" | "$(System.Job.DisplayName)"'
+      key: 'gradle | "$(Agent.OS)" | "$(System.JobDisplayName)" '
       restoreKeys: gradle
       path: $(GRADLE_USER_HOME)
     displayName: Gradle build cache
@@ -101,7 +101,7 @@ jobs:
       test -d $(Pipeline.Workspace)/z3 || git clone -b $(Z3_VERSION) --depth 1 https://github.com/Z3Prover/z3.git z3
       mkdir -p z3/build
       cd z3/build
-      cmake -GNinja -DZ3_BUILD_JAVA_BINDINGS=On ..
+      cmake -GNinja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
       ninja
     condition: succeeded()
     workingDirectory: $(Pipeline.Workspace)
