@@ -9,6 +9,7 @@ schedules:
 jobs:
 - job: Build_Kaiju
   variables:
+    CCACHE_DIR: $(Pipeline.Workspace)/cache
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
     GRADLE_VERSION: gradle-6.9
@@ -44,13 +45,26 @@ jobs:
     vmImage: 'Ubuntu-20.04'
   steps:
 
+  - bash: |
+      set -e
+      sudo apt-get -y update
+      sudo apt-get install ccache -y
+      echo "##vso[task.prependpath]/usr/lib/ccache"
+    displayName: Install ccache and update PATH to use linked versions of gcc, cc, etc
+
+  - task: Cache@2
+    inputs:
+      key: 'ccache | "$(System.JobDisplayName)" ' # Same for each version of Ghidra more or less
+      restoreKeys: 'ccache'
+      path: $(CCACHE_DIR)
+    displayName: ccache
+
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$(JAVA_HOME_11_X64)"
       echo "##vso[task.prependpath]$(JAVA_HOME_11_X64)/bin:$(PATH)"
     displayName: "Set java version"
 
   - task: Cache@2
-    condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     inputs:
       key: '"$(Z3_VERSION)" | z3'
       path: $(Pipeline.Workspace)/z3
@@ -65,7 +79,7 @@ jobs:
 
   - task: Cache@2
     inputs:
-      key: 'gradle | "$(Agent.OS)" | "$(System.Job.DisplayName)"'
+      key: 'gradle | "$(Agent.OS)" | "$(System.JobDisplayName)" '
       restoreKeys: gradle
       path: $(GRADLE_USER_HOME)
     displayName: Gradle build cache
@@ -87,7 +101,7 @@ jobs:
       test -d $(Pipeline.Workspace)/z3 || git clone -b $(Z3_VERSION) --depth 1 https://github.com/Z3Prover/z3.git z3
       mkdir -p z3/build
       cd z3/build
-      cmake -GNinja -DZ3_BUILD_JAVA_BINDINGS=On ..
+      cmake -GNinja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
       ninja
     condition: succeeded()
     workingDirectory: $(Pipeline.Workspace)
@@ -109,9 +123,10 @@ jobs:
     displayName: Download and build Ghidra from git part 1
 
   - task: Cache@2
+    displayName: Cache Ghidra dependencies
     inputs:
       key: 'gradle deps'
-      path: $(Pipeline.Workspace)/ghidra/build/downloads
+      path: $(Pipeline.Workspace)/ghidra/dependencies
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
 
   - bash: |
@@ -123,7 +138,7 @@ jobs:
     workingDirectory: $(Pipeline.Workspace)
     displayName: Download gradle 6.x binary from $(GRADLE_URL)
   - bash: |
-      set -e
+      set -ex
       cd ghidra
       gradle --build-cache --init-script gradle/support/fetchDependencies.gradle init
       gradle --build-cache buildGhidra -x ip
