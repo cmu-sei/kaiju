@@ -41,21 +41,27 @@ import ghidra.util.task.TaskMonitor;
 
 import ghidra.service.graph.AttributedGraph;
 import ghidra.service.graph.AttributedVertex;
+// TODO: the AttributedGraph API changed in Ghidra 10.1, we use reflection in the constructor to test for this
+//import ghidra.service.graph.GraphType;
 
 // For UTF8 charset in crypto functions to standardize across operating systems
 import java.nio.charset.StandardCharsets;
 
+import java.lang.Class;
+import java.lang.reflect.InvocationTargetException;
 import java.util.StringJoiner;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.security.MessageDigest;
 
 import kaiju.util.HexUtils;
 import kaiju.common.*;
 
-public class FunctionGraph extends AttributedGraph implements KaijuLogger {
+public class FunctionGraph implements KaijuLogger {
 
     private Program program;
+    private AttributedGraph attrgraph;
     private Map<AttributedVertex, Function> vertex2fn;
     private Map<Function, AttributedVertex> fn2vertex;
     //private MultiLogger logger;
@@ -68,7 +74,44 @@ public class FunctionGraph extends AttributedGraph implements KaijuLogger {
      * easy extensibility.
      */
     public FunctionGraph(Program currentProgram, TaskMonitor currentMonitor) {
-        super();
+    
+        java.lang.reflect.Method m;
+        try {
+            m = attrgraph.getClass().getMethod("AttributeGraph");
+        } catch (NoSuchMethodException e) {
+            //TODO: what do we do?
+            m = null;
+        }
+        
+        try {
+            // if we can load GraphType, then we know we have Ghidra 10.1+
+            Class graphtypeclass = Class.forName("ghidra.service.graph.GraphType");
+            try {
+                // create a GraphType object, then feed it to AttributedGraph
+                Class[] types = {String.class, String.class, List.class, List.class};
+                Object[] params = {"Kaiju Function Graph", graphtypeclass.getDeclaredConstructor(types).newInstance()};
+                attrgraph = (AttributedGraph) (m.invoke(params));
+            } catch (NoSuchMethodException nsme) {
+                // TODO: this comes from GraphType new instance, do we do anything?
+            } catch (InstantiationException ie) {
+                // TODO: this comes from GraphType new instance, do we do anything?
+            } catch (IllegalAccessException iae) {
+                // TODO: this comes from AttributedGraph new instance, do we do anything?
+            } catch (InvocationTargetException ite) {
+                // TODO: this comes from AttributedGraph new instance, do we do anything?
+            }
+        } catch (ClassNotFoundException cnfe) {
+            //if couldn't load, assume pre Ghidra 10.1
+            try {
+                // pre Ghidra 10.1 we could construct AttributedGraph with no params
+                attrgraph = (AttributedGraph) (m.invoke(null));
+            } catch (IllegalAccessException iae) {
+                // TODO: anything?
+            } catch (InvocationTargetException ite) {
+                // TODO: anything?
+            }
+        }
+        
         program = currentProgram;
         vertex2fn = new HashMap<>();
         fn2vertex = new HashMap<>();
@@ -101,7 +144,7 @@ public class FunctionGraph extends AttributedGraph implements KaijuLogger {
                 }
                 try {
                     // add a new vertex to represent this function
-                    AttributedVertex addedVertex = addVertex();
+                    AttributedVertex addedVertex = attrgraph.addVertex();
                     // TODO: add hash info as vertex attributes
                     updateVertexAttributes(addedVertex, function);
                     // add the vertex to the maps so can find later

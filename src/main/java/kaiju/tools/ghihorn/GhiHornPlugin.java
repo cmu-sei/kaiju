@@ -156,7 +156,7 @@ public class GhiHornPlugin extends ProgramPlugin {
                 new ApiAnalyzerFrontEnd(this), new ApiAnalyzerHornifier()));
 
         // Rerun auto analysis to remove/fix badness, such as non-returning
-        // funcitons
+        // functions
         AutoAnalysisManager aam = AutoAnalysisManager.getAnalysisManager(program);
         if (!aam.isAnalyzing()) {
             aam.reAnalyzeAll(program.getMemory());
@@ -172,7 +172,7 @@ public class GhiHornPlugin extends ProgramPlugin {
             this.provider = new GhiHornProvider(tool, this, frontEnds);
             new ActionBuilder("Open GhiHorn", getName())
                     .supportsDefaultToolContext(true)
-                    .menuPath("&CERT", "GhiHorn")
+                    .menuPath("&Kaiju", "GhiHorn")
                     .onAction(c -> provider.setVisible(true))
                     .menuIcon(null)
                     .keyBinding("ctrl G")
