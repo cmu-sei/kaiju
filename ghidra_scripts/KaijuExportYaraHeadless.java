@@ -22,8 +22,12 @@
  * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
  * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
  * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ * 5. Gradle (https://github.com/gradle/gradle/blob/master/LICENSE) Copyright 2021 Gradle Inc.
+ * 6. markdown-gradle-plugin (https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt) Copyright 2020 Andres Almiray.
+ * 7. Z3 (https://github.com/Z3Prover/z3/blob/master/LICENSE.txt) Copyright 2021 Microsoft Corporation.
+ * 8. jopt-simple (https://github.com/jopt-simple/jopt-simple/blob/master/LICENSE.txt) Copyright 2021 Paul R. Holser, Jr.
  *
- * DM21-0087
+ * DM21-0792
  */
 import java.io.File;
 import java.io.FileWriter;
@@ -35,7 +39,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+// HeadlessScript used so doesn't appear in Ghidra GUI
 import ghidra.app.script.GhidraScript;
+//import ghidra.app.util.headless.HeadlessScript;
 
 import ghidra.program.model.util.PropertyMapManager;
 import ghidra.program.model.util.ObjectPropertyMap;
@@ -44,13 +50,13 @@ import ghidra.program.model.address.Address;
 import ghidra.util.Msg;
 import ghidra.util.task.*;
 
-import kaiju.fnhash.internal.FnHashSaveable;
-import kaiju.fnhash.internal.FnUtils;
+import kaiju.hashing.FnHashSaveable;
+import kaiju.tools.fnhashclassic.FnUtils;
 import kaiju.tools.fnhash.HashViewerTableModel;
 import kaiju.util.ByteArrayList;
 import kaiju.util.HexUtils;
 
-public class exportYaraHeadless extends GhidraScript {
+public class KaijuExportYaraHeadless extends GhidraScript {
     public File csvFile;
     public PrintWriter csvPrintWriter;
     

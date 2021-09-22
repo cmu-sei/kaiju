@@ -22,17 +22,23 @@
  * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
  * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
  * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ * 5. Gradle (https://github.com/gradle/gradle/blob/master/LICENSE) Copyright 2021 Gradle Inc.
+ * 6. markdown-gradle-plugin (https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt) Copyright 2020 Andres Almiray.
+ * 7. Z3 (https://github.com/Z3Prover/z3/blob/master/LICENSE.txt) Copyright 2021 Microsoft Corporation.
+ * 8. jopt-simple (https://github.com/jopt-simple/jopt-simple/blob/master/LICENSE.txt) Copyright 2021 Paul R. Holser, Jr.
  *
- * DM21-0087
+ * DM21-0792
  */
 
 // based on https://github.com/NationalSecurityAgency/ghidra/blob/master/Ghidra/Features/FunctionID/ghidra_scripts/FunctionIDHeadlessPrescript.java
 
+// HeadlessScript used so doesn't appear in Ghidra GUI
 import ghidra.app.script.GhidraScript;
+//import ghidra.app.util.headless.HeadlessScript;
 
 import java.util.Map;
 
-public class setupScript extends GhidraScript {
+public class KaijuSetupScript extends GhidraScript {
 	//enable CERT Function Hashing
 
 	private static final String CERT_FNHASH_ANALYZER = "CERT Function Hashing";

@@ -22,8 +22,12 @@
  * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
  * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
  * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ * 5. Gradle (https://github.com/gradle/gradle/blob/master/LICENSE) Copyright 2021 Gradle Inc.
+ * 6. markdown-gradle-plugin (https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt) Copyright 2020 Andres Almiray.
+ * 7. Z3 (https://github.com/Z3Prover/z3/blob/master/LICENSE.txt) Copyright 2021 Microsoft Corporation.
+ * 8. jopt-simple (https://github.com/jopt-simple/jopt-simple/blob/master/LICENSE.txt) Copyright 2021 Paul R. Holser, Jr.
  *
- * DM21-0087
+ * DM21-0792
  */
 package kaiju.tools.fse;
 
@@ -59,9 +63,8 @@ import ghidra.util.task.ConsoleTaskMonitor;
 import kaiju.common.*;
 import kaiju.hashing.FnHashSaveable;
 
-public class FnSetExtractor {
+public class FnSetExtractor implements KaijuLogger {
 
-    private MultiLogger logger;
     // A Map of: function pic hash -> program md5 -> list of entry point addresses.
     private TreeMap<String, TreeMap<String, List<Address>>> fn2file;
     // A Map of: program md5 -> function pic hash -> list of entry point addresses.
@@ -79,7 +82,6 @@ public class FnSetExtractor {
     private int numOfProgramsInProject;
 
     public FnSetExtractor(ProjectData currentData) {
-        logger = MultiLogger.getInstance();
         // ensures this object cannot be created without doing computation
         // and initializing all private member variables
         computeFnSet(currentData);
@@ -169,11 +171,11 @@ public class FnSetExtractor {
             while (fiter.hasNext()) {
                 Function function = fiter.next();
                 if (function == null) {
-                    logger.debug(this, "Skipping Null Function Reference");
+                    debug(this, "Skipping Null Function Reference");
                     continue;
                 }
                 if (function.isThunk()) {
-                    logger.debug(this, "Skipping Thunk @ 0x" + function.getEntryPoint().toString());
+                    debug(this, "Skipping Thunk @ 0x" + function.getEntryPoint().toString());
                     continue;
                 }
                 

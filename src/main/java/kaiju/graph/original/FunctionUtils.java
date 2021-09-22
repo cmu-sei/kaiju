@@ -22,8 +22,12 @@
  * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
  * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
  * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ * 5. Gradle (https://github.com/gradle/gradle/blob/master/LICENSE) Copyright 2021 Gradle Inc.
+ * 6. markdown-gradle-plugin (https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt) Copyright 2020 Andres Almiray.
+ * 7. Z3 (https://github.com/Z3Prover/z3/blob/master/LICENSE.txt) Copyright 2021 Microsoft Corporation.
+ * 8. jopt-simple (https://github.com/jopt-simple/jopt-simple/blob/master/LICENSE.txt) Copyright 2021 Paul R. Holser, Jr.
  *
- * DM21-0087
+ * DM21-0792
  */
 package kaiju.graph.original;
 
@@ -59,7 +63,7 @@ import kaiju.common.*;
  * Some utility functions for representing a Function in different formats,
  * particularly a CFG of CodeBlock flows.
  */
-public class FunctionUtils {
+public class FunctionUtils implements KaijuLogger {
 
     private Address fep;
     private AddressSetView allAddresses;
@@ -70,8 +74,6 @@ public class FunctionUtils {
     private int nCodeUnits;
     
     private CodeManager cm;
-    
-    private MultiLogger logger;
     
     public AddressSetView getChunks() {
         return chunks;
@@ -99,8 +101,6 @@ public class FunctionUtils {
 
     public FunctionUtils(Program program, Function function) {
     
-        logger = MultiLogger.getInstance();
-    
         initialComputations(program, function);
     
     }
@@ -109,7 +109,7 @@ public class FunctionUtils {
     
         if (function == null) {
             // TODO: what's the best way to handle this?
-            logger.debug(this, "Empty function found!");
+            debug(this, "Empty function found!");
         }
         
         fep = function.getEntryPoint();
@@ -148,10 +148,10 @@ public class FunctionUtils {
                 dmsg += "[pre EP] ";
             }
             dmsg += "chunk from " + chunk.getMinAddress().toString() + " to " + chunk.getMaxAddress().toString();
-            logger.debug(this, dmsg);
+            debug(this, dmsg);
         }
         
-        logger.debug(this, "Fn has " + nChunks + " chunk(s)");
+        debug(this, "Fn has " + nChunks + " chunk(s)");
         
         return chunks;
     
@@ -170,7 +170,7 @@ public class FunctionUtils {
         CodeUnitIterator cuiter = cm.getCodeUnits(chunks, true);
         
         if (!cuiter.hasNext()) {
-            logger.debug(this, "Empty CodeUnit Iterator in Function!");
+            debug(this, "Empty CodeUnit Iterator in Function!");
         }
         
         nAddresses = 0;
@@ -185,13 +185,13 @@ public class FunctionUtils {
             
             dmsg = "  ";
             dmsg += "CodeUnit from " + cu.getMinAddress().toString() + " to " + cu.getMaxAddress().toString();
-            logger.debug(this, dmsg);
+            debug(this, dmsg);
         }
         
         // cast AddressSet class to AddressSetView interface
         allAddresses = (AddressSetView) addrs;
         
-        logger.debug(this, "Fn has " + nAddresses + " address(es)");
+        debug(this, "Fn has " + nAddresses + " address(es)");
     
     }
 

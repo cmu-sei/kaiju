@@ -22,8 +22,12 @@
  * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
  * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
  * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ * 5. Gradle (https://github.com/gradle/gradle/blob/master/LICENSE) Copyright 2021 Gradle Inc.
+ * 6. markdown-gradle-plugin (https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt) Copyright 2020 Andres Almiray.
+ * 7. Z3 (https://github.com/Z3Prover/z3/blob/master/LICENSE.txt) Copyright 2021 Microsoft Corporation.
+ * 8. jopt-simple (https://github.com/jopt-simple/jopt-simple/blob/master/LICENSE.txt) Copyright 2021 Paul R. Holser, Jr.
  *
- * DM21-0087
+ * DM21-0792
  */
 
 package kaiju.tools.ooanalyzer;
@@ -74,11 +78,7 @@ import ghidra.app.util.demangler.CharacterIterator;
 import ghidra.app.util.demangler.DemangledObject;
 import ghidra.app.util.demangler.DemangledType;
 import ghidra.app.util.demangler.Demangler;
-// TODO: the demangle api was updated to take a DemanglerOptions object
-// as of Ghidra 9.2, but this causes build problems on 9.1.
-// commenting out for now but needs a fix later should
-// the api be removed in a future release
-//import ghidra.app.util.demangler.DemanglerOptions;
+import ghidra.app.util.demangler.DemanglerOptions;
 import ghidra.app.util.demangler.microsoft.MicrosoftDemangler;
 import ghidra.app.util.NamespaceUtils;
 import ghidra.program.database.data.DataTypeUtilities;
@@ -1652,17 +1652,11 @@ public class OOAnalyzer {
   private static Optional<Map<String, String>> tryToDemangleUsingGhidra (String mangledName, Boolean isMethodName) {
     try {
       Demangler demangler = new MicrosoftDemangler();
-      // TODO: the demangle api was updated to take a DemanglerOptions object
-      // as of Ghidra 9.2, but this causes build problems on 9.1.
-      // commenting out for now but needs a fix later should
-      // the api be removed in a future release
-      //DemanglerOptions demanglerOpts = demangler.createDefaultOptions();
-      //demanglerOpts.setDemangleOnlyKnownPatterns​(true);
+      DemanglerOptions demanglerOpts = demangler.createDefaultOptions();
+      demanglerOpts.setDemangleOnlyKnownPatterns​(true);
 
       Msg.debug (OOAnalyzer.class, "Trying to demangle " + mangledName + " using Ghidra");
-      DemangledObject demangledObj = demangler.demangle(mangledName, true);
-      // TODO: use the following updated demangle api (see comment above about DemanglerOptions)
-      //DemangledObject demangledObj = demangler.demangle(mangledName, demanglerOpts);
+      DemangledObject demangledObj = demangler.demangle(mangledName, demanglerOpts);
 
       if (demangledObj != null) {
 

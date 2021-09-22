@@ -22,8 +22,12 @@
  * 2. Ghidra (https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE) Copyright 2021 National Security Administration.
  * 3. GSON (https://github.com/google/gson/blob/master/LICENSE) Copyright 2020 Google.
  * 4. JUnit (https://github.com/junit-team/junit5/blob/main/LICENSE.md) Copyright 2020 JUnit Team.
+ * 5. Gradle (https://github.com/gradle/gradle/blob/master/LICENSE) Copyright 2021 Gradle Inc.
+ * 6. markdown-gradle-plugin (https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt) Copyright 2020 Andres Almiray.
+ * 7. Z3 (https://github.com/Z3Prover/z3/blob/master/LICENSE.txt) Copyright 2021 Microsoft Corporation.
+ * 8. jopt-simple (https://github.com/jopt-simple/jopt-simple/blob/master/LICENSE.txt) Copyright 2021 Paul R. Holser, Jr.
  *
- * DM21-0087
+ * DM21-0792
  */
 package kaiju.tools.fnhashclassic;
 
@@ -52,7 +56,7 @@ import kaiju.util.HexUtils;
 /**
  * an inner class to gather and hold CodeUnit data for hashing purposes.
  */
-public class UnitHashData {
+public class UnitHashData implements KaijuLogger {
 
     //public FlowType ft; // only valid with BlockModel interpretation
     public long numaddr;
@@ -68,9 +72,6 @@ public class UnitHashData {
 
     // CTOR will do all the real work for gathering the data
     public UnitHashData(CodeUnit cu, CodeManager cm, TaskMonitor monitor) throws Exception, UsrException {
-    
-        // start the logger!
-        MultiLogger logger = MultiLogger.getInstance();
     
         // determine user's custom options
         Options opt = cu.getProgram().getOptions(Program.ANALYSIS_PROPERTIES);

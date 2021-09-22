@@ -40,7 +40,7 @@ Ghidra's graphical interface, but it is also possible to manually
 unzip into the appropriate directory to install.
 
 CERT Kaiju requires the following runtime dependencies:
-- [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended) or 10.0+
+- [Ghidra](https://ghidra-sre.org) 9.2+ or 10.0+
 - Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
 
 **NOTE**: It is also possible to build the extension package
@@ -118,7 +118,7 @@ Analyzers are automatically run during Ghidra's analysis phase and include:
 The GUI tools include:
 - **GhiHorn** = a plugin to calculate paths and reachability in
 control flow graphs, utilizing Z3.
-    - Select `CERT > GhiHorn` to access this tool from Ghidra's CodeBrowser.
+    - Select `Kaiju > GhiHorn` to access this tool from Ghidra's CodeBrowser.
 - **Function Hash Viewer** = a plugin that displays an interactive list
 of functions in a program and several types of hashes. Analysts can use this
 to export one or more functions from a program into YARA signatures.
@@ -140,7 +140,7 @@ symbols found by OOAnalyzer are updated in the Ghidra Code
 Browser. The plugin's design and implementation details are described
 in our SEI blog post titled [Using OOAnalyzer to Reverse Engineer
 Object Oriented Code with Ghidra][ooanalyzer-blog].
-    - Select `CERT > OOAnalyzer Importer` from the menu to get started
+    - Select `Kaiju > OOAnalyzer Importer` from the menu to get started
     with this tool. A simple dialog popup will ask you to
     locate the JSON file you wish to import.
     More extensive usage documentation can be found in
@@ -221,9 +221,10 @@ Kaiju yourself.
 ### Build Dependencies
 
 CERT Kaiju requires the following build dependencies:
-- [Ghidra](https://ghidra-sre.org) 9.1+ (9.2+ recommended) or 10.0+
-- [gradle](https://gradle.org/install/) 6.8+ (latest gradle 6.x recommended, 7.x not supported by Ghidra 9.x)
-- [GSON](https://github.com/google/gson) 2.8.6 (bundled with Kaiju)
+- [Ghidra](https://ghidra-sre.org) 9.2+ or 10.0+
+- [gradle](https://gradle.org/install/) 6.9+ for Ghidra 9.x, or 7+ for Ghidra 10.x
+- [GSON](https://github.com/google/gson) 2.8.6 (handled automatically by gradle)
+- [JOpt Simple](https://github.com/jopt-simple/jopt-simple) 5.0.4 (handled automatically by gradle)
 - [Z3](https://github.com/Z3Prover/z3) 4.8.11+, built with the Java API
 - Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
 
@@ -234,7 +235,12 @@ installation problems.
 **NOTE ABOUT GSON**: In most cases, Gradle will automatically obtain this for
 you.  If you find that you need to obtain it manually, you can download
 [gson-2.8.6.jar](https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.6/gson-2.8.6.jar)
-and place it in the `kaiju/lib` directory.
+and place it in the `kaiju/lib` directory before building.
+
+**NOTE ABOUT JOPT**: In most cases, Gradle will automatically obtain this for
+you.  If you find that you need to obtain it manually, you can download
+[jopt-simple-5.0.4.jar](https://repo1.maven.org/maven2/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar)
+and place it in the `kaiju/lib` directory before building.
 
 ### Build Instructions
 
@@ -370,14 +376,9 @@ rm -rf $GHIDRA_INSTALL_DIR/Extensions/Ghidra/*kaiju*.zip $GHIDRA_INSTALL_DIR/Ghi
     
 This software is licensed under a simplified BSD-style license
 by the Software Engineering Institute at Carnegie Mellon University.
-Please find full details of this license in the `LICENSE.md` file
+Please find full details of this license, as well as licensing terms
+of dependencies used in this project, in the `LICENSE.md` file
 in the root of this repository.
-
-To build this software, we make use of a modified version of
-the `markdown-gradle-plugin` plugin for `gradle`.
-[`markdown-gradle-plugin`](https://github.com/kordamp/markdown-gradle-plugin)
-is Copyright (C) 2013-2020 Andres Almiray and licensed under terms of
-the [Apache 2.0 license](https://github.com/kordamp/markdown-gradle-plugin/blob/master/LICENSE.txt).
 
 The CERT Kaiju logo is based on [art][logo] created by Cameron Spahn,
 originally released under terms of
