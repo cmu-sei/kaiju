@@ -1,11 +1,5 @@
 package kaiju.tools.ghihorn;
 
-// import java.awt.Color;
-// import java.awt.GridBagConstraints;
-// import java.awt.GridBagLayout;
-// import java.awt.GridLayout;
-// import java.awt.BorderLayout;
-// import java.awt.Insets;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -90,6 +84,7 @@ import kaiju.tools.ghihorn.hornifer.horn.element.HornElement;
 import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 import kaiju.tools.ghihorn.z3.GhiHornZ3Parameters;
 
+
 /**
  * main Headed UI for GhiHorn
  */
@@ -106,6 +101,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
     private JCheckBox showGlobalVarsCheckBox, showStateVarsCheckBox, showDecompVarsCheckBox;
     private List<GhiHornFrontEnd> displays;
     private Instant startInstant;
+    private boolean z3LibsFound;
 
     // Utility class to detect changes to settings
     private class SettingsListener implements DocumentListener {
@@ -140,6 +136,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
 
         this.plugin = (GhiHornPlugin) plugin;
         this.displays = displays;
+        this.z3LibsFound = false;
         plugin.getTool().getService(ColorizingService.class);
 
         dateFormatter =
@@ -168,6 +165,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         final JPanel controlPanel = new JPanel();
         analyzeButton = new JButton("Analyze");
         JLabel apiDbLabel = new JLabel();
+
         try {
             ResourceFile apidbPath =
                     Application.getModuleDataSubDirectory(ApiDatabaseService.ApiDirectory);
@@ -286,10 +284,18 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         statusLabel =
                 new JLabel("Ready to analyze");
 
+        JLabel z3VerLabel = new JLabel("");
+        try {
+            z3VerLabel.setText("Z3 version: " + Version.getFullVersion());
+            z3LibsFound = true;
+        } catch (UnsatisfiedLinkError e) {
+            z3VerLabel.setText("Warning: Z3 libraries not found, GhiHorn will not run");
+        }    
+
         JPanel statusPanel = new JPanel(new GridLayout(3, 1));
         statusPanel.setBorder(BorderFactory.createTitledBorder("Status"));
         statusPanel.add(statusLabel);
-        statusPanel.add(new JLabel("Z3 version: " + Version.getFullVersion()));
+        statusPanel.add(z3VerLabel);
         statusPanel.add(apiDbLabel);
 
         gbc.gridx = 0;
@@ -304,6 +310,12 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         controlPanel.add(statusPanel);
 
         analyzeButton.addActionListener(e -> {
+
+            if (!z3LibsFound) {
+                // Attempting to analyze without Z3 is a bad idea, so detect and disallow it
+                OkDialog.showError("Z3 Not Found", "Cannot use GhiHorn without Z3");
+                return;
+            }
 
             // clear the highlight
             plugin.getProvider().setHighlight(new ProgramSelection(new AddressSet()));
