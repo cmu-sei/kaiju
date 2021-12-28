@@ -20,6 +20,12 @@ jobs:
     matrix:
       ghidra-git:
         ghidraVersion: "master"
+      ghidra1011:
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.1_build/ghidra_10.1.1_PUBLIC_20211221.zip"
+        ghidraVersion: "10.1.1"
+      ghidra101:
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1_build/ghidra_10.1_PUBLIC_20211210.zip"
+        ghidraVersion: "10.1"
       ghidra1004:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0.4_build/ghidra_10.0.4_PUBLIC_20210928.zip"
         ghidraVersion: "10.0.4"
