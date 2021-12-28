@@ -90,13 +90,6 @@ jobs:
   - task: Cache@2
     condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     inputs:
-      key: '"$(Z3_VERSION)" | z3'
-      path: $(Pipeline.Workspace)/z3
-    displayName: Cache z3 dir
-
-  - task: Cache@2
-    condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
-    inputs:
       key: '"$(ghidraUrl)" | binary'
       path: $(Pipeline.Workspace)/zip
     displayName: Cache ghidra binary
