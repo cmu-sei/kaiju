@@ -42,11 +42,9 @@ jobs:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0_build/ghidra_10.0_PUBLIC_20210621.zip"
         ghidraVersion: "10.0"
       ghidra924:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.2.4_PUBLIC_20210427.zip"
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_9.2.4_build/ghidra_9.2.4_PUBLIC_20210427.zip"
         ghidraVersion: "9.2.4"
       ghidra923:
-        # 403 now?
-        #ghidraUrl: "https://ghidra-sre.org/ghidra_9.2.3_PUBLIC_20210325.zip"
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_9.2.3_build/ghidra_9.2.3_PUBLIC_20210325.zip"
         ghidraVersion: "9.2.3"
       ghidra922:
