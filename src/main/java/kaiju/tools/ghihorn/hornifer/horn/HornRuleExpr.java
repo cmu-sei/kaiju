@@ -93,12 +93,12 @@ public class HornRuleExpr {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder(this.bodyExpr.toString());
 
-        sb.append(this.headExpr.toString()).append(" <- ").append(this.bodyExpr.toString());
         if (constraintExpr != null) {
             sb.append(" && ").append(constraintExpr);
         }
+        sb.append(" -> ").append(this.headExpr.toString());
         return sb.toString();
     }
 

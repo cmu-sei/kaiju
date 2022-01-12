@@ -32,13 +32,10 @@
 package kaiju.disasm.context;
 
 import ghidra.program.model.listing.CodeUnit;
-
-import kaiju.disasm.context.InsnCategorizer;
-import kaiju.disasm.context.InvalidStrategyException;
-import kaiju.disasm.context.impl.X86Strategy;
-import kaiju.disasm.context.impl.PpcStrategy;
-import kaiju.disasm.context.impl.MipsStrategy;
 import kaiju.disasm.context.impl.ArmStrategy;
+import kaiju.disasm.context.impl.MipsStrategy;
+import kaiju.disasm.context.impl.PpcStrategy;
+import kaiju.disasm.context.impl.X86Strategy;
 
 /**
  * A helper class that checks the context of an instruction awaiting categorization

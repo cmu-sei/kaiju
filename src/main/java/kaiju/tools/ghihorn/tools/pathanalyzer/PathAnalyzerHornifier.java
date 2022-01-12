@@ -3,25 +3,30 @@ package kaiju.tools.ghihorn.tools.pathanalyzer;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import com.google.common.base.Verify;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.util.ProgramLocation;
-import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
+import kaiju.tools.ghihorn.exception.GhiHornException;
 import kaiju.tools.ghihorn.hornifer.GhiHornifier;
 import kaiju.tools.ghihorn.hornifer.horn.GhiHornArgument;
-import kaiju.tools.ghihorn.hornifer.horn.HornClause;
 import kaiju.tools.ghihorn.hornifer.horn.GhiHornFixedPoint;
+import kaiju.tools.ghihorn.hornifer.horn.HornClause;
 import kaiju.tools.ghihorn.hornifer.horn.HornProgram;
+import kaiju.tools.ghihorn.hornifer.horn.element.HornFact;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornPredicate;
+import kaiju.tools.ghihorn.hornifer.horn.variable.HornConstant;
+import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable;
 
 public class PathAnalyzerHornifier extends GhiHornifier {
+
     private Address startAddr;
     private Address endAddr;
 
     public PathAnalyzerHornifier() {
-        super(PathAnalyzerFrontEnd.NAME);
+        super(PathAnalyzerController.NAME);
     }
 
     /**
@@ -37,49 +42,68 @@ public class PathAnalyzerHornifier extends GhiHornifier {
 
         PathAnalyzerArgument arg = (PathAnalyzerArgument) arguments;
 
-        // Some addressess may be inside a basic block, hence the "containing"
-        Set<HornPredicate> startSet = hornProgram.findPredicateByAddress(arg.getStart());
-        Set<HornPredicate> endSet = hornProgram.findPredicateByAddress(arg.getEnd());
-        Verify.verify(!startSet.isEmpty() && !endSet.isEmpty(),
-                "Cannot find start/end location for evaluation");
+        HornPredicate startPred = null;
+        if (arg.getEntry().equals(hornProgram.getEntryPointAddr())) {
+            // start at the entry point
+            Optional<HornPredicate> entryPred = hornProgram.getEntryPredicate();
+            if (entryPred.isPresent()) {
+                startPred = entryPred.get();
+            }
 
-        final HornPredicate startPred = startSet.iterator().next();
+        } else {
+            // Some addressess may be inside a basic block, hence the "containing"
+            Set<HornPredicate> startSet = hornProgram.findPredicateByAddress(arg.getEntry());
+            if (!startSet.isEmpty()) {
+                startPred = startSet.iterator().next();
+            }
+        }
+        Set<HornPredicate> endSet = hornProgram.findPredicateByAddress(arg.getGoal());
+
+        Verify.verify(startPred != null && !endSet.isEmpty(),
+                "Cannot find start/end location for evaluation");
 
         monitor.setMessage("Found start address in block: " + startPred.getFullName());
 
-        // If these are in different functions, then bad things may happen
+        // Add initialized variables to the staring fact
+        Map<HornVariable, HornConstant> initGlobals = hornProgram.initializedGlobals();
+        HornVariable[] vars = new HornVariable[initGlobals.size()];
+        HornConstant[] vals = new HornConstant[initGlobals.size()];
 
-        // The argument to the fixed point is 0, which is the initial value
-        // of the sequence counter
-        final String startFactName =
-                new StringBuilder("start_").append(startPred.getFullName()).toString();
+        int i = 0;
+        for (var entry : initGlobals.entrySet()) {
+            vars[i] = entry.getKey();
+            vals[i] = entry.getValue();
+            ++i;
+        }
 
-        final ProgramLocation startLoc = startPred.getLocator();
-
-        final HornPredicate startFact =
-                new HornPredicate(startFactName, startPred.getInstanceId(), startLoc);
+        final HornFact startFact =
+                new HornFact(START_FACT_NAME, startPred.getLocator(), vars, vals);
+        fx.addFact(startFact);
 
         final String startRuleName =
-                new StringBuilder(startFactName).append("-").append(startPred.getFullName())
+                new StringBuilder(START_FACT_NAME)
+                        .append("-")
+                        .append(startPred.getFullName())
                         .toString();
 
         fx.addRule(new HornClause(startRuleName, startFact, startPred));
 
         // End setting up the start
+
         ProgramLocation endLoc = null;
         if (endSet.size() > 0) {
             endLoc = endSet.iterator().next().getLocator();
         }
-        final HornPredicate goalPred = new HornPredicate("goal", endLoc);
-        fx.setGoal(goalPred);
+
+        final HornPredicate goalPred = new HornPredicate(GOAL_FACT_NAME, endLoc);
 
         // There are multiple possible endpoints, then add them as rules
         for (HornPredicate endPred : endSet) {
 
             monitor.setMessage("Found end address in block: " + goalPred.getFullName());
 
-            final String goalXRuleName =
-                    new StringBuilder(endPred.getFullName()).append("-goal").toString();
+            final String goalXRuleName = new StringBuilder(endPred.getFullName()).append("-")
+                    .append(GOAL_FACT_NAME).toString();
 
             fx.addRule(new HornClause(goalXRuleName, endPred, goalPred));
         }
@@ -94,7 +118,7 @@ public class PathAnalyzerHornifier extends GhiHornifier {
     public boolean configureTool(final Map<String, Object> settings) {
 
         final PathAnalyzerConfig configuration =
-                PathAnalyzerFrontEnd.class.getAnnotation(PathAnalyzerConfig.class);
+                PathAnalyzerController.class.getAnnotation(PathAnalyzerConfig.class);
 
         this.startAddr = (Address) settings.get(configuration.startAddress());
         this.endAddr = (Address) settings.get(configuration.endAddress());
@@ -106,7 +130,7 @@ public class PathAnalyzerHornifier extends GhiHornifier {
      * 
      */
     @Override
-    public Set<GhiHornArgument<?>> getArguments(HornProgram hornProgram) {
+    public Set<GhiHornArgument<?>> getCoordinates(HornProgram hornProgram) {
         return new HashSet<GhiHornArgument<?>>() {
             {
                 add(new PathAnalyzerArgument(startAddr, endAddr));
@@ -115,15 +139,18 @@ public class PathAnalyzerHornifier extends GhiHornifier {
     }
 
     @Override
-    protected void initializeTool(HornProgram hornProgram, final TaskMonitor mon)
-            throws CancelledException {
-        Set<GhiHornArgument<?>> args = getArguments(hornProgram);
+    protected void initializeTool(HornProgram hornProgram, final TaskMonitor mon) {
+
+        Set<GhiHornArgument<?>> args = getCoordinates(hornProgram);
         if (args.size() != 1) {
-            throw new CancelledException("Incorrect number of arguments");
+            throw new GhiHornException("Incorrect number of arguments provided");
         }
+
+        // Make sure that both the start and end are in the program
+
         GhiHornArgument<?> arg = args.iterator().next();
-        Address s = (Address) arg.getStart();
-        Address e = (Address) arg.getEnd();
+        Address s = (Address) arg.getEntry();
+        Address e = (Address) arg.getGoal();
         int count = 0;
         for (Function f : hornProgram.getProgram().getFunctionManager().getFunctions(true)) {
             if (f.getBody().contains(s)) {
@@ -136,7 +163,7 @@ public class PathAnalyzerHornifier extends GhiHornifier {
                 return;
             }
         }
-        throw new CancelledException("Cannot find start/end address in program!");
+        throw new GhiHornException("Cannot find start/end address in program!");
     }
 
     @Override

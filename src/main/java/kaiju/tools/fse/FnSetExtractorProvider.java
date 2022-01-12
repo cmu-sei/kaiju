@@ -31,29 +31,18 @@
  */
 package kaiju.tools.fse;
 
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.util.TreeMap;
+import java.util.Vector;
+
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
-import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.Vector;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
-
-import docking.ComponentProvider;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
-import ghidra.framework.plugintool.PluginTool;
 import ghidra.util.HelpLocation;
 import resources.ResourceManager;
 
@@ -64,8 +53,6 @@ public class FnSetExtractorProvider extends ComponentProviderAdapter {
 
     public static final ImageIcon ICON = ResourceManager.loadImage("images/Kaiju.png");
     private JComponent mainPanel;
-    private HelpLocation helpLocation;
-
     public FnSetExtractorProvider(FnSetExtractorPlugin plugin) {
 
         super(plugin.getTool(), "CERT Function Intersection Visualizer", plugin.getName());
@@ -87,7 +74,7 @@ public class FnSetExtractorProvider extends ComponentProviderAdapter {
         mainPanel.add(scrollPane);
         
         setIcon(ICON);
-        helpLocation = new HelpLocation(plugin.getName(), plugin.getName());
+        new HelpLocation(plugin.getName(), plugin.getName());
         addToTool();
     }
     
@@ -110,10 +97,6 @@ public class FnSetExtractorProvider extends ComponentProviderAdapter {
     
     private Vector<Vector<Object>> getTableData(FnSetExtractor extractor) {
         Vector<Vector<Object>> data = new Vector<>();
-        
-        // first just make sure we have the right number of columns
-        // representing the number of Programs in our Project
-        int programCnt = extractor.getNumOfProgramsInProject();
         
         TreeMap<String, Vector<ExtractedFunction>> fn2hashvec = extractor.getHashVec2Fn();
         

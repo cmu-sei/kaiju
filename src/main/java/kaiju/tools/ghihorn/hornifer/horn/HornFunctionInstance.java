@@ -29,6 +29,7 @@ public class HornFunctionInstance {
     private final HornPredicate precondition;
     private final HornPredicate postcondition;
 
+    // Funciton information
     private List<HornVariable> params;
     private Set<HornVariable> localVars;
     private HornVariable resultVar;
@@ -90,7 +91,7 @@ public class HornFunctionInstance {
         ProgramLocation startLoc = null, endLoc = null;
         final Program mainProgram = hornProgram.getProgram();
 
-        if (hornFunction.isExternal() || hornFunction.isImported()) {
+        if (hornFunction.isExternal() || hornFunction.isImported() || hornFunction.isThunk()) {
 
             // With external functions start and end are the same and they are
             // the xref addresses for this call (because there is no program
@@ -128,8 +129,11 @@ public class HornFunctionInstance {
 
         final HornPredicate prePred =
                 hornProgram.makeHornPredicate(hornFunction, preName, id, startLoc, inParams);
+        prePred.makePrecondition();
+
         final HornPredicate postPred =
                 hornProgram.makeHornPredicate(hornFunction, postName, id, endLoc, outParams);
+        postPred.makePostcondition();
 
         HornFunctionInstance contract =
                 new HornFunctionInstance(hornFunction, id, xrefAddress, prePred, postPred);
@@ -155,7 +159,8 @@ public class HornFunctionInstance {
     }
 
     /**
-     * Properly format the input paramteters for this functioin instance
+     * Properly format the input paramteters for this functioin instance. Note the parameters are in
+     * ordinal order
      * 
      * @param ins the list of parameters for this function
      */
@@ -241,5 +246,80 @@ public class HornFunctionInstance {
     public HornVariable getResultVariable() {
         return resultVar;
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((hornFunction == null) ? 0 : hornFunction.hashCode());
+        result = prime * result + ((instanceId == null) ? 0 : instanceId.hashCode());
+        result = prime * result + ((localVars == null) ? 0 : localVars.hashCode());
+        result = prime * result + ((params == null) ? 0 : params.hashCode());
+        result = prime * result + ((postcondition == null) ? 0 : postcondition.hashCode());
+        result = prime * result + ((precondition == null) ? 0 : precondition.hashCode());
+        result = prime * result + ((resultVar == null) ? 0 : resultVar.hashCode());
+        result = prime * result + ((xrefAddress == null) ? 0 : xrefAddress.hashCode());
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!(obj instanceof HornFunctionInstance))
+            return false;
+        HornFunctionInstance other = (HornFunctionInstance) obj;
+        if (hornFunction == null) {
+            if (other.hornFunction != null)
+                return false;
+        } else if (!hornFunction.equals(other.hornFunction))
+            return false;
+        if (instanceId == null) {
+            if (other.instanceId != null)
+                return false;
+        } else if (!instanceId.equals(other.instanceId))
+            return false;
+        if (localVars == null) {
+            if (other.localVars != null)
+                return false;
+        } else if (!localVars.equals(other.localVars))
+            return false;
+        if (params == null) {
+            if (other.params != null)
+                return false;
+        } else if (!params.equals(other.params))
+            return false;
+        if (postcondition == null) {
+            if (other.postcondition != null)
+                return false;
+        } else if (!postcondition.equals(other.postcondition))
+            return false;
+        if (precondition == null) {
+            if (other.precondition != null)
+                return false;
+        } else if (!precondition.equals(other.precondition))
+            return false;
+        if (resultVar == null) {
+            if (other.resultVar != null)
+                return false;
+        } else if (!resultVar.equals(other.resultVar))
+            return false;
+        if (xrefAddress == null) {
+            if (other.xrefAddress != null)
+                return false;
+        } else if (!xrefAddress.equals(other.xrefAddress))
+            return false;
+        return true;
+    }
+
+    
 
 }

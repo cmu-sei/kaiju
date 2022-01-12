@@ -4,16 +4,67 @@
             "Name": "File Open/Close",
             "Description": "Open and close a file",
             "Sequence": [
-                "Kernel32.DLL::CreateFileA",
-                "Kernel32.DLL::CloseHandle"
+                {
+                    "API": "Kernel32.DLL::CreateFileA",
+                    "Retn": "H"
+                },
+                {
+                    "API": "Kernel32.DLL::CloseHandle",
+                    "Args": [
+                        "H"
+                    ]
+                }
             ]
         },
         {
             "Name": "Read/Write a file",
             "Description": "Read/Write a file",
             "Sequence": [
-                "Kernel32.DLL::ReadFile",
-                "Kernel32.DLL::WriteFile"
+                {
+                    "API": "Kernel32.DLL::ReadFile",
+                    "Args": [
+                        "H"
+                    ]
+                },
+                {
+                    "API": "Kernel32.DLL::WriteFile",
+                    "Args": [
+                        "H"
+                    ]
+                }
+            ]
+        },
+        {
+            "Name":"TaskList",
+            "Description":"List running processes",
+            "Sequence":[
+                {
+                    "API":"Kernel32.DLL::CreateToolhelp32Snapshot",
+                    "Retn":"HANDLE"
+                },
+                {
+                    "API":"Kernel32.dll::Process32First",
+                    "Args":[ "HANDLE" ]
+                },
+                {
+                    "API":"Kernel32.dll::Process32Next",
+                    "Args":[ "HANDLE" ]
+                }
+            ]
+        },
+        {
+            "Name": "Reverse shell",
+            "Description": "Spawn a reverse shell",
+            "Sequence": [
+                {
+                    "API": "Kernel32.DLL::CreatePipe"
+                },
+                {
+                    "API": "Kernel32.DLL::CreatePipe"
+                },
+                {
+                    "API": "Kernel32.DLL::CreateProcessA"
+                }
             ]
         }
     ]

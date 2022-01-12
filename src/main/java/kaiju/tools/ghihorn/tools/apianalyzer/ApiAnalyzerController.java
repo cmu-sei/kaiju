@@ -46,24 +46,24 @@ import ghidra.program.model.address.Address;
 import ghidra.util.SystemUtilities;
 import kaiju.tools.ghihorn.GhiHornPlugin;
 import kaiju.tools.ghihorn.GhiHornProvider;
-import kaiju.tools.ghihorn.display.GhiHornFrontEnd;
-import kaiju.tools.ghihorn.hornifer.GhiHornEvent;
+import kaiju.tools.ghihorn.display.GhiHornController;
+import kaiju.tools.ghihorn.hornifer.GhiHornCommandEvent;
+import kaiju.tools.ghihorn.hornifer.GhiHornifier;
 import kaiju.tools.ghihorn.hornifer.horn.GhiHornAnswer;
-import kaiju.tools.ghihorn.hornifer.horn.element.HornPredicate;
 import kaiju.tools.ghihorn.tools.GhiHornEventConfig;
 import kaiju.tools.ghihorn.tools.apianalyzer.json.ApiSignatureJsonParser;
 import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 
-@ApiAnalyzerConfig(
-        events = @GhiHornEventConfig(
-                terminateUpdate = "AA:TU",
-                statusUpdate = "AA:SU",
-                resultUpdate = "AA:RU"),
-        signatures = "AA:Sig")
-public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
+//@formatter:off
+@ApiAnalyzerConfig(events = @GhiHornEventConfig(completeUpdate = "AA:TU", 
+                                                statusUpdate = "AA:SU",
+                                                resultUpdate = "AA:RU"), 
+                    signatures = "AA:Sig")
+//@formatter:on
+public class ApiAnalyzerController extends GhiHornController {
 
     public static final String NAME = "ApiAnalyzer";
-    private static final String DEFAULT_SIG_FILENAME = "signature.json";
+    public static final String DEFAULT_SIG_FILENAME = "signature.json";
     private ApiAnalyzerConfig configuration;
     private final JTabbedPane resultsTabbedPane;
     private final JPanel mainPanel;
@@ -75,10 +75,10 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
     private List<ApiSignature> signatures;
     private JPanel statusPanel;
 
-    public ApiAnalyzerFrontEnd(final GhiHornPlugin plugin) {
+    public ApiAnalyzerController(final GhiHornPlugin plugin) {
 
         super(NAME, plugin);
-    
+
         this.mainPanel = new JPanel();
 
         mainPanel.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
@@ -97,33 +97,23 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
         final ResourceFile rf = Application.findDataFileInAnyModule(DEFAULT_SIG_FILENAME);
 
         File sigFile = rf.getFile(false);
-        if (!loadApiSignatures(sigFile)) {
+        int sigCount = loadApiSignatures(sigFile);
+        if (sigCount == -1) {
             OkDialog.showError("Problem Loading Signatures",
                     "There was a problem loading signatures from '" + sigFile.getName() + "'");
+            return;
         }
+        status("Loaded " + sigCount + " signatures from " + sigFile.getName());
 
-        sigComboBox.removeAllItems();
-        for (ApiSignature sig : this.signatures) {
-            try {
-
-                Verify.verifyNotNull(sig.getName(), "Invalid signature name");
-                Verify.verifyNotNull(sig.getSequence(),
-                        "Invalid signature sequence for " + sig.getName());
-                Verify.verifyNotNull(sig.getSequence().isEmpty() == false,
-                        "Empty signature for " + sig.getName());
-                sigComboBox.addItem(sig);
-            } catch (VerifyException ve) {
-                status("Skipping sig: " + ve.getMessage());
-            }
-        }
+        loadSigChoices();
 
         sigComboBox.setEnabled(true);
-        this.sigComboBox.setSelectedIndex(-1);
+        this.sigComboBox.setSelectedIndex(0);
 
         final GhiHornProvider provider = plugin.getProvider();
         if (provider != null) {
             provider.enableAnalysis();
-        }
+        }        
 
         gbConstraints.gridx = 1;
         gbConstraints.gridy = 1;
@@ -163,10 +153,14 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
                     // No file selected or dialog cancelled
                     return;
                 }
-                if (!loadApiSignatures(jsonFile)) {
+                int count = loadApiSignatures(jsonFile);
+                if (-1 == count) {
                     OkDialog.showError("Problem",
                             "There was a problem loading signatures from '" + jsonFile + "'");
                 }
+                status("Loaded " + count + " signatures from " + sigFile.getName());
+                loadSigChoices();
+
             } catch (VerifyException ve) {
                 OkDialog.showError("Error loading signatures", ve.getMessage());
             }
@@ -174,6 +168,24 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
 
         setDividerLocation(splitPane, 0.5); // middle
         splitPane.setOrientation(SwingConstants.VERTICAL);
+    }
+
+    private void loadSigChoices() {
+        sigComboBox.removeAllItems();
+        sigComboBox.addItem(ApiSignature.allSignatures());
+        for (ApiSignature sig : this.signatures) {
+            try {
+
+                Verify.verifyNotNull(sig.getName(), "Invalid signature name");
+                Verify.verifyNotNull(sig.getSequence(),
+                        "Invalid signature sequence for " + sig.getName());
+                Verify.verifyNotNull(sig.getSequence().isEmpty() == false,
+                        "Empty signature for " + sig.getName());
+                sigComboBox.addItem(sig);
+            } catch (VerifyException ve) {
+                status("Skipping sig: " + ve.getMessage());
+            }
+        }
     }
 
     /**
@@ -204,20 +216,17 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
      * 
      * @param jsonFile
      */
-    private boolean loadApiSignatures(final File jsonFile) {
-
-        Preconditions.checkNotNull(sigComboBox);
+    private int loadApiSignatures(final File jsonFile) {
 
         if (jsonFile != null) {
             if (this.signatures != null && !signatures.isEmpty()) {
                 this.signatures.clear();
             }
             this.signatures = (new ApiSignatureJsonParser(jsonFile)).parse();
-            if (this.signatures.isEmpty()) {
-                return false;
-            }
+            return this.signatures.size();
+
         }
-        return true;
+        return -1;
     }
 
     /**
@@ -264,8 +273,6 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
         pane.setCaretPosition(doc.getLength());
     }
 
-
-
     /**
      * Update the result
      * 
@@ -297,6 +304,7 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
                     setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
                 }
             };
+
         }
         plugin.getProvider().highlightAnswer(answer);
 
@@ -338,16 +346,17 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
         if (res.status != GhiHornFixedpointStatus.Error) {
             ApiAnalyzerTableRowData rowData = new ApiAnalyzerTableRowData();
             rowData.result = res;
-            ApiAnalyzerArgument args = (ApiAnalyzerArgument) res.arguments;
-            rowData.start = args.getStart();
-            rowData.end = args.getEnd();
-            rowData.sig = args.getSignature();
+            rowData.searchCoordinates = (ApiAnalyzerArgument) res.arguments;
             validResults.add(rowData);
         }
         refresh();
     }
 
+    /**
+     * Refresh the table data
+     */
     public void refresh() {
+
         synchronized (this.resultsTable) {
             List<ApiAnalyzerTableRowData> validResults = this.resultsTable.getData();
             final var model = this.resultsTable.getModel();
@@ -360,21 +369,23 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
      * Bean for the result table
      */
     public class ApiAnalyzerTableRowData {
-        public GhiHornAnswer result;
-        public ApiSignature sig;
-        public HornPredicate start;
-        public HornPredicate end;
+        private GhiHornAnswer result;
+        private ApiAnalyzerArgument searchCoordinates;
 
-        public String displayResult() {
+        public String getMatch() {
+            return searchCoordinates.getSignature().getName();
+        }
 
-            final Address startAddress = start.getLocator().getAddress();
-            final Address endAddress = end.getLocator().getAddress();
+        public Address getEntry() {
+            return searchCoordinates.getEntryAsAddress();
+        }
 
-            return new StringBuilder(sig.getName())
-                    .append(": ")
-                    .append(startAddress).append("-")
-                    .append(endAddress)
-                    .toString();
+        public Address getStart() {
+            return searchCoordinates.getStartAsAddress();
+        }
+
+        public Address getGoal() {
+            return searchCoordinates.getGoalAsAddress();
         }
 
         public GhiHornFixedpointStatus getStatus() {
@@ -389,14 +400,22 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
      */
     private JPanel makeStatusPanel() {
 
-        this.resultsTable =
-                new GTableWidget<>(NAME, ApiAnalyzerTableRowData.class,
-                        "displayResult",
-                        "getStatus");
+        this.resultsTable = new GTableWidget<>(NAME, ApiAnalyzerTableRowData.class, "getMatch",
+                "getEntry", "getStart", "getGoal", "getStatus");
 
-        resultsTable.addSelectionListener(rowData -> displayResult(rowData.result));
-        resultsTable.setItemPickListener(rowData -> displayResult(rowData.result));
+        this.resultsTable.setToolTipText(
+                "Display ApiAnalyzer results. Entry: entry point selected; Start: first API found; Goal: the last API found");
 
+        resultsTable.addSelectionListener(rowData -> {
+            if (rowData != null) {
+                displayResult(rowData.result);
+            }
+        });
+        resultsTable.setItemPickListener(rowData -> {
+            if (rowData != null) {
+                displayResult(rowData.result);
+            }
+        });
         final JScrollPane resultsTableScrollPane = new JScrollPane(resultsTable);
         resultsTableScrollPane.setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
 
@@ -504,19 +523,32 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
      * 
      */
     @Override
-    public Map<String, Object> getSettings() {
+    public List<Map<String, Object>> getCommandParameters() {
 
-        final ApiSignature sig = (ApiSignature) sigComboBox.getSelectedItem();
-        if (sig != null) {
-            status("Looking for API signature " + sig.getName());
-            return new HashMap<>() {
+        List<Map<String, Object>> cmdParams = new ArrayList<>();
+
+        final List<ApiSignature> signatures = new ArrayList<>();
+
+        final ApiSignature selectedSig = (ApiSignature) sigComboBox.getSelectedItem();
+        if (selectedSig.getName().equals(ApiSignature.ALL_SIGS)) {
+            for (int i = 1; i < sigComboBox.getItemCount(); i++) {
+                signatures.add(sigComboBox.getItemAt(i));
+            }
+            status("Looking for all API signatures");
+        } else {
+            signatures.add(selectedSig);
+            status("Looking for API signature: " + selectedSig.getName());
+        }
+
+        // Each signature will get a command
+        for (ApiSignature sig : signatures) {
+            cmdParams.add(new HashMap<>() {
                 {
-                    put(GhiHornPlugin.TOOL_NAME, getName());
                     put(configuration.signatures(), sig);
                 }
-            };
+            });
         }
-        return new HashMap<>();
+        return cmdParams;
     }
 
     @Override
@@ -525,27 +557,46 @@ public class ApiAnalyzerFrontEnd extends GhiHornFrontEnd {
     }
 
     @Override
-    public void initialize() {   
-        this.configuration = ApiAnalyzerFrontEnd.class.getAnnotation(ApiAnalyzerConfig.class);
-        
-        registerEvent(configuration.events().statusUpdate(), GhiHornEvent.StatusMessage);
-        registerEvent(configuration.events().resultUpdate(), GhiHornEvent.ResultMessage);
-        registerEvent(configuration.events().terminateUpdate(), GhiHornEvent.TerminateMessage);
+    public void initialize() {
+        this.configuration = ApiAnalyzerController.class.getAnnotation(ApiAnalyzerConfig.class);
+
+        registerCommandEvent(configuration.events().statusUpdate(),
+                GhiHornCommandEvent.StatusMessage);
+        registerCommandEvent(configuration.events().resultUpdate(),
+                GhiHornCommandEvent.ResultReady);
+        registerCommandEvent(configuration.events().completeUpdate(),
+                GhiHornCommandEvent.Completed);
+        registerCommandEvent(configuration.events().cancelUpdate(), GhiHornCommandEvent.Cancelled);
     }
 
     @Override
     public List<GhiHornAnswer> getResults(boolean includeErrors) {
         if (includeErrors) {
-            return this.resultsTable.getData().stream().map(r -> r.result)
+            return this.resultsTable.getData()
+                    .stream()
+                    .map(r -> r.result)
                     .filter(r -> r.status != GhiHornFixedpointStatus.Error)
                     .collect(Collectors.toList());
         }
-        return this.resultsTable.getData().stream().map(r -> r.result).collect(Collectors.toList());
+        return this.resultsTable.getData()
+                .stream()
+                .map(r -> r.result)
+                .collect(Collectors.toList());
 
     }
 
     @Override
-    public JComponent getMaiComponent() {
+    public JComponent getMainComponent() {
         return mainPanel;
+    }
+
+    @Override
+    public String getControllerName() {
+        return NAME;
+    }
+
+    @Override
+    public GhiHornifier getHornifiier() {
+        return new ApiAnalyzerHornifier();
     }
 }

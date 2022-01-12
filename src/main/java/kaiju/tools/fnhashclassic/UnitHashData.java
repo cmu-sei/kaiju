@@ -31,6 +31,10 @@
  */
 package kaiju.tools.fnhashclassic;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import ghidra.framework.options.Options;
 import ghidra.program.database.code.CodeManager;
 import ghidra.program.model.address.Address;
@@ -44,13 +48,7 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.UsrException;
 import ghidra.util.task.TaskMonitor;
-
-import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
-
-import kaiju.common.*;
-import kaiju.tools.fnhashclassic.FnHashOptions;
+import kaiju.common.KaijuLogger;
 import kaiju.util.HexUtils;
 
 /**
@@ -168,14 +166,10 @@ public class UnitHashData implements KaijuLogger {
             InstructionPrototype insnp = insn.getPrototype();
             // No direct way to just get a default string of the whole Instruction?  Really???
             msg = iaddr.toString() + " " + insn.getMnemonicString() + " ";
-            Mask mnemMask = insnp.getInstructionMask();
             //Mask picmask = new MaskImpl(picbytes); // a mask really is just a wrapped byte []?
             //debug(((MaskImpl)picmask).toString());
             int numOperands = insn.getNumOperands();
             ArrayList<Mask> opMasks = new ArrayList<Mask>();
-            String opmstr = "     ";
-            String otstr = "     ";
-            int byteStart = 0;
             for (int o=0;o<numOperands;++o) {
                 msg += insn.getDefaultOperandRepresentation(o);
                 String sep = insn.getSeparator(o);
@@ -191,8 +185,6 @@ public class UnitHashData implements KaijuLogger {
                 Mask opMask = insnp.getOperandValueMask(o);
                 opMasks.add(opMask);
                 
-                // TODO: test to see if this instance of getBytes() needs StandardCharsets.UTF_8 set as arg
-                opmstr += "opMask" + o + ": " + HexUtils.byteArrayToHexString(opMask.getBytes()," ");
                 int ot = insn.getOperandType(o);
                 // the different operand checks available are documented at:
                 // https://ghidra.re/ghidra_docs/api/ghidra/program/model/lang/OperandType.html
@@ -241,7 +233,7 @@ public class UnitHashData implements KaijuLogger {
                     }
                 }
                 
-                otstr += "op" + o + " type: " + HexUtils.intToHexString(ot) + " (" + OperandType.toString(ot) + ") picit: " + picit + " ";
+                
                 
                 // for yara, need to document where to put ?? for addresses vs legit null bytes.
                 // store a FF byte if an address, and 00 byte for all else

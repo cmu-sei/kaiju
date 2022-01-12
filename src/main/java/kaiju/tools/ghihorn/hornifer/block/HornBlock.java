@@ -8,10 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
-
 import ghidra.program.model.address.Address;
 import ghidra.program.model.pcode.PcodeOp;
 import kaiju.tools.ghihorn.cfg.HighCfgVertex;
@@ -23,6 +21,7 @@ import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable;
 import kaiju.tools.ghihorn.z3.GhiHornContext;
 
 public class HornBlock {
+
     private final EnumMap<HornBlockProperty.Property, HornBlockProperty> propertyMap;
     private final HornFunction hornFunction;
     private final HighCfgVertex<Address, VertexAttributes> vertex;
@@ -122,6 +121,7 @@ public class HornBlock {
 
     /**
      * Instantiate the state for this block
+     * 
      * @param ctx
      * @return
      */
@@ -132,9 +132,24 @@ public class HornBlock {
 
         // create the input/output state for this block. The initial state is
         // the mapping of each pcode, which is typically of the form (= out in)
-        
-        orderedPcodeExprs.stream().filter(pc -> pc != null).filter(Expr::isEq).map(Expr::getArgs)
-                .forEach(a -> state.put(a[0], a[1]));
+
+        for (var pc : orderedPcodeExprs) {
+            if (pc != null && pc.isEq()) {
+                Expr<?>[] args = pc.getArgs();
+                if (!args[0].equals(args[1])) {
+
+                    // For some reason pcode can have a format of X = X, which has no impact on
+                    // true state but overwrites the state prior
+
+                    state.put(args[0], args[1]);
+                }
+            }
+        }
+
+        // Nothing to substitute?
+        if (state.size() <= 1) {
+            return state;
+        }
 
         for (int outer = 0; outer < orderedPcodeExprs.size(); outer++) {
 
@@ -142,13 +157,22 @@ public class HornBlock {
             Expr<? extends Sort> out = state.get(in);
 
             // +1 so not sub-ing yourself
+            boolean fixedpoint = false;
             for (int inner = outer + 1; inner < orderedPcodeExprs.size(); inner++) {
 
                 Expr<? extends Sort> nextIn = orderedPcodeExprs.get(inner).getArgs()[0];
                 Expr<? extends Sort> nextOut = state.get(nextIn);
-
-                Expr<? extends Sort> sub = nextOut.substitute(in, out);
-                state.replace(nextIn, sub);
+                
+                if (out != null && nextOut != null && !out.equals(nextOut)) {
+                    Expr<? extends Sort> sub = nextOut.substitute(in, out); // in=from, out=to
+                    state.replace(nextIn, sub);
+                } else {
+                    fixedpoint = true;
+                }
+            }
+            if (fixedpoint) {
+                // If there were no changes, then the state is settled into a fixed point
+                break;
             }
         }
         return state;
@@ -165,7 +189,10 @@ public class HornBlock {
 
         // iterate over the entryset for explicit order
         List<Expr<? extends Sort>> pcodeOrderExprs = new ArrayList<>();
-        pcodeExprMap.entrySet().stream().sequential().map(pcx -> pcx.getValue().instantiate(ctx))
+        pcodeExprMap.entrySet()
+                    .stream()
+                    .sequential()
+                    .map(pcx -> pcx.getValue().instantiate(ctx))
                 .filter(expr -> expr != null).forEach(pcodeOrderExprs::add);
 
         return pcodeOrderExprs;

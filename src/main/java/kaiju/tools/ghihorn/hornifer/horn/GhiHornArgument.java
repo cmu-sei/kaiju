@@ -1,24 +1,26 @@
 package kaiju.tools.ghihorn.hornifer.horn;
 
 import ghidra.program.model.address.Address;
+import kaiju.tools.ghihorn.answer.format.GhiHornFormattableElement;
 
 /**
  * Interface for arguments
  */
-public interface GhiHornArgument<T> {
-    /**
-     * 
-     * @return the start
-     */
-    public T getStart();
+public interface GhiHornArgument<T> extends GhiHornFormattableElement {
 
     /**
      * 
-     * @return the end
+     * @return the starting element
      */
-    public T getEnd();
+    public T getEntry();
 
-    public Address getStartAddress();
+    /**
+     * 
+     * @return the ending element
+     */
+    public T getGoal();
 
-    public Address getEndAddress();
+    public Address getEntryAsAddress();
+
+    public Address getGoalAsAddress();
 }

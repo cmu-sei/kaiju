@@ -24,7 +24,7 @@ public class SextExpression implements HornExpression {
         // Because bitvector variables are all 64b by default, this operations
         // is moot.
         int i = GhiHornDataType.BYTE_WIDTH * (outExpr.getSortSize() - inExpr.getSortSize());
-        return ctx.mkZeroExt(i, inExpr);
+        return ctx.mkSignExt(i, inExpr);
     }
 
     /**
@@ -49,6 +49,47 @@ public class SextExpression implements HornExpression {
 
     @Override
     public HornExpression[] getComponents() {
-        return new HornExpression[] { in, out };
+        return new HornExpression[] {in, out};
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#hashCode()
+     */
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((in == null) ? 0 : in.hashCode());
+        result = prime * result + ((out == null) ? 0 : out.hashCode());
+        return result;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!(obj instanceof SextExpression))
+            return false;
+        SextExpression other = (SextExpression) obj;
+        if (in == null) {
+            if (other.in != null)
+                return false;
+        } else if (!in.equals(other.in))
+            return false;
+        if (out == null) {
+            if (other.out != null)
+                return false;
+        } else if (!out.equals(other.out))
+            return false;
+        return true;
     }
 }

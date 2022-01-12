@@ -32,56 +32,22 @@
 package kaiju.tools.fse;
 
 import javax.swing.ImageIcon;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.TreeMap;
 
-import db.NoTransactionException;
 import docking.ActionContext;
-import docking.action.*;
-import docking.widgets.OptionDialog;
-import docking.widgets.dialogs.SettingsDialog;
-import docking.widgets.filechooser.GhidraFileChooser;
-import docking.widgets.table.GTable;
-import ghidra.MiscellaneousPluginPackage;
-import ghidra.app.CorePluginPackage;
-import ghidra.app.events.ProgramSelectionPluginEvent;
+import docking.action.DockingAction;
+import docking.action.ToolBarData;
 import ghidra.app.plugin.PluginCategoryNames;
-import ghidra.app.plugin.ProgramPlugin;
-import ghidra.app.plugin.core.data.DataSettingsDialog;
-import ghidra.app.services.GoToService;
 import ghidra.framework.main.FrontEndable;
-import ghidra.framework.model.*;
-import ghidra.framework.options.Options;
+import ghidra.framework.model.Project;
 import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
-import ghidra.framework.preferences.Preferences;
-import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.Data;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.FunctionIterator;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.program.util.*;
 import ghidra.util.HelpLocation;
-import ghidra.util.exception.CancelledException;
-import ghidra.util.exception.VersionException;
-import ghidra.util.table.GhidraTable;
-import ghidra.util.table.SelectionNavigationAction;
-import ghidra.util.table.actions.MakeProgramSelectionAction;
-import ghidra.util.task.ConsoleTaskMonitor;
 import ghidra.util.task.SwingUpdateManager;
+import kaiju.common.KaijuLogger;
+import kaiju.common.KaijuPluginPackage;
 import resources.Icons;
-import resources.ResourceManager;
-
-import kaiju.common.*;
-import kaiju.hashing.FnHashSaveable;
 
 /**
  * Plugin that provides a table comparing hashes between different Programs within Ghidra Project.

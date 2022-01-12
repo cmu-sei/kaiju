@@ -31,20 +31,16 @@
  */
 package kaiju.graph.original;
 
+import java.util.Collection;
+import java.util.TreeSet;
+import java.util.Vector;
+
 import generic.stl.Pair;
 import generic.stl.RedBlackNode;
 import generic.stl.RedBlackTree;
 import ghidra.graph.GDirectedGraph;
+import ghidra.graph.GImplicitDirectedGraph;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.CodeUnit;
-
-import java.lang.Boolean;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.Vector;
 
 /**
  * A directed graph representing the CodeUnits (Instructions and Data) in a Function or Program.

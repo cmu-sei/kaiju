@@ -35,7 +35,9 @@ public class HornFunction {
     private final Set<HornEdge> hornEdges;
     private final Map<HornBlock, Set<HornEdge>> outEdges;
     private final Map<HornBlock, Set<HornEdge>> inEdges;
-    private final List<Address> callXrefsTo;
+    private final Set<Address> callXrefsTo;
+    private final Map<HornBlock, Set<HornVariable>> descendantVarsMap;
+    private final Map<HornBlock, Set<HornBlock>> descendantBlkMap;
     private HighFunction highFunction;
     private HighCfg<Address, VertexAttributes> highCfg;
     private HornBlock entryBlock;
@@ -68,6 +70,8 @@ public class HornFunction {
         this.hornEdges = new HashSet<>();
         this.outEdges = new HashMap<>();
         this.inEdges = new HashMap<>();
+        this.descendantVarsMap = new HashMap<>();
+        this.descendantBlkMap = new HashMap<>();
 
         this.localVariables = new HashSet<>();
         this.parameters = new ArrayList<>();
@@ -85,7 +89,7 @@ public class HornFunction {
 
         callXrefsTo = StreamSupport.stream(startIter.spliterator(), false)
                 .filter(r -> r.getReferenceType().isCall())
-                .map(r -> r.getFromAddress()).collect(Collectors.toList());
+                .map(r -> r.getFromAddress()).collect(Collectors.toSet());
     }
 
     /**
@@ -135,8 +139,22 @@ public class HornFunction {
         callXrefsTo.addAll(additionalXrefs);
     }
 
+    /**
+     * True if this function has an call XREF
+     * 
+     * @return true if called, false otherwise
+     */
     public boolean isCalled() {
         return !callXrefsTo.isEmpty();
+    }
+
+    /**
+     * Thunk functions are the basically the same as
+     * 
+     * @return true if a thunk, false otherwise
+     */
+    public boolean isThunk() {
+        return this.highFunction != null && this.highFunction.getFunction().isThunk();
     }
 
     /**
@@ -175,7 +193,7 @@ public class HornFunction {
             Map<HornBlock, Set<HornVariable>> in) {
 
         Set<HornVariable> out = new HashSet<>();
-        
+
         // Exit blocks have all out params live at exit. Globals and
         // function-scoped variables are assumed live throughout their scope
 
@@ -190,23 +208,32 @@ public class HornFunction {
 
             // The problem with using direct successors is that there may be
             // live variables that aren't propogated sufficiently, especially
-            // when loops are present. 
+            // when loops are present.
             //
-            // If you want faster solving, then use the successor code below.
+            // If you want better solving, then use the successor code below.
             // note that this will slow things down considerably
-            //  
+            //
             // for (var s : hornFunc.getHighCfg().successorListOf(block.getVertex())) {
             // HornBlock suc = hornFunc.getBlockByAddress(s.getLocator());
             // for (var suc : getDescendants(block)) {
-            //     if (!suc.equals(block)) {
-            //         out.addAll(in.get(suc));
-            //     }
+            // if (!suc.equals(block)) {
+            // out.addAll(in.get(suc));
             // }
-
-            getDescendants(block)
-                        .stream()
+            // }
+            Set<HornBlock> descBlks = this.descendantBlkMap.get(block);
+            if (descBlks != null) {
+                descBlks.stream()
                         .filter(d -> !d.equals(block))
                         .forEach(d -> out.addAll(in.get(d)));
+            } else {
+
+                descBlks = getDescendantBlocks(block);
+                descBlks.stream()
+                        .filter(d -> !d.equals(block))
+                        .forEach(d -> out.addAll(in.get(d)));
+
+                this.descendantBlkMap.put(block, descBlks);
+            }
 
             // Add all variable used in the current block.
             out.addAll(block.getUseVariables());
@@ -219,7 +246,7 @@ public class HornFunction {
     /**
      * @return the xrefsTo
      */
-    public List<Address> getCallXrefsTo() {
+    public Set<Address> getCallXrefsTo() {
         return callXrefsTo;
     }
 
@@ -276,7 +303,8 @@ public class HornFunction {
             }
         } while (changed);
 
-        // Removing nulls and constants here for simplicity's sake
+        // Removing nulls and constants here for simplicity's sake (although constants shouldn't be
+        // included to begin with)
 
         in.values().forEach(s -> s.removeIf(elm -> elm == null || elm instanceof HornConstant));
         out.values().forEach(s -> s.removeIf(elm -> elm == null || elm instanceof HornConstant));
@@ -292,20 +320,32 @@ public class HornFunction {
      * @param blk the block
      * @return the variables maintained in the state
      */
-    public Set<HornVariable> computeDescendants(final HornBlock blk) {
-        Set<HornVariable> stateVars = new HashSet<>();
+    public Set<HornVariable> computeDescendantVariables(final HornBlock blk) {
+
+        if (descendantVarsMap.containsKey(blk)) {
+            return descendantVarsMap.get(blk);
+        }
+        Set<HornVariable> descendantVars = new HashSet<>();
 
         final LiveHornVariables<HornBlock> lv = computeLiveVariables();
 
         // Compute the descendants for each basic block, which are the blocks
         // that follow a given block, saving the live input variables as we go.
-        // The intersection of those vaiables with the block variables are ones
-        // that must be propogated forward
 
-        getDescendants(blk).stream().filter(b -> !b.equals(blk))
-                .forEach(b -> stateVars.addAll(lv.liveIn.get(b)));
+        getDescendantBlocks(blk).stream()
+                .filter(b -> !b.equals(blk))
+                .map(b -> lv.liveIn.get(b))
+                .forEach(descendantVars::addAll);
 
-        return GhiHornifier.setIntersect(blk.getVariables(), stateVars);
+
+        // The intersection of the descendant variables with the live out block variables are ones
+        // that must be propogated forward.
+
+        Set<HornVariable> blkLiveOutVars = lv.liveOut.get(blk);
+        Set<HornVariable> stateVars = GhiHornifier.setIntersect(blkLiveOutVars, descendantVars);
+
+        this.descendantVarsMap.put(blk, stateVars);
+        return stateVars;
     }
 
     /**
@@ -456,16 +496,16 @@ public class HornFunction {
     }
 
     /**
-     * Fetch descendants for a block. If successors are bloks that immediately proceed a block, then
-     * descendants for a given vertex are all nodes at the outgoing side of an edge, as well as
+     * Fetch descendants for a block. If successors are blocks that immediately proceed a block,
+     * then descendants for a given vertex are all nodes at the outgoing side of an edge, as well as
      * their outgoing vertices, etc. Note that this implementation includes the input block as a
      * descendent
      * 
      * @param blk the block from to compute the descendants
      * 
-     * @return the set of descendants
+     * @return the set of descendant blocks
      */
-    public Set<HornBlock> getDescendants(final HornBlock blk) {
+    public Set<HornBlock> getDescendantBlocks(final HornBlock blk) {
 
         Collection<HighCfgVertex<Address, VertexAttributes>> descendants =
                 GraphAlgorithms.getDescendants(this.highCfg,

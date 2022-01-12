@@ -12,7 +12,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface GhiHornEventConfig {
 
-    String terminateUpdate() default "";
+    String completeUpdate() default "";
+    
+    String cancelUpdate() default "";
 
     String statusUpdate() default "";
 

@@ -23,7 +23,7 @@ import ghidra.util.task.TaskMonitor;
 /** 
  * A parallel decompiler that uses Ghidra's thread pool services
  */
-public class GhiHornParallelDecompiler {
+public class GhiHornParallelDecompiler implements GhiHornDecompiler {
     private ServiceProvider serviceProvider;
 
     public GhiHornParallelDecompiler(ServiceProvider sp) {
@@ -39,6 +39,7 @@ public class GhiHornParallelDecompiler {
      * @throws CancelledException
      * @throws Exception
      */
+    @Override
     public List<HighFunction> decompileProgram(Program program, TaskMonitor monitor)
         throws CancelledException, Exception {    
 

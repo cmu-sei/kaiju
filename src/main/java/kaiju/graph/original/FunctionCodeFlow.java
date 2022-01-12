@@ -31,32 +31,23 @@
  */
 package kaiju.graph.original;
 
+import java.util.List;
 import ghidra.app.services.BlockModelService;
 import ghidra.framework.plugintool.ServiceProviderStub;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.database.code.CodeManager;
-import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.AddressRange;
-import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSetView;
-import ghidra.program.model.listing.CodeUnit;
+import ghidra.program.model.block.CodeBlock;
+import ghidra.program.model.block.CodeBlockIterator;
+import ghidra.program.model.block.CodeBlockModel;
+import ghidra.program.model.block.SimpleBlockModel;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.block.CodeBlock;
-import ghidra.program.model.block.CodeBlockIterator;
-import ghidra.program.model.block.CodeBlockModel;
-import ghidra.program.model.block.CodeBlockReferenceIterator;
-import ghidra.program.model.block.SimpleBlockModel;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
-
-import java.util.List;
-
-import kaiju.graph.original.FunctionUtils;
-import kaiju.common.*;
 
 /**
  * A class to represent the control flow graph (CFG) of a function in a
@@ -79,8 +70,6 @@ public class FunctionCodeFlow {
     // so assume basic_blocks in address order
     private List<CodeBlock> basic_blocks;
     private List<Instruction> bb_insns;
-    private int nBlocks;
-
     public FunctionCodeFlow(Function function, Program currentProgram, TaskMonitor monitor) throws CancelledException {
     
         if (function == null) {
@@ -114,8 +103,6 @@ public class FunctionCodeFlow {
         // from a Function, well except for the "chunks" I suppose that come
         // back as the body of the function as an AddressSetView:
         chunks = function.getBody(); 
-        Address fep = function.getEntryPoint();
-        
         CodeBlockIterator bbiter = null;
         try {
             // get an iterator over the CodeBlocks (basic blocks, maybe data too?)
@@ -158,7 +145,6 @@ public class FunctionCodeFlow {
     
     private List<CodeBlock> computeBasicBlocks(Program program, TaskMonitor monitor) throws CancelledException {
         
-        nBlocks = 0;
         CodeBlockIterator bbiter = null;        
 
         try {
@@ -199,7 +185,6 @@ public class FunctionCodeFlow {
         // can now iterate over the basic blocks getting addresses, not sure how
         // to get at instructions "properly" yet...
         for (;bbiter.hasNext();) {
-            nBlocks++;
             CodeBlock bb = bbiter.next();
 
             basic_blocks.add(bb); // save this off for later

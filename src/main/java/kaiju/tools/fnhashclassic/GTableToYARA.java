@@ -33,32 +33,41 @@ package kaiju.tools.fnhashclassic;
 
 import java.awt.Component;
 import java.awt.Container;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.StringBuilder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import javax.swing.*;
-import javax.swing.table.*;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JTable;
+import javax.swing.SwingUtilities;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableModel;
 import javax.swing.text.JTextComponent;
 
 import docking.DockingWindowManager;
-import docking.widgets.table.*;
+import docking.widgets.table.GTableColumnModel;
+import docking.widgets.table.RowObjectFilterModel;
+import docking.widgets.table.TableModelWrapper;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.util.PropertyMapManager;
 import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.util.HTMLUtilities;
+import ghidra.program.model.util.PropertyMapManager;
 import ghidra.util.Msg;
 import ghidra.util.table.AddressBasedTableModel;
 import ghidra.util.table.GhidraTable;
-import ghidra.util.task.*;
-
+import ghidra.util.task.Task;
+import ghidra.util.task.TaskLauncher;
+import ghidra.util.task.TaskMonitor;
 import kaiju.hashing.FnHashSaveable;
-import kaiju.tools.fnhashclassic.FnUtils;
 import kaiju.util.ByteArrayList;
 import kaiju.util.HexUtils;
 
@@ -171,7 +180,7 @@ public final class GTableToYARA {
             
             Program current_program = table.getProgram();
             PropertyMapManager man = current_program.getUsrPropertyManager();
-            ObjectPropertyMap fnhashmap = man.getObjectPropertyMap​("__CERT_Kaiju_FnHash");
+            ObjectPropertyMap fnhashmap = man.getObjectPropertyMap("__CERT_Kaiju_FnHash");
             FnHashSaveable prop = (FnHashSaveable) fnhashmap.getObject(row_addr);
             
             String filename_value = current_program.getExecutablePath();

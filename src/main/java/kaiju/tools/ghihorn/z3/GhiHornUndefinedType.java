@@ -12,11 +12,13 @@ public class GhiHornUndefinedType implements GhiHornDataType {
 
     @Override
     public Sort mkSort(GhiHornContext ctx) {
-        return null;
+        
+        return ctx.mkUninterpretedSort("undefined");
     }
 
     @Override
     public Expr<? extends Sort> mkConst(GhiHornContext ctx, String name) {
-        return null;
+       
+        return ctx.mkConst(ctx.mkSymbol(name),  ctx.mkUninterpretedSort(name));
     }    
 }

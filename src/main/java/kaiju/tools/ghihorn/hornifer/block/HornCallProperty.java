@@ -9,7 +9,7 @@ import kaiju.tools.ghihorn.hornifer.horn.expression.HornExpression;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable;
 
 /**
- * Represens a call property including call address, arguments, and return value
+ * Represents a call property including call address, arguments, and return value
  */
 public class HornCallProperty implements HornBlockProperty {
 

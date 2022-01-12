@@ -31,36 +31,19 @@
  */
 package kaiju.graph;
 
-import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressSetView;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.util.PropertyMapManager;
-import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.util.exception.DuplicateNameException;
-import ghidra.util.exception.CancelledException;
-import ghidra.util.exception.UsrException;
-import ghidra.util.task.TaskMonitor;
-
 import ghidra.service.graph.AttributedGraph;
 import ghidra.service.graph.AttributedVertex;
 // TODO: the AttributedGraph API changed in Ghidra 10.1, we use reflection in the constructor to test for this
 //import ghidra.service.graph.GraphType;
-
-// For UTF8 charset in crypto functions to standardize across operating systems
-import java.nio.charset.StandardCharsets;
-
-import java.lang.Class;
-import java.lang.reflect.InvocationTargetException;
-import java.util.StringJoiner;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.security.MessageDigest;
-
-import kaiju.util.HexUtils;
-import kaiju.common.*;
+import ghidra.util.task.TaskMonitor;
+import kaiju.common.KaijuLogger;
 
 public class FunctionGraph implements KaijuLogger {
 
@@ -89,10 +72,10 @@ public class FunctionGraph implements KaijuLogger {
         
         try {
             // if we can load GraphType, then we know we have Ghidra 10.1+
-            Class graphtypeclass = Class.forName("ghidra.service.graph.GraphType");
+            Class<?> graphtypeclass = Class.forName("ghidra.service.graph.GraphType");
             try {
                 // create a GraphType object, then feed it to AttributedGraph
-                Class[] types = {String.class, String.class, List.class, List.class};
+                Class<?>[] types = {String.class, String.class, List.class, List.class};
                 Object[] params = {"Kaiju Function Graph", graphtypeclass.getDeclaredConstructor(types).newInstance()};
                 attrgraph = (AttributedGraph) (m.invoke(params));
             } catch (NoSuchMethodException nsme) {

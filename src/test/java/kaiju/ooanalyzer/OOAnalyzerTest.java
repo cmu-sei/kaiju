@@ -30,36 +30,23 @@
  * DM21-0792
  */
 
-package kaiju.tools.ooanalyzer;
+package kaiju.ooanalyzer;
 
 //import static org.junit.Assert.assertTrue;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import java.io.File;
-import java.util.Optional;
-import java.util.ArrayList;
-import java.util.List;
-
-import ghidra.program.util.GhidraProgramUtilities;
 import ghidra.program.model.listing.Program;
+import ghidra.program.util.GhidraProgramUtilities;
 import ghidra.test.AbstractGhidraHeadedIntegrationTest;
-import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.test.TestEnv;
 import ghidra.util.Msg;
-import ghidra.util.task.TaskMonitor;
-
 import kaiju.tools.ooanalyzer.OOAnalyzerGhidraPlugin;
-
-import resources.ResourceManager;
 
 class OOAnalyzerTest extends AbstractGhidraHeadedIntegrationTest {
 
     private TestEnv env;
     private OOAnalyzerGhidraPlugin plugin;
-    private Path testDir;
-
+    
     OOAnalyzerTest () throws Exception {
     }
 

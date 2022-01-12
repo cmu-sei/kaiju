@@ -1,12 +1,10 @@
 package kaiju.tools.ghihorn.hornifer;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,13 +15,14 @@ import java.util.stream.Collectors;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.base.VerifyException;
-import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Fixedpoint;
 import com.microsoft.z3.Status;
 import generic.concurrent.ConcurrentQ;
 import generic.concurrent.ConcurrentQBuilder;
 import generic.concurrent.GThreadPool;
 import generic.concurrent.QCallback;
+import generic.concurrent.QItemListener;
+import generic.concurrent.QProgressListener;
 import generic.concurrent.QResult;
 import ghidra.graph.GraphAlgorithms;
 import ghidra.program.model.address.Address;
@@ -45,13 +44,14 @@ import ghidra.program.model.symbol.SymbolType;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
-import kaiju.tools.ghihorn.GhiHornPlugin;
 import kaiju.tools.ghihorn.answer.GhiHornAnswerGraphBuilder;
-import kaiju.tools.ghihorn.api.ApiDatabaseService;
+import kaiju.tools.ghihorn.api.ApiDatabase;
 import kaiju.tools.ghihorn.api.ApiEntry;
 import kaiju.tools.ghihorn.cfg.HighCfgEdge;
 import kaiju.tools.ghihorn.cfg.HighCfgEdgeGuard;
 import kaiju.tools.ghihorn.cfg.VertexAttributes;
+import kaiju.tools.ghihorn.cmd.GhiHornCommand;
+import kaiju.tools.ghihorn.decompiler.GhiHornDecompiler;
 import kaiju.tools.ghihorn.hornifer.block.HornBlock;
 import kaiju.tools.ghihorn.hornifer.block.HornBlockProperty;
 import kaiju.tools.ghihorn.hornifer.block.HornCallProperty;
@@ -82,80 +82,64 @@ import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 import kaiju.tools.ghihorn.z3.GhiHornType;
 import kaiju.tools.ghihorn.z3.GhiHornZ3Parameters;
 
+
 /**
  * Generic class for a hornifier.
  */
 public abstract class GhiHornifier {
-    protected final String toolName;
-    protected ApiDatabaseService apiDatabaseService;
 
+    public final static String START_FACT_NAME = "start";
+    public final static String GOAL_FACT_NAME = "goal";
+
+    protected final String name;
+    protected ApiDatabase apiDatabase;
+    protected GhiHornCommand cmd;
     private GhiHornZ3Parameters z3Parameters;
-    private PropertyChangeSupport pcs;
-    private String statusUpdatePropertyID;
-    private String terminatePropertyID;
-    private String resultPropertyID;
     private boolean isCancelled;
+    private Map<String, Object> parameters;
+    private GhiHornDecompiler decompiler;
+    private Address entryPoint;
 
     public enum TerminateReason {
         Cancelled, Completed;
     }
 
     protected GhiHornifier(final String n) {
-        this.toolName = n;
+        this.name = n;
         this.isCancelled = false;
-
-    }
-
-    /**
-     * Connect the display with an encoder
-     * 
-     * @param listener
-     * @param update
-     * @param complete
-     */
-    public void registerListener(final PropertyChangeListener listener,
-            Map<GhiHornEvent, String> eventConfig) {
-
-        this.pcs = new PropertyChangeSupport(this);
-
-        this.statusUpdatePropertyID = eventConfig.get(GhiHornEvent.StatusMessage);
-        this.pcs.addPropertyChangeListener(statusUpdatePropertyID, listener);
-
-        this.terminatePropertyID = eventConfig.get(GhiHornEvent.TerminateMessage);
-        this.pcs.addPropertyChangeListener(terminatePropertyID, listener);
-
-        this.resultPropertyID = eventConfig.get(GhiHornEvent.ResultMessage);
-        this.pcs.addPropertyChangeListener(resultPropertyID, listener);
-    }
-
-    /**
-     * Signal completion without error
-     */
-    public void complete() {
-        if (pcs != null) {
-            pcs.firePropertyChange(terminatePropertyID, null, TerminateReason.Completed);
-        }
     }
 
     /**
      * Signal cancellation without error
      */
     public void cancel() {
-        if (!isCancelled) {
-            Msg.info(this, "Cancelled analysis");
-            isCancelled = true;
-
-            if (pcs != null) {
-                pcs.firePropertyChange(terminatePropertyID, null, TerminateReason.Cancelled);
-            }
-        }
+        isCancelled = true;
     }
 
     /**
-     * @return the z3Parameters
+     * @param parameters the parameters to set
      */
-    public GhiHornZ3Parameters getZ3Parameters() {
-        return z3Parameters;
+    public void setParameters(Map<String, Object> parameters) {
+        this.parameters = parameters;
+    }
+
+    /**
+     * @param decompiler the decompiler to set
+     */
+    public void setDecompiler(GhiHornDecompiler decompiler) {
+        this.decompiler = decompiler;
+    }
+
+    public boolean isCancelled() {
+        return isCancelled;
+    }
+
+    public void setApiDatabase(final ApiDatabase apiDb) {
+        this.apiDatabase = apiDb;
+    }
+
+    public void setCommand(final GhiHornCommand c) {
+        this.cmd = c;
     }
 
     /**
@@ -163,10 +147,8 @@ public abstract class GhiHornifier {
      * @param update
      */
     public void statusUpdate(final String update) {
-        synchronized (pcs) {
-            if (pcs != null) {
-                pcs.firePropertyChange(statusUpdatePropertyID, null, update);
-            }
+        if (cmd != null) {
+            cmd.sendStatusMsg(update);
         }
     }
 
@@ -176,16 +158,21 @@ public abstract class GhiHornifier {
      * @param result
      */
     public synchronized void updateResults(final GhiHornAnswer result) {
-
-        synchronized (pcs) {
-            if (pcs != null && result != null) {
-                pcs.firePropertyChange(resultPropertyID, null, result);
-            }
+        if (cmd != null) {
+            cmd.updateResults(result);
         }
+
+    }
+
+    /**
+     * @return the z3Parameters
+     */
+    public GhiHornZ3Parameters getZ3Parameters() {
+        return z3Parameters;
     }
 
     public String getName() {
-        return toolName;
+        return name;
     }
 
     /**
@@ -194,23 +181,24 @@ public abstract class GhiHornifier {
      * @param context the z3 context
      * @param program the underlying ghidra program
      * @param functions the decompiled function
-     * @return
+     * @return The constructed horn program
      */
     private HornProgram makeHornProgram(final Program program, final List<HighFunction> functions) {
 
-        final HornProgram hornProgram = new HornProgram(program);
+        final HornProgram hornProgram = new HornProgram(program, this.entryPoint);
 
+        boolean foundInvalid = false;
         for (HighFunction highFunc : functions) {
-            try {
-                if (highFunc != null) {
-                    HornFunction hornFunc = new HornFunction(highFunc);
-                    hornProgram.addFunction(hornFunc);
-                } else {
-                    statusUpdate(
-                            "Encountered invalid decompiled function, analysis may be inaccurate");
-                }
-            } catch (NullPointerException e) {
+
+            if (highFunc != null) {
+                hornProgram.addFunction(new HornFunction(highFunc));
+            } else {
+                foundInvalid = true;
+                continue;
             }
+        }
+        if (foundInvalid) {
+            statusUpdate("Encountered invalid decompiled function(s), analysis may be inaccurate");
         }
 
         // For the sake of simplicity, just assume everything is a bit vector.
@@ -240,6 +228,7 @@ public abstract class GhiHornifier {
         final Program program = hornProgram.getProgram();
         Map<Function, List<Address>> extFunctions = new HashMap<>();
         if (program != null) {
+
             // Add API (external) functions as empty functions
             for (Symbol sym : program.getSymbolTable().getExternalSymbols()) {
                 if (sym != null && sym.getSymbolType() == SymbolType.FUNCTION) {
@@ -252,9 +241,23 @@ public abstract class GhiHornifier {
                             }
                         }
                         extFunctions.put(extFunc, xrefs);
-
                     }
                 }
+            }
+        }
+
+        // Treat the thunks as external functions, which means that the function must be removed
+        // from the standard set of functions and re-added as a thunk
+
+        for (Iterator<HornFunction> i=hornProgram.getHornFunctions().iterator(); i.hasNext();) {
+         
+            HornFunction func = i.next();
+            if (func.isThunk() && func.isCalled()) {
+                Function thFn = func.getFunction();
+                List<Address> xrefs = new ArrayList<>();
+                xrefs.addAll(func.getCallXrefsTo());
+                extFunctions.put(thFn, xrefs);
+                i.remove();
             }
         }
 
@@ -262,10 +265,8 @@ public abstract class GhiHornifier {
         // the API Database service
 
         if (!extFunctions.isEmpty()) {
-            try {
-                apiDatabaseService.loadApiLibraries();
-            } catch (CancelledException e) {
-                Msg.error(this, "Cancelled API service");
+            if (!apiDatabase.loadApiLibraries()) {
+                Msg.error(this, "Failed to load API database");
             }
             for (Entry<Function, List<Address>> entry : extFunctions.entrySet()) {
 
@@ -276,16 +277,18 @@ public abstract class GhiHornifier {
 
                 // Attempt to find the implementation of this API
                 Optional<HighFunction> optHf =
-                        apiDatabaseService.getApiFunction(api.getLibName(), api.getApiName());
+                        apiDatabase.getApiFunction(api.getLibName(), api.getApiName());
 
                 optHf.ifPresentOrElse((apiFunc) -> {
+
+                    // Present in API database
 
                     HornFunction horn = new HornFunction(apiFunc);
                     horn.setImported(true);
                     horn.addXrefs(xrefs);
                     horn.setName(api.formatApiName());
 
-                    hornProgram.addFunction(horn);
+                    hornProgram.addExternalFunction(horn);
 
                 }, () -> {
 
@@ -293,20 +296,20 @@ public abstract class GhiHornifier {
 
                     if (!xrefs.isEmpty()) {
 
-                        statusUpdate("A referenced external function: " + api
+                        Msg.warn(this, "A referenced external function: " + api
                                 + " was NOT found in the API database. As a result analysis may be inaccurate. Perhaps consider updating the API database");
 
                         // If the external function is referenced from
-                        // somewhere, then include it in the program
+                        // somewhere, then include it in the program without an implementation
 
-                        HornFunction horn = new HornFunction(func);
+                        final HornFunction horn = new HornFunction(func);
                         horn.addXrefs(xrefs);
                         horn.setName(api.formatApiName());
 
-                        hornProgram.addFunction(horn);
+                        hornProgram.addExternalFunction(horn);
 
                     } else {
-                        statusUpdate("An un-referenced external function: " + api
+                        Msg.warn(this, "An un-referenced external function: " + api
                                 + " was NOT found in the API database. This function will be skipped");
                     }
                 });
@@ -321,20 +324,23 @@ public abstract class GhiHornifier {
      * @param monitor
      * @throws Exception
      */
-    public HornProgram hornify(final List<HighFunction> funcList,
-            TaskMonitor monitor) throws Exception {
+    public HornProgram hornify(final Program program, TaskMonitor monitor)
+            throws Exception {
 
-        Program program = funcList.get(0).getFunction().getProgram();
+        Verify.verify(decompiler != null, "Missing decompiler");
+
+        List<HighFunction> funcList = decompiler.decompileProgram(program, monitor);
 
         final HornProgram hornProgram = makeHornProgram(program, funcList);
 
-
-        // Initialize the specific tool
+        // Initialize the specific tool prior to encoding
         initializeTool(hornProgram, monitor);
 
         final Set<HornFunction> hornFuncSet = hornProgram.getHornFunctions();
 
         monitor.initialize(hornFuncSet.size());
+
+        Msg.info(this, "Hornifiying functions");
 
         for (var hornFunction : hornFuncSet) {
 
@@ -349,6 +355,7 @@ public abstract class GhiHornifier {
         }
 
         Msg.info(this, "Hornification completed");
+        Msg.info(this, "Encoding function calls");
 
         // Encoding the function instances makes the call connections
 
@@ -368,15 +375,18 @@ public abstract class GhiHornifier {
 
         Msg.info(this, "Encoding completed");
 
+        Msg.info(this, "Propagating state through calls");
+
         // Once all the connections have been made propgate the state based on calls
         propagateStateThruCalls(hornProgram);
 
-        // Any post-encoding. By default set the variables used in the final clause to
-        // what was gathered during predicate generation. Override this method and call super to
-        // customize the post encoding
-        finalizeTool(hornProgram, monitor);
+        Msg.info(this, "Propagation completed");
 
-        monitor.setMessage("Completed hornification of " + hornProgram.getName());
+        // Any post-encoding. By default set the variables used in the final clause to
+        // what was gathered during predicate generation. Override this method and call
+        // super to customize the post encoding
+
+        finalizeTool(hornProgram, monitor);
 
         return hornProgram;
     }
@@ -397,22 +407,24 @@ public abstract class GhiHornifier {
                 // subsequent calls
 
                 Set<HornVariable> descendantVars =
-                        instance.getHornFunction().computeDescendants(callerBlk);
+                        instance.getHornFunction().computeDescendantVariables(callerBlk);
 
                 if (!descendantVars.isEmpty()) {
 
-                    Set<HornPredicate> callerBlkDescendants =
+                    Set<HornPredicate> callTreePredicates =
                             GraphAlgorithms.getDescendants(hornProgram.getCallGraph(),
                                     Arrays.asList(instance.getPrecondition()));
 
-                    for (HornPredicate callPredicate : callerBlkDescendants) {
+                    for (HornPredicate callTreeEntry : callTreePredicates) {
 
-                        if (!callPredicate.equals(instance.getPrecondition())) {
+                        if (!callTreeEntry.equals(instance.getPrecondition())) {
 
-                            Set<HornPredicate> callPreds = hornProgram
-                                    .getPredicatesByInstanceId(callPredicate.getInstanceId());
+                            // These are the predicates that make up the called function
+                            Set<HornPredicate> callBodyPreds = hornProgram
+                                    .getPredicatesByInstanceId(callTreeEntry.getInstanceId());
 
-                            callPreds.forEach(cp -> cp.addVariables(descendantVars));
+                            // Add the descendant variables if they are not present
+                            callBodyPreds.forEach(cp -> cp.addVariables(descendantVars));
                         }
                     }
                 }
@@ -423,6 +435,7 @@ public abstract class GhiHornifier {
         // re-synchronize the variable expressions in the associated clauses
         hornProgram.getClauses().forEach(c -> c.syncVariables());
     }
+
 
     // These create new sets, and so are non-destructive. More or less taken
     // from Soot
@@ -521,11 +534,12 @@ public abstract class GhiHornifier {
 
         final Address calledFromAddress = callProp.getCalledFromAddress();
         final String id = HornPredicate.addressToId(calledFromAddress);
-        final HornFunctionInstance calledInstance = hornProgram.getInstanceByID(id);
 
-        Verify.verifyNotNull(calledInstance,
+        var optcalledInstance = hornProgram.getInstanceByID(id);
+        Verify.verify(optcalledInstance.isPresent(),
                 "Cannot find called function instance for call at " + calledFromAddress
                         + ", skipping call");
+        final HornFunctionInstance calledInstance = optcalledInstance.get();
 
         // add the call graph edge for this new call. This represents a
         // function-to-function call chain
@@ -563,8 +577,7 @@ public abstract class GhiHornifier {
                 HornVariableName callerArgName = new HornVariableName(argVars.get(ord));
 
                 callerPred.getVariables().stream()
-                        .filter(v -> v.getVariableName().equals(callerArgName))
-                        .findFirst()
+                        .filter(v -> v.getVariableName().equals(callerArgName)).findFirst()
                         .ifPresent(argVar -> argConstraints
                                 .add(new EqExpression(argVar, calledParam)));
             }
@@ -585,10 +598,10 @@ public abstract class GhiHornifier {
             // called_post => post
 
             final String xid = HornPredicate.addressToId(calledFromAddress);
-            final HornFunctionInstance callerContract = hornProgram.getInstanceByID(xid);
-            if (callerContract != null) {
+            var optCallerContract = hornProgram.getInstanceByID(xid);
+            if (optCallerContract.isPresent()) {
 
-                Msg.info(this, "Call terminates function @ " + callerBlk.toString());
+                final HornFunctionInstance callerContract = optCallerContract.get();
 
                 final String postRuleName =
                         new StringBuilder(calledInstance.getPostcondition().getFullName())
@@ -596,9 +609,8 @@ public abstract class GhiHornifier {
                                 .toString();
 
                 hornProgram
-                        .addClause(
-                                new HornClause(postRuleName, calledInstance.getPostcondition(),
-                                        callerContract.getPostcondition()));
+                        .addClause(new HornClause(postRuleName, calledInstance.getPostcondition(),
+                                callerContract.getPostcondition()));
                 return;
             }
         }
@@ -814,7 +826,8 @@ public abstract class GhiHornifier {
 
                         HighSymbol paramHighSym = lsm.getParamSymbol(i);
                         phv = new HornVariable(new HornVariableName(paramHighSym.getName()),
-                                new GhiHornBitVectorType(), Scope.Function);
+                                new GhiHornBitVectorType(),
+                                Scope.Function);
                     }
 
                     entryProperty.addParameter(i, phv);
@@ -943,11 +956,6 @@ public abstract class GhiHornifier {
 
             hornFunction.addHornBlock(newBlock);
 
-            // At this point all the variables have been computed from the pcode so
-            // collect the globals and add them to the program
-            newBlock.getVariables().stream().filter(hv -> hv.getScope() == Scope.Global)
-                    .forEach(g -> hornProgram.addGlobalVariable(g));
-
             monitor.incrementProgress(1);
         }
 
@@ -1020,33 +1028,37 @@ public abstract class GhiHornifier {
     protected void hornifyFunction(final HornProgram hornProgram, final HornFunction hornFunction,
             TaskMonitor monitor) {
 
-        if (!hornFunction.isExternal()) {
+        if (!hornFunction.isExternal() && !hornFunction.isThunk()) {
             hornifyCfg(hornProgram, hornFunction, monitor);
         }
 
         // Parameters are the same for internal or external functions
         final Function function = hornFunction.getFunction();
+        final Program program = function.getProgram();
 
         HighFunction highFunc = hornFunction.getHighFunction();
+
         LocalSymbolMap lsm = null;
         if (highFunc != null) {
             lsm = highFunc.getLocalSymbolMap();
         }
 
-        for (int p = 0; p < function.getParameterCount(); p++) {
-            Parameter param = function.getParameter(p);
-            HornVariableName paramName = HornVariableName.make(param);
-            HornVariable hvp =
-                    new HornVariable(paramName, new GhiHornBitVectorType(), Scope.Local);
-            // If there is a high parameter, then prefer it
-            if (lsm != null) {
-                HighParam highParam = lsm.getParam(p);
-
-                // For some reason creating the parameter from the high variable
-                // breaks the connection
-                hvp.setHighVariable(highParam);
+        // Prefer the high symbols if they are there
+        if (lsm != null) {
+            for (int p = 0; p < lsm.getNumParams(); p++) {
+                HighParam param = lsm.getParam(p);
+                HornVariable hvp = new HornVariable(param);
+                hornFunction.addParameter(p, hvp);
             }
-            hornFunction.addParameter(p, hvp);
+        } else {
+
+            for (int p = 0; p < function.getParameterCount(); p++) {
+                Parameter param = function.getParameter(p);
+                HornVariableName paramName = HornVariableName.make(param);
+                HornVariable hvp =
+                        new HornVariable(paramName, new GhiHornBitVectorType(), Scope.Local);
+                hornFunction.addParameter(p, hvp);
+            }
         }
 
         if (hornFunction.isExternal()) {
@@ -1059,7 +1071,7 @@ public abstract class GhiHornifier {
                 try {
                     retName = HornVariableName.make(retParam);
                 } catch (VerifyException vx) {
-                    retName = new HornVariableName("ret", function.getName());
+                    retName = new HornVariableName("ret", function.getName(), program.getName());
                     Msg.warn(this,
                             "found nameless return, using default name: " + retName.getFullName());
                 }
@@ -1107,12 +1119,14 @@ public abstract class GhiHornifier {
             for (Address xref : callAddrList) {
 
                 // Add the instance to the program, one per call
-                hornProgram.addHornFunctionInstance(
-                        HornFunctionInstance.createInstance(hornProgram, hornFunction,
-                                xref));
+                hornProgram
+                        .addHornFunctionInstance(HornFunctionInstance.createInstance(hornProgram,
+                                hornFunction, xref));
             }
         }
     }
+
+
 
     /**
      * Evaluate the encoded horn program
@@ -1122,90 +1136,140 @@ public abstract class GhiHornifier {
      */
     public void evaluate(HornProgram hornProgram, TaskMonitor monitor) {
 
-        Set<GhiHornArgument<?>> arguments = getArguments(hornProgram);
+        monitor.setMessage("Querying signatures");
+
+        Set<GhiHornArgument<?>> arguments = getCoordinates(hornProgram);
 
         // Create a thread pool to run the queries. Need to revisit this because
         // the context is a shared object
         final GThreadPool pool = GThreadPool.getSharedThreadPool("GH");
 
+        // This does the real work of creating a new Z3 context in thread 
+        QCallback<GhiHornArgument<?>, GhiHornAnswer> argumentCallBack =
+                new QCallback<GhiHornArgument<?>, GhiHornAnswer>() {
+
+                    @Override
+                    public GhiHornAnswer process(GhiHornArgument<?> arg, TaskMonitor mon)
+                            throws Exception {
+
+                        GhiHornFixedPoint hornFx = null;
+                        hornFx = makeHornFixedPoint(hornProgram, arg, mon);
+
+                        // Creating a new context for each job, which is
+
+                        final GhiHornContext ctx = new GhiHornContext();
+                        final GhiHornAnswer result = new GhiHornAnswer();
+                        final Fixedpoint fx = hornFx.instantiate(ctx);
+
+                        result.fxString = fx.toString();
+                        result.arguments = arg;
+
+                        try {
+
+                            Status status = fx.query(hornFx.getGoalPredicate().instantiate(ctx));
+                            result.status = GhiHornFixedpointStatus.translate(status);
+
+                            if (result.status != GhiHornFixedpointStatus.Unknown) {
+
+                                result.answerGraph = new GhiHornAnswerGraphBuilder()
+                                        .forHornProgram(hornProgram)
+                                        .forZ3ProofCertificate(fx.getAnswer())
+                                        .withStatus(result.status)
+                                        .usingFixedPoint(hornFx)
+                                        .build()
+                                        .orElseThrow();
+
+                            } else {
+                                result.errorMessage = fx.getReasonUnknown();
+                            }
+                            return result;
+                        } catch (Exception e) {
+                            result.status = GhiHornFixedpointStatus.Error;
+                            result.errorMessage = e.getMessage();
+                            return result;
+                        } finally {
+                            ctx.close();
+                        }
+                    }
+                };
+
+        // Post new results as they become available
+        QItemListener<GhiHornArgument<?>, GhiHornAnswer> resultListener =
+                new QItemListener<GhiHornArgument<?>, GhiHornAnswer>() {
+                    public void itemProcessed(QResult<GhiHornArgument<?>, GhiHornAnswer> result) {
+                        try {
+                            updateResults(result.getResult());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                };
+        
+        // update progress processing the queue. This is just informational
+
+        QProgressListener<GhiHornArgument<?>> progressListener =
+                new QProgressListener<GhiHornArgument<?>>() {
+
+                    @Override
+                    public void progressChanged(long id, GhiHornArgument<?> item,
+                            long currentProgress) {
+                        // Nothing to do
+                    }
+
+                    @Override
+                    public void taskStarted(long id, GhiHornArgument<?> item) {
+                        Msg.info(GhiHornifier.this, "Starting query for " + item);
+                    }
+
+                    @Override
+                    public void taskEnded(long id, GhiHornArgument<?> item, long totalCount,
+                            long completedCount) {
+                        Msg.info(GhiHornifier.this, "Completed query for " + item + "("
+                                + completedCount + "/" + totalCount + ")");
+                    }
+
+                    @Override
+                    public void progressModeChanged(long id, GhiHornArgument<?> item,
+                            boolean indeterminate) {
+                        // Nothing to do
+                    }
+
+                    @Override
+                    public void progressMessageChanged(long id, GhiHornArgument<?> item,
+                            String message) {
+                        // Nothing to do
+                    }
+
+                    @Override
+                    public void maxProgressChanged(long id, GhiHornArgument<?> item,
+                            long maxProgress) {
+                        // Nothing to do
+                    }
+
+                };
+
         ConcurrentQ<GhiHornArgument<?>, GhiHornAnswer> queue =
                 new ConcurrentQBuilder<GhiHornArgument<?>, GhiHornAnswer>()
-                        .setThreadPool(pool).setMaxInProgress(1).setMonitor(monitor)
+                        .setThreadPool(pool)
+                        .setMaxInProgress(arguments.size())
+                        .setMonitor(monitor)
                         .setCollectResults(true)
-                        .build(new QCallback<GhiHornArgument<?>, GhiHornAnswer>() {
+                        .setListener(resultListener)
+                        .build(argumentCallBack);
 
-                            @Override
-                            public GhiHornAnswer process(GhiHornArgument<?> arg, TaskMonitor mon)
-                                    throws Exception {
-
-                                final GhiHornFixedPoint hornFx =
-                                        makeHornFixedPoint(hornProgram, arg, mon);
-
-                                final GhiHornContext ctx = new GhiHornContext();
-                                final GhiHornAnswer result = new GhiHornAnswer();
-                                final Fixedpoint fx = hornFx.instantiate(ctx);
-                                final BoolExpr goal = hornFx.getGoal().instantiate(ctx);
-
-                                result.fxString = fx.toString();
-                                result.arguments = arg;
-
-                                try {
-
-                                    Status status = fx.query(goal);
-                                    result.status = GhiHornFixedpointStatus.translate(status);
-
-                                    Msg.info(null, "Completed query: " + arg.toString());
-
-                                    if (result.status != GhiHornFixedpointStatus.Unknown) {
-                                        result.answerGraph =
-                                                new GhiHornAnswerGraphBuilder(hornProgram,
-                                                        result.status, hornFx,
-                                                        fx.getAnswer()).getGraph();
-                                    } else {
-                                        result.errorMessage = fx.getReasonUnknown();
-                                    }
-                                    return result;
-                                } catch (Exception e) {
-                                    result.status = GhiHornFixedpointStatus.Error;
-                                    result.errorMessage = e.getMessage();
-                                    return result;
-                                } finally {
-                                    ctx.close();
-                                }
-                            }
-                        });
-
+        queue.addProgressListener(progressListener);
         queue.add(arguments);
 
-        int expected = arguments.size();
-        int progress = 0;
-
         try {
+
+            // Every five seconds check for termination
+
             while (!queue.isEmpty() && !isCancelled) {
-
-                Collection<QResult<GhiHornArgument<?>, GhiHornAnswer>> results =
-                        queue.waitForResults(5,
-                                TimeUnit.SECONDS);
-
-                progress += results.size();
-
-                Msg.info(GhiHornifier.class, "Completed " + progress + "/" + expected + " tasks");
-
-                results.forEach(r -> {
-                    try {
-                        updateResults(r.getResult());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+                queue.waitForResults(5, TimeUnit.SECONDS);
             }
-
             if (isCancelled) {
-                Msg.info(this, "Cancelled with " + (expected - progress) + " tasks not completed");
                 queue.cancelAllTasks(true);
             }
-
-
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -1223,16 +1287,12 @@ public abstract class GhiHornifier {
     /**
      * Configure the encoder
      * 
-     * @param settings
+     * @param parameters
      * @return true if successfully configured; false otherwise
      */
 
-    public boolean configure(Map<String, Object> settings) {
-
-        this.apiDatabaseService = (ApiDatabaseService) settings.get(GhiHornPlugin.API_DB);
-        this.z3Parameters = (GhiHornZ3Parameters) settings.get(GhiHornPlugin.Z3_PARAMS);
-
-        return this.apiDatabaseService != null && configureTool(settings);
+    public boolean verifyConfiguration() {
+        return this.apiDatabase != null && this.entryPoint != null && configureTool(parameters);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -1282,6 +1342,16 @@ public abstract class GhiHornifier {
      * 
      * @return
      */
-    public abstract Set<GhiHornArgument<?>> getArguments(HornProgram hornPraogram);
+    public abstract Set<GhiHornArgument<?>> getCoordinates(HornProgram hornProgram);
+
+    public void setZ3Parameters(GhiHornZ3Parameters z3Params) {
+        this.z3Parameters = z3Params;
+    }
+
+    public void setEntryPoint(Address ep) {
+        this.entryPoint = ep;
+    }
+
+    public void setHornProgram(HornProgram hornProgram) {}
 
 }

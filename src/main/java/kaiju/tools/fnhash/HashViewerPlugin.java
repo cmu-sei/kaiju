@@ -31,46 +31,49 @@
  */
 package kaiju.tools.fnhash;
 
-import javax.swing.ImageIcon;
 import java.io.File;
 
+import javax.swing.ImageIcon;
+
 import docking.ActionContext;
-import docking.action.*;
+import docking.action.DockingAction;
+import docking.action.MenuData;
+import docking.action.ToolBarData;
 import docking.widgets.OptionDialog;
-import docking.widgets.dialogs.SettingsDialog;
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.table.GTable;
-import ghidra.MiscellaneousPluginPackage;
-import ghidra.app.CorePluginPackage;
 import ghidra.app.events.ProgramSelectionPluginEvent;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
 import ghidra.app.plugin.core.data.DataSettingsDialog;
 import ghidra.app.services.GoToService;
-import ghidra.framework.model.*;
-import ghidra.framework.options.Options;
+import ghidra.framework.model.DomainObject;
+import ghidra.framework.model.DomainObjectChangeRecord;
+import ghidra.framework.model.DomainObjectChangedEvent;
+import ghidra.framework.model.DomainObjectListener;
 import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.framework.preferences.Preferences;
-import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
-import ghidra.program.util.*;
+import ghidra.program.util.ChangeManager;
+import ghidra.program.util.ProgramChangeRecord;
+import ghidra.program.util.ProgramLocation;
+import ghidra.program.util.ProgramSelection;
 import ghidra.util.HelpLocation;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.table.GhidraTable;
 import ghidra.util.table.SelectionNavigationAction;
 import ghidra.util.table.actions.MakeProgramSelectionAction;
 import ghidra.util.task.SwingUpdateManager;
+import kaiju.common.KaijuLogger;
+import kaiju.common.KaijuPluginPackage;
+import kaiju.export.GTableToCSV;
+import kaiju.tools.fnhashclassic.GTableToYARA;
+import kaiju.tools.fnhashclassic.HeadlessToCSV;
 import resources.Icons;
 import resources.ResourceManager;
-
-import kaiju.common.*;
-import kaiju.export.GTableToCSV;
-import kaiju.tools.fnhash.FnHashAnalyzer;
-import kaiju.tools.fnhashclassic.HeadlessToCSV;
-import kaiju.tools.fnhashclassic.GTableToYARA;
 
 /**
  * Plugin that provides the "Defined Strings" table, where all the currently defined
@@ -90,7 +93,6 @@ import kaiju.tools.fnhashclassic.GTableToYARA;
 //@formatter:on
 public class HashViewerPlugin extends ProgramPlugin implements DomainObjectListener, KaijuLogger {
 
-    private DockingAction selectAction;
     private DockingAction showSettingsAction;
     private SelectionNavigationAction linkNavigationAction;
     private HashViewerProvider provider;

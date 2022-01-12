@@ -1,30 +1,43 @@
 package kaiju.tools.ghihorn.hornifer.horn;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import com.google.common.base.VerifyException;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
+import ghidra.app.util.bin.BinaryReader;
+import ghidra.app.util.bin.ByteProvider;
+import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.graph.DefaultGEdge;
 import ghidra.graph.GDirectedGraph;
 import ghidra.graph.GraphFactory;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.FunctionIterator;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.Memory;
+import ghidra.program.model.pcode.HighFunction;
+import ghidra.program.model.pcode.HighGlobal;
+import ghidra.program.model.pcode.HighSymbol;
+import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.util.ProgramLocation;
-import ghidra.util.task.TaskMonitor;
 import kaiju.tools.ghihorn.hornifer.block.HornBlock;
+import kaiju.tools.ghihorn.hornifer.block.HornBlockProperty;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornElement;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornFact;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornPredicate;
+import kaiju.tools.ghihorn.hornifer.horn.variable.HornConstant;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariableName;
 
@@ -32,10 +45,13 @@ import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariableName;
  * More or less a container for the horn things
  */
 public class HornProgram {
-    
+
     private final Program program;
-    private final Set<HornFunction> functions;
-    private final List<Address> entryPointAddrs;
+    private final Set<HornFunction> hornFunctions;
+    private final Set<HornFunction> externalFunctions;
+    private final Set<HornFunction> thunkFunctions;
+    private final Address entryPointAddr;
+    private HornPredicate entryPointPredicate;
 
     // Because of function instances, one block can be mapped to mulutple horn
     // predicates differntiated by IDs
@@ -43,10 +59,18 @@ public class HornProgram {
     private final Map<String, HornFunctionInstance> idToInstanceMap;
     private final Map<String, Set<HornFunctionInstance>> nameToInstanceMap;
     private final Map<String, Set<HornPredicate>> idToPredicateMap;
+
+    // Global variables and there initialized global variables. The initialized
+    // globals are akin to BSS values
     private final Set<HornVariable> globalVariableSet;
+    private final Map<HornVariable, HornConstant> initializedGlobalVariables;
+
+    private HornFunctionInstance entryPointFuncInst;
     private final Set<HornPredicate> predicates;
-    private final Set<HornPredicate> entryPointPreds;
+    private final Set<HornPredicate> callerPreds;
     private final Set<HornClause> clauses;
+    private final MultiValuedMap<String, HornClause> apiCallingClauses;
+    private final MultiValuedMap<String, HornClause> apiReturningClauses;
     private final Set<HornFact> facts;
 
     // More or less a call graph to find the calls from each predicate
@@ -57,35 +81,52 @@ public class HornProgram {
      * 
      * @param p
      */
-    public HornProgram(final Program p) {
+    public HornProgram(final Program p, Address ep) {
         this.program = p;
 
         this.callTreeGraph = GraphFactory.createDirectedGraph();
 
         // A synchronized set can always be derived from a concurrent map
-        this.functions = new HashSet<>();
+        this.hornFunctions = new TreeSet<>(
+                Comparator.comparing(HornFunction::getName,
+                        Comparator.nullsFirst(String::compareTo)));
+
+        this.externalFunctions = new TreeSet<>(
+                Comparator.comparing(HornFunction::getName,
+                        Comparator.nullsFirst(String::compareTo)));
+
+        this.thunkFunctions = new TreeSet<>(
+            Comparator.comparing(HornFunction::getName,
+                    Comparator.nullsFirst(String::compareTo)));
+
         this.predicates = new HashSet<>();
-        this.entryPointPreds = new HashSet<>();
+        this.callerPreds = new HashSet<>();
 
         this.idToPredicateMap = new HashMap<>();
-        this.nameToInstanceMap = new HashMap<>();
+
+        // Make this case insensitive
+        this.nameToInstanceMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         this.blockToPredicateMap = new HashMap<>();
+        this.initializedGlobalVariables = new HashMap<>();
         this.globalVariableSet = new HashSet<>();
         this.idToInstanceMap = new HashMap<>();
         this.clauses = new HashSet<>();
+        this.apiCallingClauses = new HashSetValuedHashMap<>();
+        this.apiReturningClauses = new HashSetValuedHashMap<>();
         this.facts = new HashSet<>();
-        this.entryPointAddrs = new ArrayList<>();
-        this.program.getSymbolTable().getExternalEntryPointIterator().forEach(entryPointAddrs::add);
-        
-        // We also need to account for functions that have no callers as entry points
-        FunctionIterator fItr = p.getFunctionManager().getFunctions(true);
-        while (fItr.hasNext()) {
-            Function func = fItr.next();
-            Set<Function> callers = func.getCallingFunctions(TaskMonitor.DUMMY);
-            if (callers.isEmpty()) {
-                entryPointAddrs.add(func.getEntryPoint());
-            }
-        }
+
+        this.entryPointAddr = ep;
+        this.entryPointFuncInst = null;
+        this.entryPointPredicate = null;
+    }
+
+    /**
+     * Fetch the values for initialized global variables
+     * 
+     * @return
+     */
+    public Map<HornVariable, HornConstant> initializedGlobals() {
+        return initializedGlobalVariables;
     }
 
     /**
@@ -94,7 +135,7 @@ public class HornProgram {
      * @param fact
      */
     public void addFact(final HornFact fact) throws VerifyException {
-      
+
         this.facts.add(fact);
     }
 
@@ -103,12 +144,13 @@ public class HornProgram {
      * @return just the facts
      */
     public Set<HornFact> getFacts() {
-      
+
         return this.facts;
     }
 
     /**
-     * Add a predicate to this program
+     * Add a predicate to this program. The predicate includes all global variables, function
+     * variables, and local variables
      * 
      * @param hornFunction
      * @param blk
@@ -122,7 +164,7 @@ public class HornProgram {
         // Create a sorted set for variables that are sorted by the string for
         // the expression
         SortedSet<HornVariable> variables = new TreeSet<>(
-                Comparator.comparing(HornVariable::formatName,
+                Comparator.comparing(HornVariable::getName,
                         Comparator.nullsFirst(String::compareTo)));
 
         for (HornVariable v : vars) {
@@ -140,7 +182,8 @@ public class HornProgram {
         // Add preconditions from the function if it already created. The
         // variables in the precondition predicate will be the
         // function-level variables, such as parameters and preserved state.
-        final HornFunctionInstance instance = getInstanceByID(id);
+
+        final HornFunctionInstance instance = this.idToInstanceMap.get(id);
         Set<HornVariable> funcVars = new HashSet<>();
         if (instance != null) {
             HornPredicate precondition = instance.getPrecondition();
@@ -161,15 +204,7 @@ public class HornProgram {
 
         this.predicates.add(pred);
 
-        if (idToPredicateMap.containsKey(id)) {
-            this.idToPredicateMap.get(id).add(pred);
-        } else {
-            this.idToPredicateMap.put(id, new HashSet<>() {
-                {
-                    add(pred);
-                }
-            });
-        }
+        idToPredicateMap.computeIfAbsent(id, i -> new HashSet<>()).add(pred);
 
         return pred;
     }
@@ -191,8 +226,8 @@ public class HornProgram {
 
         // If a block with this ID already exists, then return it
         if (blockToPredicateMap.containsKey(blk)) {
-            Set<HornPredicate> callerPreds = blockToPredicateMap.get(blk);
-            for (HornPredicate pred : callerPreds) {
+            Set<HornPredicate> blkCallerPreds = blockToPredicateMap.get(blk);
+            for (HornPredicate pred : blkCallerPreds) {
                 if (pred.getInstanceId().equals(id)) {
                     return pred;
                 }
@@ -208,15 +243,13 @@ public class HornProgram {
 
         Program fnProg = funcInstance.getHornFunction().getFunction().getProgram();
         final ProgramLocation loc = new ProgramLocation(fnProg, blk.getStartAddress());
+
         final HornPredicate pred = makeHornPredicate(hornFunction, predName, id, loc, allVars);
+
         pred.setHornBlock(blk);
 
-        // Save the entry point predicates for this horn program
-        for (Address ep : entryPointAddrs) {
-            if (blk.containsAddress(ep)) {
-                entryPointPreds.add(pred);
-                break;
-            }
+        if (blk.hasProperty(HornBlockProperty.Property.Call)) {
+            this.callerPreds.add(pred);
         }
 
         if (blockToPredicateMap.containsKey(blk)) {
@@ -230,6 +263,46 @@ public class HornProgram {
         }
 
         return pred;
+    }
+
+    public Optional<HornPredicate> getEntryPredicate() {
+
+        if (this.entryPointPredicate == null) {
+
+            List<HornPredicate> entryList = predicates.stream()
+                    .filter(p -> p.getLocator().getAddress().equals(entryPointAddr))
+                    .collect(Collectors.toList());
+
+            if (entryList.size() == 1) {
+                this.entryPointPredicate = entryList.get(0);
+                this.entryPointPredicate.makeEntry();
+
+            } else if (entryList.size() > 1) {
+
+                // Favor the precondition as it will be first
+                for (HornPredicate p : entryList) {
+                    if (p.isPrecondition()) {
+                        this.entryPointPredicate = p;
+                        break;
+                    }
+                }
+                if (this.entryPointPredicate == null) {
+                    this.entryPointPredicate = entryList.get(0);
+                }
+                this.entryPointPredicate.makeEntry();
+            }
+        }
+        return Optional.ofNullable(this.entryPointPredicate);
+
+    }
+
+    /**
+     * Fetch the predicates that contain a call
+     * 
+     * @return
+     */
+    public Set<HornPredicate> getCallerPreds() {
+        return this.callerPreds;
     }
 
     /**
@@ -253,17 +326,10 @@ public class HornProgram {
     }
 
     /**
-     * @return the entryPointAddrs
-     */
-    public List<Address> getEntryPointAddresses() {
-        return entryPointAddrs;
-    }
-
-    /**
      * @return the entryPointPreds
      */
-    public Set<HornPredicate> getEntryPointPredicates() {
-        return entryPointPreds;
+    public HornFunctionInstance getEntryPointFunctionInstance() {
+        return entryPointFuncInst;
     }
 
     /**
@@ -271,8 +337,11 @@ public class HornProgram {
      * @param a
      * @return
      */
-    public HornFunctionInstance getInstanceByID(final String id) {
-        return this.idToInstanceMap.get(id);
+    public Optional<HornFunctionInstance> getInstanceByID(final String id) {
+        if (this.idToInstanceMap.containsKey(id)) {
+            return Optional.of(this.idToInstanceMap.get(id));
+        }
+        return Optional.empty();
     }
 
     /**
@@ -285,29 +354,71 @@ public class HornProgram {
         if (instance != null) {
             this.idToInstanceMap.put(instance.getInstanceId(), instance);
 
-            final String funcName = instance.getHornFunction().getName();
-            if (this.nameToInstanceMap.containsKey(funcName)) {
-                this.nameToInstanceMap.get(funcName).add(instance);
-            } else {
-                this.nameToInstanceMap.put(funcName, new HashSet<>() {
-                    {
-                        add(instance);
-                    }
-                });
+            Address instanceAddr = instance.getHornFunction().getFunction().getEntryPoint();
+            if (entryPointAddr.equals(instanceAddr)) {
+                entryPointFuncInst = instance;
             }
+
+            final String funcName = instance.getHornFunction().getName();
+            this.nameToInstanceMap.computeIfAbsent(funcName, k -> new HashSet<>()).add(instance);
         }
+    }
+
+    /**
+     * @return the entryPointAddr
+     */
+    public Address getEntryPointAddr() {
+        return entryPointAddr;
     }
 
     /**
      * Add a global variable if it has not been previously found
      * 
-     * @param gv
+     * @param newGlobalVar
      */
-    public void addGlobalVariable(final HornVariable gv) {
+    public void addGlobalVariable(final HornVariable newGlobalVar) {
 
         // Not strictly needed by makes things a bit more explicit
-        if (!this.globalVariableSet.contains(gv)) {
-            this.globalVariableSet.add(gv);
+        if (!this.globalVariableSet.contains(newGlobalVar)) {
+            this.globalVariableSet.add(newGlobalVar);
+
+            // Attempt to read the initilized value of this variable
+
+            final HighVariable newGlobalHighVar = newGlobalVar.getHighVariable();
+            if (newGlobalHighVar == null) {
+                return;
+            }
+
+            final Program hvProgram = newGlobalHighVar.getHighFunction().getFunction().getProgram();
+            final Memory memory = hvProgram.getMemory();
+            final ByteProvider provider = new MemoryByteProvider(memory,
+                    hvProgram.getAddressFactory().getDefaultAddressSpace());
+            final BinaryReader reader = new BinaryReader(provider, !memory.isBigEndian());
+
+            try {
+                // the representative varnode seems to be the declare location
+                final DataType hvDataType = newGlobalHighVar.getDataType();
+                HornConstant globalVariableValue = null;
+
+                if (hvDataType.getLength() == Long.BYTES) {
+                    globalVariableValue = new HornConstant(
+                            reader.readLong(newGlobalHighVar.getRepresentative().getOffset()));
+                } else if (hvDataType.getLength() == Integer.BYTES) {
+                    globalVariableValue = new HornConstant(
+                            reader.readInt(newGlobalHighVar.getRepresentative().getOffset()));
+                } else if (hvDataType.getLength() == Byte.BYTES) {
+                    globalVariableValue = new HornConstant(
+                            reader.readByte(newGlobalHighVar.getRepresentative().getOffset()));
+                }
+
+                // TODO: are any other meaningful sizes? what about static arrays?
+                if (globalVariableValue != null) {
+                    initializedGlobalVariables.put(newGlobalVar, globalVariableValue);
+                }
+
+            } catch (IOException e) {
+                // There is no value
+            }
         }
     }
 
@@ -342,44 +453,49 @@ public class HornProgram {
      */
     public void addClause(final HornClause clause) {
 
+        if (clauses.contains(clause)) {
+            return;
+        }
+
         final HornElement body = clause.getBody();
         final HornElement head = clause.getHead();
+        final String bodyName = clause.getBody().getName();
 
-        if (!this.predicates.contains(clause.getBody())) {
+        // Record some information about the clause, such as whether it is a call to or return from
+        // an API
+
+        int callStartPos = bodyName.lastIndexOf("_pre");
+        if (callStartPos != -1) {
+            final String apiName = bodyName.substring(0, callStartPos);
+            for (HornFunction exf : this.externalFunctions) {
+                if (exf.getName().equals(apiName)) {
+                    this.apiCallingClauses.put(apiName.toUpperCase(), clause);
+                    break;
+                }
+            }
+        }
+        int callEndPos = bodyName.lastIndexOf("_post");
+        if (callEndPos != -1) {
+            final String apiName = bodyName.substring(0, callEndPos);
+            for (HornFunction exf : this.externalFunctions) {
+                if (exf.getName().equals(apiName)) {
+                    this.apiReturningClauses.put(apiName.toUpperCase(), clause);
+                    break;
+                }
+            }
+        }
+
+        if (!this.predicates.contains(body)) {
             if (body instanceof HornPredicate) {
                 this.predicates.add((HornPredicate) body);
             }
         }
-        if (!this.predicates.contains(clause.getHead())) {
+        if (!this.predicates.contains(head)) {
             if (head instanceof HornPredicate) {
                 this.predicates.add((HornPredicate) head);
             }
         }
         this.clauses.add(clause);
-    }
-
-    public GDirectedGraph<HornElement, DefaultGEdge<HornElement>> buildClauseGraph() {
-
-        // A gradphical representation of addresses from the clauses
-        final GDirectedGraph<HornElement, DefaultGEdge<HornElement>> clauseGraph =
-                GraphFactory.createDirectedGraph();
-
-        for (HornClause c : clauses) {
-            final HornElement from = c.getBody();
-            final HornElement to = c.getHead();
-
-            if (!clauseGraph.containsVertex(from)) {
-                clauseGraph.addVertex(from);
-            }
-            if (!clauseGraph.containsVertex(to)) {
-                clauseGraph.addVertex(to);
-            }
-            var edge = new DefaultGEdge<>(from, to);
-            if (!clauseGraph.containsEdge(edge)) {
-                clauseGraph.addEdge(edge);
-            }
-        }
-        return clauseGraph;
     }
 
     /**
@@ -397,6 +513,15 @@ public class HornProgram {
             callTreeGraph.addVertex(to);
         }
         callTreeGraph.addEdge(new DefaultGEdge<>(from, to));
+    }
+
+    public Optional<HornClause> findClause(String name) {
+        for (HornClause c : clauses) {
+            if (c.getName().equals(name)) {
+                return Optional.of(c);
+            }
+        }
+        return Optional.empty();
     }
 
     /**
@@ -435,7 +560,7 @@ public class HornProgram {
      * @return
      */
     public Optional<HornBlock> findBlockContainingAddress(final Address address) {
-        for (HornFunction func : functions) {
+        for (HornFunction func : hornFunctions) {
             if (func.containsAddress(address)) {
                 for (HornBlock hb : func.getBlocks()) {
                     if (hb.containsAddress(address)) {
@@ -454,12 +579,34 @@ public class HornProgram {
      * @return the found horn function or empty
      */
     public Optional<HornFunction> findFunctionContainingAddress(final Address addr) {
-        for (var func : this.functions) {
+        for (var func : this.hornFunctions) {
             if (func.containsAddress(addr)) {
                 return Optional.of(func);
             }
         }
         return Optional.empty();
+    }
+
+    public boolean addExternalFunction(final HornFunction extHornFunc) {
+        externalFunctions.add(extHornFunc);
+
+        return addFunction(extHornFunc);
+    }
+
+    /**
+     * Return set of external functions
+     */
+    public Set<HornFunction> getExternallFunctions() {
+        return this.externalFunctions;
+    }
+
+    /**
+     * Return the set of thunks
+     * 
+     * @return
+     */
+    public Set<HornFunction> getThunkFunctions() {
+        return this.thunkFunctions;
     }
 
     /**
@@ -468,7 +615,36 @@ public class HornProgram {
      * @return
      */
     public boolean addFunction(final HornFunction f) {
-        return functions.add(f);
+
+
+        if (!hornFunctions.contains(f)) {
+
+            hornFunctions.add(f);
+
+            final HighFunction highFunc = f.getHighFunction();
+
+            if (highFunc != null) {
+
+                // Attempt to add all the global variables in this function. The nature of the
+                // variable does not matter, global variables are passed to all predicates
+
+                Iterator<HighSymbol> symIter = highFunc.getGlobalSymbolMap().getSymbols();
+                while (symIter.hasNext()) {
+                    HighSymbol sym = symIter.next();
+                    HighVariable highVar = sym.getHighVariable();
+                    if (highVar instanceof HighGlobal) {
+                        HornVariable globalHv = HornVariable.mkVariable(highVar);
+                        addGlobalVariable(globalHv);
+                    }
+                }
+            }
+
+            // Save some notion of thunk-ness
+            if (f.isThunk()) {
+                this.thunkFunctions.add(f);
+            }
+        }
+        return false;
     }
 
     /**
@@ -477,7 +653,7 @@ public class HornProgram {
      * @return defined horn functions
      */
     public Set<HornFunction> getHornFunctions() {
-        return this.functions;
+        return this.hornFunctions;
     }
 
     /*
@@ -502,14 +678,17 @@ public class HornProgram {
      * @return program name
      */
     public String getName() {
+
         return program.getName();
     }
 
     public Program getProgram() {
+
         return this.program;
     }
 
     public Map<String, HornFunctionInstance> getFunctionInstances() {
+
         return this.idToInstanceMap;
     }
 
@@ -518,5 +697,33 @@ public class HornProgram {
      */
     public GDirectedGraph<HornPredicate, DefaultGEdge<HornPredicate>> getCallGraph() {
         return callTreeGraph;
+    }
+
+    /**
+     * @return the all the clauses that r
+     */
+    public Collection<HornClause> getAllApiReturningClauses() {
+        return apiReturningClauses.values();
+    }
+
+    /**
+     * @return the apiCallingClauses
+     */
+    public Collection<HornClause> getAllApiCallingClauses() {
+        return apiCallingClauses.values();
+    }
+
+    /**
+     * @return the apiReturningClauses
+     */
+    public Collection<HornClause> getApiReturningClauses(final String apiName) {
+        return apiReturningClauses.get(apiName.toUpperCase());
+    }
+
+    /**
+     * @return the apiCallingClauses
+     */
+    public Collection<HornClause> getApiCallingClauses(final String apiName) {
+        return apiCallingClauses.get(apiName.toUpperCase());
     }
 }

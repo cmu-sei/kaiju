@@ -2,6 +2,7 @@ package kaiju.tools.ghihorn.api;
 
 import org.python.google.common.base.Verify;
 import ghidra.program.model.listing.Function;
+import kaiju.tools.ghihorn.tools.apianalyzer.ApiFunction;
 
 /**
  * This class is to ensure consistent naming throughout the tool
@@ -44,7 +45,7 @@ public class ApiEntry {
     }
 
     public String formatApiName() {
-        return new StringBuilder(libName).append("::").append(apiName).toString().toUpperCase();
+        return new StringBuilder(libName).append(ApiFunction.API_NAME_SEPARATOR).append(apiName).toString().toUpperCase();
     }
 
     /**
@@ -115,6 +116,6 @@ public class ApiEntry {
 
     @Override
     public String toString() {
-        return new StringBuilder(libName).append("::").append(apiName).toString();
+        return new StringBuilder(libName).append(ApiFunction.API_NAME_SEPARATOR).append(apiName).toString();
     }
 }

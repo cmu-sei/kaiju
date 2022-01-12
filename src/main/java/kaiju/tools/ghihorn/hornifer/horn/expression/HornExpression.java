@@ -20,6 +20,8 @@ public interface HornExpression {
      * @throws Z3Exception
      */
     public Expr<? extends Sort> instantiate(GhiHornContext ctx);
+
     public GhiHornType getType();
+
     public HornExpression[] getComponents();
 }

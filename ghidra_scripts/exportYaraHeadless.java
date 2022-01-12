@@ -30,27 +30,19 @@
  * DM21-0792
  */
 import java.io.File;
-import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.util.StringJoiner;
-import java.lang.StringBuilder;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-
 import ghidra.app.script.GhidraScript;
-
-import ghidra.program.model.util.PropertyMapManager;
-import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.Address;
-import ghidra.util.Msg;
-import ghidra.util.task.*;
-
+import ghidra.program.model.address.AddressIterator;
+import ghidra.program.model.util.ObjectPropertyMap;
+import ghidra.program.model.util.PropertyMapManager;
+import ghidra.util.task.ConsoleTaskMonitor;
+import ghidra.util.task.TaskMonitor;
 import kaiju.hashing.FnHashSaveable;
 import kaiju.tools.fnhashclassic.FnUtils;
-import kaiju.tools.fnhash.HashViewerTableModel;
 import kaiju.util.ByteArrayList;
 import kaiju.util.HexUtils;
 

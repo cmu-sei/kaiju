@@ -1,15 +1,15 @@
 package kaiju.tools.ghihorn;
 
-import kaiju.common.*;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import docking.action.DockingAction;
 import docking.action.builder.ActionBuilder;
 import ghidra.app.events.ProgramSelectionPluginEvent;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
+import ghidra.app.plugin.core.analysis.AutoAnalysisManagerListener;
 import ghidra.app.plugin.core.colorizer.ColorizingService;
 import ghidra.app.services.GhidraScriptService;
 import ghidra.app.services.GoToService;
@@ -18,68 +18,56 @@ import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressIterator;
+import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.util.ProgramSelection;
 import ghidra.util.Msg;
 import ghidra.util.SystemUtilities;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
-import kaiju.tools.ghihorn.api.ApiDatabaseService;
-import kaiju.tools.ghihorn.display.GhiHornFrontEnd;
-import kaiju.tools.ghihorn.hornifer.GhiHornifier;
-import kaiju.tools.ghihorn.tools.apianalyzer.ApiAnalyzerFrontEnd;
-import kaiju.tools.ghihorn.tools.apianalyzer.ApiAnalyzerHornifier;
-import kaiju.tools.ghihorn.tools.pathanalyzer.PathAnalyzerFrontEnd;
-import kaiju.tools.ghihorn.tools.pathanalyzer.PathAnalyzerHornifier;
+import kaiju.tools.ghihorn.api.ApiDatabase;
+import kaiju.tools.ghihorn.api.GhiHornApiDatabase;
+import kaiju.tools.ghihorn.cmd.GhiHornCommand;
+import kaiju.tools.ghihorn.decompiler.GhiHornParallelDecompiler;
+import kaiju.tools.ghihorn.decompiler.GhiHornSimpleDecompiler;
+import kaiju.tools.ghihorn.display.GhiHornController;
+import kaiju.tools.ghihorn.tools.apianalyzer.ApiAnalyzerController;
+import kaiju.tools.ghihorn.tools.pathanalyzer.PathAnalyzerController;
 
 //@formatter:off
 @PluginInfo(
 	status = PluginStatus.UNSTABLE,
-	packageName = KaijuPluginPackage.NAME,
+	packageName = GhiHornPlugin.PLUGIN_NAME,
 	category = PluginCategoryNames.ANALYSIS,
-	shortDescription = "CERT Analyze horn clauses",
+	shortDescription = "Analyze horn clauses",
 	description = "Generate and analyze horn clauses using z3 and Ghidra.",
     servicesRequired = {GoToService.class, 
                         ColorizingService.class,       
                         GhidraScriptService.class, 
-                        ProgramManager.class,
-                        ApiDatabaseService.class},
+                        ProgramManager.class},
 	eventsProduced = { ProgramSelectionPluginEvent.class }	
 )
 //@formatter:on
 /**
  * The main plugin class
  */
-public class GhiHornPlugin extends ProgramPlugin {
+public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerListener {
 
     public static final String PLUGIN_NAME = "GhiHorn";
-    public static final String API_DB = "GH:API";
 
     // Universal configuration settings used by all tools
-    public static final String TOOL_NAME = "GH:ToolName";
-    public static final String Z3_PARAMS = "GH:Z3PARAMS";
+    public static final String HORNIFIER_NAME = "GH:Hornifier";
 
     // The API service
-    private ApiDatabaseService apiDatabaseService;
+    private GhiHornApiDatabase apiDatabase;
 
-    // The configuration of tools
-    private final Map<String, GhiHornToolConfig> ghiHornTools;
-    
     private TaskMonitor monitor;
 
     // This is the base component provider for the plugin
     private GhiHornProvider provider;
 
-    // Utility class to maintain the mapping of front end to back end
-    private class GhiHornToolConfig {
-        public GhiHornToolConfig(GhiHornFrontEnd front, GhiHornifier back) {
-            frontEnd = front;
-            backEnd = back;
-            backEnd.registerListener(frontEnd, front.getEventConfig());
-        }
-        GhiHornFrontEnd frontEnd;
-        GhiHornifier backEnd;
-    }
+    private DockingAction ghihornAction;
 
     /**
      * Plugin constructor
@@ -90,37 +78,19 @@ public class GhiHornPlugin extends ProgramPlugin {
 
         super(tool, true, true);
 
-        provider = null;
         monitor = new TaskMonitorAdapter(true);
-        ghiHornTools = new HashMap<>();
 
         Msg.info(this, PLUGIN_NAME + " plugin loaded.");
     }
+
 
     /**
      * Execute the plugin by launching a background command
      * 
      * @param model
      */
-    public boolean execute(Map<String, Object> settings) throws RuntimeException {
-
-        if (settings == null) {
-            return false;
-        }
-
-        final String toolName = (String) settings.get(TOOL_NAME);
-        if (toolName == null) {
-            return false;
-        }
-        var toolConfig = ghiHornTools.get(toolName);
-        if (toolConfig == null) {
-            throw new RuntimeException("Could not find hornifier for tool: " + toolName);
-        }
-
-        final GhiHornCommand cmd = new GhiHornCommand(this, toolConfig.backEnd, settings);
+    public void execute(GhiHornCommand cmd) throws RuntimeException {
         this.tool.executeBackgroundCommand(cmd, currentProgram);
-
-        return true;
     }
 
     public void cancel() {
@@ -136,8 +106,8 @@ public class GhiHornPlugin extends ProgramPlugin {
 
     @Override
     protected void dispose() {
-        if (apiDatabaseService != null) {
-            apiDatabaseService.freeApiLibraries();
+        if (apiDatabase != null) {
+            apiDatabase.freeApiLibraries();
         }
     }
 
@@ -149,39 +119,41 @@ public class GhiHornPlugin extends ProgramPlugin {
 
         super.programActivated(program);
 
-        ghiHornTools.put(PathAnalyzerFrontEnd.NAME, new GhiHornToolConfig(
-                new PathAnalyzerFrontEnd(this), new PathAnalyzerHornifier()));
-
-        ghiHornTools.put(ApiAnalyzerFrontEnd.NAME, new GhiHornToolConfig(
-                new ApiAnalyzerFrontEnd(this), new ApiAnalyzerHornifier()));
-
         // Rerun auto analysis to remove/fix badness, such as non-returning
-        // functions
+        // funcitons
         AutoAnalysisManager aam = AutoAnalysisManager.getAnalysisManager(program);
         if (!aam.isAnalyzing()) {
+            Msg.info(this, "Rerunning auto-analysis");
             aam.reAnalyzeAll(program.getMemory());
         }
+
+        aam.addListener(this);
 
         // Install a new action to show the GhiHorn interface
         if (!SystemUtilities.isInHeadlessMode()) {
 
-            final List<GhiHornFrontEnd> frontEnds =
-                    ghiHornTools.values().stream().map(p -> p.frontEnd)
-                            .collect(Collectors.toList());
+            List<GhiHornController> controllers = Arrays.asList(new GhiHornController[] {
+                    new PathAnalyzerController(this), new ApiAnalyzerController(this)});
 
-            this.provider = new GhiHornProvider(tool, this, frontEnds);
-            new ActionBuilder("Open GhiHorn", getName())
+            this.provider = new GhiHornProvider(tool, this, controllers);
+
+            this.ghihornAction = new ActionBuilder("Open GhiHorn", getName())
                     .supportsDefaultToolContext(true)
-                    .menuPath("&Kaiju", "GhiHorn")
+                    .menuPath("&CERT", "GhiHorn")
                     .onAction(c -> provider.setVisible(true))
                     .menuIcon(null)
                     .keyBinding("ctrl G")
+                    .enabled(false)
                     .buildAndInstall(tool);
         } else {
             Msg.info(this, "Running in headless mode, use the GhiHorn script!");
         }
 
-        this.apiDatabaseService = this.tool.getService(ApiDatabaseService.class);
+        if (!SystemUtilities.isInHeadlessMode()) {
+            this.apiDatabase = new GhiHornApiDatabase(new GhiHornSimpleDecompiler());
+        } else {
+            this.apiDatabase = new GhiHornApiDatabase(new GhiHornParallelDecompiler(this.tool));
+        }
 
         Msg.info(this, PLUGIN_NAME + " activated");
     }
@@ -215,7 +187,33 @@ public class GhiHornPlugin extends ProgramPlugin {
         this.provider = provider;
     }
 
-    public ApiDatabaseService getApiService() {
-        return this.apiDatabaseService;
+    public ApiDatabase getApiDatabase() {
+        return this.apiDatabase;
+    }
+
+
+    @Override
+    public void analysisEnded(AutoAnalysisManager manager) {
+
+        List<Address> entryPoints = new ArrayList<>();
+        AddressIterator ai = this.currentProgram.getSymbolTable().getExternalEntryPointIterator();
+
+        while (ai.hasNext()) {
+            Address extAddr = ai.next();
+            Function entryFunc = this.currentProgram.getFunctionManager().getFunctionAt(extAddr);
+            if (entryFunc != null) {
+
+                // The name "entry" is special in Ghidra
+                if (entryFunc.getName().equals("entry")) {
+                    entryPoints.add(0, entryFunc.getEntryPoint());
+                } else {
+                    entryPoints.add(entryFunc.getEntryPoint());
+                }
+            }
+        }
+
+        provider.setEntryPoints(entryPoints);
+
+        ghihornAction.setEnabled(true);
     }
 }

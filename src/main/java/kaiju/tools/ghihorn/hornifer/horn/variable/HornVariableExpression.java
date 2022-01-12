@@ -12,6 +12,7 @@ import kaiju.tools.ghihorn.z3.GhiHornType;
  * Variables bound to a Z3 expression 
  */
 public class HornVariableExpression {
+    
     private final HornVariable variable;
     
     // An expression can be a value
@@ -60,7 +61,7 @@ public class HornVariableExpression {
     }
 
     public String getName() {
-        return variable.formatName();
+        return variable.getName();
     }
 
     /**

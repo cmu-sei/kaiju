@@ -34,14 +34,10 @@ import java.io.FileWriter;
 import java.util.StringJoiner;
 
 import ghidra.app.script.GhidraScript;
-
-import ghidra.program.model.util.PropertyMapManager;
-import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.Address;
-
-import ghidra.util.Msg;
-
+import ghidra.program.model.address.AddressIterator;
+import ghidra.program.model.util.ObjectPropertyMap;
+import ghidra.program.model.util.PropertyMapManager;
 import kaiju.hashing.FnHashSaveable;
 
 public class KaijuExportCSVHeadless extends GhidraScript {

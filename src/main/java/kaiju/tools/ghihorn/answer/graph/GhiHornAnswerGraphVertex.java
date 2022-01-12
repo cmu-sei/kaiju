@@ -2,39 +2,27 @@ package kaiju.tools.ghihorn.answer.graph;
 
 import ghidra.graph.GVertex;
 import kaiju.tools.ghihorn.answer.GhiHornAnswerAttributes;
+import kaiju.tools.ghihorn.answer.format.GhiHornFormattableElement;
+import kaiju.tools.ghihorn.answer.format.GhiHornOutputFormatter;
 
 /**
  * A vertex for the {@link SampleGraphPlugin}
  */
-public class GhiHornAnswerGraphVertex implements GVertex {
+public class GhiHornAnswerGraphVertex implements GVertex, GhiHornFormattableElement {
     private final GhiHornAnswerAttributes attributes;
 
-    public GhiHornAnswerGraphVertex(final GhiHornAnswerAttributes attrs) {  
+    public GhiHornAnswerGraphVertex(final GhiHornAnswerAttributes attrs) {
         this.attributes = attrs;
-    }
-
-    /**
-     * Designate this vertex as the start
-     */
-    public void makeStart() {
-        this.attributes.makeStart();
-    }
-
-    /**
-     * Designate this vertex as the goal
-     */
-    public void makeGoal() {
-        this.attributes.makeGoal();
     }
 
     /**
      * @return the name
      */
-    public String getName() {
+    public String getVertexName() {
         if (attributes == null) {
             return "";
         }
-        return attributes.getName();
+        return attributes.getVertexName();
     }
 
     /**
@@ -44,10 +32,12 @@ public class GhiHornAnswerGraphVertex implements GVertex {
         return attributes;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#hashCode()
      */
-    
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -56,10 +46,12 @@ public class GhiHornAnswerGraphVertex implements GVertex {
         return result;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#equals(java.lang.Object)
      */
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -79,7 +71,11 @@ public class GhiHornAnswerGraphVertex implements GVertex {
 
     @Override
     public String toString() {
-        return getName();
+        return getVertexName();
     }
-    
+
+    @Override
+    public String format(GhiHornOutputFormatter formatter) {
+        return formatter.format(this);
+    }
 }

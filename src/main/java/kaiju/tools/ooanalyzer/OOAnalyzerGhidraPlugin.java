@@ -34,8 +34,6 @@ package kaiju.tools.ooanalyzer;
 
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
 import javax.swing.JOptionPane;
@@ -46,7 +44,6 @@ import docking.action.KeyBindingData;
 import docking.action.MenuData;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
-import ghidra.app.script.AskDialog;
 import ghidra.framework.cmd.BackgroundCommand;
 import ghidra.framework.model.DomainObject;
 import ghidra.framework.plugintool.PluginInfo;
@@ -55,9 +52,7 @@ import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
-
-import kaiju.common.*;
-import kaiju.tools.ooanalyzer.jsontypes.OOAnalyzerClassType;
+import kaiju.common.KaijuPluginPackage;
 import kaiju.tools.ooanalyzer.jsontypes.OOAnalyzerJsonRoot;
 
 
@@ -101,7 +96,7 @@ public class OOAnalyzerGhidraPlugin extends ProgramPlugin {
   }
 
 
-  class ImportCommand extends BackgroundCommand {
+  public class ImportCommand extends BackgroundCommand {
 
     File jsonFile;
     Boolean useOOAnalyzerNamespace;

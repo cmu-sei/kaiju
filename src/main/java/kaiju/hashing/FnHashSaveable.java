@@ -31,12 +31,10 @@
  */
 package kaiju.hashing;
 
+import java.util.Vector;
+
 import ghidra.util.ObjectStorage;
 import ghidra.util.Saveable;
-
-import java.lang.Byte;
-import java.util.ArrayList;
-import java.util.Vector;
 
 /**
  * A Saveable object representing FnHash analysis work, including various
@@ -120,8 +118,8 @@ public class FnHashSaveable implements Saveable {
     
     // WARNING: this function is tied to the schema above; if the schema
     // is changed, then this function most likely must be changed too!
-    public Vector getHashes() {
-        Vector hashes = new Vector();
+    public Vector<String> getHashes() {
+        Vector<String> hashes = new Vector<>();
         hashes.add(exact_hash);
         hashes.add(pic_hash);
         hashes.add(composite_pic_hash);

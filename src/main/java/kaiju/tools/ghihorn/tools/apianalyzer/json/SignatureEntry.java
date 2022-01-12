@@ -16,9 +16,9 @@ public class SignatureEntry {
 
     @Expose
     @SerializedName("Sequence")
-    private List<String> sequence;
+    private List<SignatureApiFunction> sequence;
 
-    public SignatureEntry(final String n, final String d, final List<String> s) {
+    public SignatureEntry(final String n, final String d, final List<SignatureApiFunction> s) {
 
         this.name = n;
         this.description = d;
@@ -33,7 +33,7 @@ public class SignatureEntry {
         return this.description;
     }
 
-    public List<String> getSequence() {
+    public List<SignatureApiFunction> getSequence() {
         return this.sequence;
     }
 
@@ -46,7 +46,7 @@ public class SignatureEntry {
                 .append(description)
                 .append(", Sequence: ");
 
-        this.sequence.forEach(s -> sb.append(s).append(", "));
+        this.sequence.forEach(s -> sb.append(s.toString()).append(", "));
 
         return sb.toString();
     }

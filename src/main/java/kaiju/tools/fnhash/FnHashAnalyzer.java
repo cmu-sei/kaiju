@@ -31,36 +31,30 @@
  */
 package kaiju.tools.fnhash;
 
+// For UTF8 charset in crypto functions to standardize across operating systems
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.StringJoiner;
+
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.importer.MessageLog;
-import ghidra.framework.options.Options;
 import ghidra.framework.options.OptionType;
+import ghidra.framework.options.Options;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.util.PropertyMapManager;
 import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.UsrException;
 import ghidra.util.task.TaskMonitor;
-
-// For UTF8 charset in crypto functions to standardize across operating systems
-import java.nio.charset.StandardCharsets;
-
-import java.util.StringJoiner;
-import java.security.MessageDigest;
-
-import kaiju.common.*;
-import kaiju.common.logging.*;
-import kaiju.graph.original.InsnControlFlowGraph;
-import kaiju.graph.original.InsnControlFlowGraphDebugVisitor;
+import kaiju.common.KaijuLogger;
+import kaiju.common.KaijuPropertyManager;
+import kaiju.common.logging.MultiLogLevel;
 import kaiju.hashing.FnHashSaveable;
-import kaiju.tools.fnhash.FnHashOptions;
 import kaiju.tools.fnhashclassic.FnUtils;
 import kaiju.util.HexUtils;
 

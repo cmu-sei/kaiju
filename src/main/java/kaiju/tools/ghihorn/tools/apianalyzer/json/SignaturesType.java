@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-class SignaturesType {
+public class SignaturesType {
     @Expose
     @SerializedName("Signatures")
-    ArrayList<SignatureEntry> signatures;
+    public ArrayList<SignatureEntry> signatures;
 }

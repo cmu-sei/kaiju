@@ -32,24 +32,24 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressFormatException;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.symbol.SymbolTable;
 import kaiju.tools.ghihorn.GhiHornPlugin;
-import kaiju.tools.ghihorn.display.GhiHornFrontEnd;
-import kaiju.tools.ghihorn.hornifer.GhiHornEvent;
+import kaiju.tools.ghihorn.display.GhiHornController;
+import kaiju.tools.ghihorn.hornifer.GhiHornCommandEvent;
+import kaiju.tools.ghihorn.hornifer.GhiHornifier;
 import kaiju.tools.ghihorn.hornifer.horn.GhiHornAnswer;
 import kaiju.tools.ghihorn.tools.GhiHornEventConfig;
 import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 
 @PathAnalyzerConfig(
         events = @GhiHornEventConfig(
-                terminateUpdate = "PA:TU",
+                completeUpdate = "PA:CM",
+                cancelUpdate = "PA:CA",
                 statusUpdate = "PA:SU",
                 resultUpdate = "PA:RU"),
         startAddress = "PA:SA",
         endAddress = "PA:EA")
-public class PathAnalyzerFrontEnd extends GhiHornFrontEnd {
+public class PathAnalyzerController extends GhiHornController {
 
     public static final String NAME = "PathAnalyzer";
     private PathAnalyzerConfig configuration;
@@ -61,18 +61,28 @@ public class PathAnalyzerFrontEnd extends GhiHornFrontEnd {
     private JTextPane statusTextPane;
     private List<GhiHornAnswer> results;
 
-    public PathAnalyzerFrontEnd() {
+    /**
+     * Create a controller with no
+     */
+    public PathAnalyzerController() {
         super(NAME, null);
+    }
+
+    @Override
+    public void setEntryPoint(Address entryPoint) {
+        if (startAtEPCheckbox.isSelected()) {
+            super.setEntryPoint(entryPoint);
+            startAddrText.setText(entryPoint.toString());
+        }
     }
 
     /**
      * 
      * @param plugin
      */
-    public PathAnalyzerFrontEnd(final GhiHornPlugin plugin) {
+    public PathAnalyzerController(final GhiHornPlugin plugin) {
 
         super(NAME, plugin);
-
 
         this.mainPanel = new JPanel();
 
@@ -90,24 +100,11 @@ public class PathAnalyzerFrontEnd extends GhiHornFrontEnd {
         goalAddrText.setMinimumSize(startAddrText.getPreferredSize());
         startAddrText.setEnabled(false);
 
-        final List<Address> entryPointAddrs = new ArrayList<>();
-        plugin.getCurrentProgram().getSymbolTable().getExternalEntryPointIterator()
-                .forEach(entryPointAddrs::add);
-
         startAtEPCheckbox = new JCheckBox();
         startAtEPCheckbox.setSelected(true);
         startAddrText.setMinimumSize(startAddrText.getPreferredSize());
-        if (entryPointAddrs.size() == 1) {
-            startAtEPCheckbox.setText("Start at program entry point");
-            startAtEPCheckbox.setSelected(true);
-            startAddrText.setText(entryPointAddrs.get(0).toString());
-        } else if (entryPointAddrs.size() > 1) {
-            startAtEPCheckbox.setText("Start at program entry point(s)");
-            startAddrText.setText("Multiple entry points possible");
-        } else {
-            startAtEPCheckbox.setEnabled(false);
-            startAddrText.setText("No entry point found, please specify address manually");
-        }
+        startAtEPCheckbox.setText("Start at program entry point");
+        startAtEPCheckbox.setEnabled(true);
 
         startAtEPCheckbox
                 .addItemListener(
@@ -290,7 +287,9 @@ public class PathAnalyzerFrontEnd extends GhiHornFrontEnd {
     @Override
     public void result(final GhiHornAnswer answer) {
         try {
-
+            if (answer == null) {
+                return;
+            }
             if (answer.status == GhiHornFixedpointStatus.Satisfiable) {
                 status("A path was found");
             } else if (answer.status == GhiHornFixedpointStatus.Unsatisfiable) {
@@ -394,76 +393,72 @@ public class PathAnalyzerFrontEnd extends GhiHornFrontEnd {
         startAddrText.setEnabled(false);
     }
 
-    /**
-     * 
-     */
-    private Address getStartAddress() throws AddressFormatException {
-        final Program program = plugin.getCurrentProgram();
-        if (startAtEPCheckbox.isSelected()) {
-            SymbolTable symTable = program.getSymbolTable();
-            List<Address> entryPointAddrs = new ArrayList<>();
-            symTable.getExternalEntryPointIterator().forEach(entryPointAddrs::add);
-
-            if (entryPointAddrs.size() > 1) {
-                return plugin.getProvider().askChoice("Select Entry Point",
-                        "Select entry point to start search:", entryPointAddrs, null);
-            }
-            if (entryPointAddrs.size() == 1) {
-                return entryPointAddrs.get(0);
-            }
-        }
-
-        return program.getAddressFactory().getDefaultAddressSpace()
-                .getAddress(startAddrText.getText());
-    }
-
     @Override
-    public Map<String, Object> getSettings() {
+    public List<Map<String, Object>> getCommandParameters() throws Exception {
 
-        // Map<String, Object> settings = new HashMap<>();
         final Program program = this.plugin.getCurrentProgram();
-        try {
 
-            final Address startAddr = getStartAddress();
-            if (startAddr == null) {
-                throw new NullPointerException();
-            }
-            this.startAddrText.setText(startAddr.toString());
-
-            final Address endAddr = program.getAddressFactory().getDefaultAddressSpace()
-                    .getAddress(goalAddrText.getText());
-
-            // Make sure that the program contains the specified addresses
-            if (!program.getMemory().contains(startAddr)
-                    || !program.getMemory().contains(endAddr)) {
-                throw new RuntimeException();
-            }
-
-            status("Looking for path from " + startAddr + " to " + endAddr);
-            return new HashMap<>() {
-                {
-                    put(GhiHornPlugin.TOOL_NAME, getName());
-                    put(configuration.startAddress(), startAddr);
-                    put(configuration.endAddress(), endAddr);
-                }
-            };
-
-        } catch (AddressFormatException | NullPointerException e) {
-            status("Invalid start/end address specified");
+        Address startAddr = Address.NO_ADDRESS;
+        if (startAtEPCheckbox.isSelected()) {
+            startAddr = entryPointAddress;
+        } else {
+            startAddr = plugin.getCurrentProgram()
+                    .getAddressFactory()
+                    .getDefaultAddressSpace()
+                    .getAddress(startAddrText.getText());
         }
-        return new HashMap<>();
+
+        if (startAddr == Address.NO_ADDRESS) {
+            throw new RuntimeException("Invalid start address");
+        }
+
+        final Address endAddr = program.getAddressFactory().getDefaultAddressSpace()
+                .getAddress(goalAddrText.getText());
+
+        // Make sure that the program contains the specified addresses
+        if (!program.getMemory().contains(startAddr)
+                || !program.getMemory().contains(endAddr)) {
+            throw new RuntimeException();
+        }
+        this.startAddrText.setText(startAddr.toString());
+
+        status("Looking for path from " + startAddr + " to " + endAddr);
+
+        final Map<String, Object> opts = new HashMap<>();
+        opts.put(configuration.startAddress(), startAddr);
+        opts.put(configuration.endAddress(), endAddr);
+        return new ArrayList<Map<String, Object>>() {
+            {
+                add(opts);
+            }
+        };
+
     }
 
     @Override
     public void initialize() {
-        this.configuration = PathAnalyzerFrontEnd.class.getAnnotation(PathAnalyzerConfig.class);
-        registerEvent(configuration.events().statusUpdate(), GhiHornEvent.StatusMessage);
-        registerEvent(configuration.events().resultUpdate(), GhiHornEvent.ResultMessage);
-        registerEvent(configuration.events().terminateUpdate(), GhiHornEvent.TerminateMessage);
+        this.configuration = PathAnalyzerController.class.getAnnotation(PathAnalyzerConfig.class);
+        registerCommandEvent(configuration.events().statusUpdate(),
+                GhiHornCommandEvent.StatusMessage);
+        registerCommandEvent(configuration.events().resultUpdate(),
+                GhiHornCommandEvent.ResultReady);
+        registerCommandEvent(configuration.events().completeUpdate(),
+                GhiHornCommandEvent.Completed);
+        registerCommandEvent(configuration.events().cancelUpdate(), GhiHornCommandEvent.Cancelled);
     }
 
     @Override
-    public JComponent getMaiComponent() {
+    public JComponent getMainComponent() {
         return this.mainPanel;
+    }
+
+    @Override
+    public String getControllerName() {
+        return NAME;
+    }
+
+    @Override
+    public GhiHornifier getHornifiier() {
+        return new PathAnalyzerHornifier();
     }
 }

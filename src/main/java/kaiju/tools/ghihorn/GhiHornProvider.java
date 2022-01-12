@@ -1,6 +1,7 @@
 package kaiju.tools.ghihorn;
 
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -42,6 +43,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import docking.WindowPosition;
 import docking.widgets.OkDialog;
+import docking.widgets.combobox.GhidraComboBox;
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
 import generic.jar.ResourceFile;
@@ -61,6 +63,7 @@ import ghidra.framework.Application;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressFormatException;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.block.CodeBlock;
 import ghidra.program.model.block.SimpleBlockModel;
@@ -71,12 +74,12 @@ import ghidra.util.SystemUtilities;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import kaiju.tools.ghihorn.answer.GhiHornAnswerAttributes;
+import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettingBuilder;
 import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettings;
-import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettings.VarSettings;
+import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettings.SettingVariables;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraphVertex;
-import kaiju.tools.ghihorn.api.ApiDatabaseService;
-import kaiju.tools.ghihorn.display.GhiHornFrontEnd;
-import kaiju.tools.ghihorn.hornifer.GhiHornifier;
+import kaiju.tools.ghihorn.api.GhiHornApiDatabase;
+import kaiju.tools.ghihorn.display.GhiHornController;
 import kaiju.tools.ghihorn.hornifer.horn.GhiHornAnswer;
 import kaiju.tools.ghihorn.hornifer.horn.HornFunctionInstance;
 import kaiju.tools.ghihorn.hornifer.horn.HornProgram;
@@ -84,9 +87,8 @@ import kaiju.tools.ghihorn.hornifer.horn.element.HornElement;
 import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 import kaiju.tools.ghihorn.z3.GhiHornZ3Parameters;
 
-
 /**
- * main Headed UI for GhiHorn
+ * Main headed UI for GhiHorn
  */
 public class GhiHornProvider extends ComponentProviderAdapter implements Navigatable {
 
@@ -94,17 +96,19 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
     private final DateTimeFormatter dateFormatter;
     private final GhiHornZ3Parameters z3Params;
     private JTabbedPane tabbedPane;
-    private Map<Integer, GhiHornFrontEnd> frontEndMap;
+    private Map<Integer, GhiHornController> controllerUIMap;
     private JPanel mainPanel;
     private JLabel statusLabel;
+    private GhidraComboBox<String> entryComboBox;
     private JButton analyzeButton, saveToFileButton, clearHighlightButton, z3ParamsButton;
-    private JCheckBox showGlobalVarsCheckBox, showStateVarsCheckBox, showDecompVarsCheckBox;
-    private List<GhiHornFrontEnd> displays;
+    private JCheckBox showGlobalVarsCheckBox, showLocalVarsCheckBox, hideTempVarsCheckBox,
+            hideExternalFuncsCheckbox;
+    private List<GhiHornController> controllers;
     private Instant startInstant;
     private boolean z3LibsFound;
 
     // Utility class to detect changes to settings
-    private class SettingsListener implements DocumentListener {
+    private class DisplaySettingsListener implements DocumentListener {
         boolean isChanged = false;
 
         @Override
@@ -130,12 +134,12 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
      * @param plugin
      */
     public GhiHornProvider(final PluginTool tool, final ProgramPlugin plugin,
-            List<GhiHornFrontEnd> displays) {
+            List<GhiHornController> displays) {
 
         super(tool, GhiHornPlugin.PLUGIN_NAME, plugin.getName(), ProgramActionContext.class);
 
         this.plugin = (GhiHornPlugin) plugin;
-        this.displays = displays;
+        this.controllers = displays;
         this.z3LibsFound = false;
         plugin.getTool().getService(ColorizingService.class);
 
@@ -154,7 +158,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         buildMainPanel();
 
         setDefaultWindowPosition(WindowPosition.BOTTOM);
-    }    
+    }
 
     /**
      * 
@@ -165,10 +169,9 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         final JPanel controlPanel = new JPanel();
         analyzeButton = new JButton("Analyze");
         JLabel apiDbLabel = new JLabel();
-
         try {
             ResourceFile apidbPath =
-                    Application.getModuleDataSubDirectory(ApiDatabaseService.ApiDirectory);
+                    Application.getModuleDataSubDirectory(GhiHornApiDatabase.DEFAULT_API_DIRECTORY);
             apiDbLabel.setText("API database: \"" + apidbPath + "\"");
         } catch (IOException x) {
             apiDbLabel.setText("Unable to load API databse");
@@ -208,7 +211,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
 
             textArea.setSize(textArea.getPreferredSize().width, 1);
 
-            SettingsListener sl = new SettingsListener();
+            DisplaySettingsListener sl = new DisplaySettingsListener();
             textArea.getDocument().addDocumentListener(sl);
 
             z3Panel.add(new JScrollPane(textArea) {
@@ -228,16 +231,32 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         });
         z3ParamsButton.setEnabled(true);
 
+        entryComboBox = new GhidraComboBox<>();
+        entryComboBox.setEditable(true);
+
+        entryComboBox.addItemListener(i -> {
+            String selectedAddr = (String) i.getItem();
+            Address entryAddr =
+                    plugin.getCurrentProgram().getAddressFactory().getAddress(selectedAddr);
+            controllers.forEach(c -> c.setEntryPoint(entryAddr));
+        });
+
         GridBagLayout gbLayout = new GridBagLayout();
         GridBagConstraints gbc = new GridBagConstraints();
         controlPanel.setLayout(gbLayout);
 
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 3));
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 4));
         buttonPanel.setBorder(BorderFactory.createTitledBorder("Control"));
         buttonPanel.add(analyzeButton);
+        buttonPanel.add(new JPanel(new FlowLayout(FlowLayout.LEADING)) {
+            {
+                add(new JLabel("Program entry point:"));
+                add(entryComboBox);
+            }
+        });
+        buttonPanel.add(z3ParamsButton);
         buttonPanel.add(saveToFileButton);
         buttonPanel.add(clearHighlightButton);
-        buttonPanel.add(z3ParamsButton);
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -251,24 +270,29 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         gbLayout.setConstraints(buttonPanel, gbc);
         controlPanel.add(buttonPanel);
 
-        final JPanel optPanel = new JPanel(new GridLayout(1, 3));
+        final JPanel optPanel = new JPanel(new GridLayout(1, 4));
         optPanel.setBorder(BorderFactory.createTitledBorder("Display Options"));
-        showGlobalVarsCheckBox = new JCheckBox(VarSettings.ShowGlobalVars.toString());
-        showDecompVarsCheckBox = new JCheckBox(VarSettings.ShowDecompilerVars.toString());
-        showStateVarsCheckBox = new JCheckBox(VarSettings.ShowStateVars.toString());
+        showGlobalVarsCheckBox = new JCheckBox(SettingVariables.ShowGlobalVars.description());
+        showLocalVarsCheckBox = new JCheckBox(SettingVariables.ShowLocalVars.description());
+        hideTempVarsCheckBox = new JCheckBox(SettingVariables.HideTempVars.description());
+        hideExternalFuncsCheckbox =
+                new JCheckBox(SettingVariables.HideExternalFunctions.description());
 
-        DisplaySettingsHandler dispChangeHandler = new DisplaySettingsHandler();
+        final DisplaySettingsHandler dispChangeHandler = new DisplaySettingsHandler();
         showGlobalVarsCheckBox.addItemListener(dispChangeHandler);
-        showDecompVarsCheckBox.addItemListener(dispChangeHandler);
-        showStateVarsCheckBox.addItemListener(dispChangeHandler);
+        showLocalVarsCheckBox.addItemListener(dispChangeHandler);
+        hideTempVarsCheckBox.addItemListener(dispChangeHandler);
+        hideExternalFuncsCheckbox.addItemListener(dispChangeHandler);
 
         showGlobalVarsCheckBox.setSelected(true);
-        showDecompVarsCheckBox.setSelected(true);
-        showStateVarsCheckBox.setSelected(false);
+        showLocalVarsCheckBox.setSelected(true);
+        hideTempVarsCheckBox.setSelected(true);
+        hideExternalFuncsCheckbox.setSelected(true);
 
         optPanel.add(showGlobalVarsCheckBox);
-        optPanel.add(showStateVarsCheckBox);
-        optPanel.add(showDecompVarsCheckBox);
+        optPanel.add(showLocalVarsCheckBox);
+        optPanel.add(hideTempVarsCheckBox);
+        optPanel.add(hideExternalFuncsCheckbox);
 
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -290,7 +314,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
             z3LibsFound = true;
         } catch (UnsatisfiedLinkError e) {
             z3VerLabel.setText("Warning: Z3 libraries not found, GhiHorn will not run");
-        }    
+        }
 
         JPanel statusPanel = new JPanel(new GridLayout(3, 1));
         statusPanel.setBorder(BorderFactory.createTitledBorder("Status"));
@@ -311,77 +335,61 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
 
         analyzeButton.addActionListener(e -> {
 
+            // clear the highlight
+            plugin.getProvider().setHighlight(new ProgramSelection(new AddressSet()));
+
             if (!z3LibsFound) {
-                // Attempting to analyze without Z3 is a bad idea, so detect and disallow it
                 OkDialog.showError("Z3 Not Found", "Cannot use GhiHorn without Z3");
                 return;
             }
 
-            // clear the highlight
-            plugin.getProvider().setHighlight(new ProgramSelection(new AddressSet()));
-
             try {
-
-                int selectedIndex = tabbedPane.getSelectedIndex();
-                final GhiHornFrontEnd hornDisplay = this.frontEndMap.get(selectedIndex);
-                hornDisplay.reset();
-
-                final Map<String, Object> settings = hornDisplay.getSettings();
-
-                if (!this.z3Params.isEmpty()) {
-                    settings.put(GhiHornPlugin.Z3_PARAMS, z3Params);
-                }
-
-                if (settings.isEmpty()) {
-                    OkDialog.showError("Missing Configuration",
-                            "You need to specify a proper confiiguration for "
-                                    + hornDisplay.getName());
-                    return;
-                }
-
-                startInstant = Instant.now();
-                final String toolName = (String) settings.get(GhiHornPlugin.TOOL_NAME);
-
-                settings.put(GhiHornPlugin.API_DB, plugin.getApiService());
-
-                if (plugin.execute(settings) == true) {
-
-                    // execution
-
+                GhiHornController controller = getActiveController();
+                if (!z3Params.isEmpty()) {
+                    controller.addZ3Parameters(z3Params);
                     final StringBuffer z3StrBuf =
                             new StringBuffer("Executing with Z3 parameters:\n");
 
                     for (Map.Entry<String, Object> z3p : z3Params.entrySet()) {
-                        z3StrBuf.append("* ").append(z3p.getKey()).append("=")
-                                .append(z3p.getValue()).append("\n").toString();
+
+                        z3StrBuf.append("* ")
+                                .append(z3p.getKey())
+                                .append("=")
+                                .append(z3p.getValue())
+                                .append("\n")
+                                .toString();
                     }
-                    
+
                     updateStatus(z3StrBuf.toString());
-                    statusLabel
-                            .setText(toolName + " analysis started at "
-                                    + dateFormatter.format(startInstant));
-
-                    statusLabel.setForeground(Color.blue);
-
-                    z3ParamsButton.setEnabled(false);
-                    clearHighlightButton.setEnabled(false);
-                    analyzeButton.setEnabled(false);
-
-                } else {
-                    updateStatus("Aborted");
                 }
 
-            } catch (RuntimeException re) {
-                re.printStackTrace();
-                OkDialog.showError("Plugin execution error", re.getMessage());
-            }
+                String entryAddr = (String) entryComboBox.getSelectedItem();
+                Address epAddress = plugin.getCurrentProgram()
+                        .getAddressFactory()
+                        .getDefaultAddressSpace()
+                        .getAddress(entryAddr);
 
+                controller.setEntryPoint(epAddress);
+
+                if (controller.executeCommands()) {
+                    beginAnalysis();
+
+                } else {
+                    updateStatus("Execution was aborted");
+                }
+
+            } catch (AddressFormatException | NullPointerException e2) {
+                updateStatus("Invalid start/end address specified");
+            } catch (Exception x) {
+                x.printStackTrace();
+                OkDialog.showError("Plugin execution error", x.getMessage());
+            }
             saveToFileButton.setEnabled(false);
         });
 
         saveToFileButton.addActionListener(e -> {
 
-            GhiHornFrontEnd selectedTool = getCurrentFrontEnd();
+            GhiHornController selectedTool = getCurrentFrontEnd();
             final List<GhiHornAnswer> results = selectedTool.getResults(false);
 
             GhiHornAnswer result =
@@ -442,15 +450,20 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         return controlPanel;
     }
 
+    public GhiHornController getActiveController() {
+        return this.controllerUIMap.get(tabbedPane.getSelectedIndex());
+    }
+
     /**
      * Fetch the current front end
+     * 
      * @return
      */
-    public GhiHornFrontEnd getCurrentFrontEnd() {
+    public GhiHornController getCurrentFrontEnd() {
         if (tabbedPane != null) {
             int selectedIndex = tabbedPane.getSelectedIndex();
             if (selectedIndex != -1) {
-                return  this.frontEndMap.get(selectedIndex);
+                return this.controllerUIMap.get(selectedIndex);
             }
         }
         return null;
@@ -506,21 +519,18 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
      */
     private void updateDisplaySettings() {
 
-        Map<VarSettings, Boolean> varSettings = new HashMap<>();
-        varSettings.put(VarSettings.ShowGlobalVars,
-                showGlobalVarsCheckBox.isSelected());
-        varSettings.put(VarSettings.ShowStateVars, showStateVarsCheckBox.isSelected());
-        varSettings.put(VarSettings.ShowDecompilerVars,
-                showDecompVarsCheckBox.isSelected());
+        GhiHornDisplaySettings displaySettings = (new GhiHornDisplaySettingBuilder())
+                .showGlobalVariables(showGlobalVarsCheckBox.isSelected())
+                .showLocalVariables(showLocalVarsCheckBox.isSelected())
+                .hideTempVariables(hideTempVarsCheckBox.isSelected())
+                .hideExternalFuncs(hideExternalFuncsCheckbox.isSelected())
+                .build();
 
-        GhiHornDisplaySettings displaySettings = new GhiHornDisplaySettings(varSettings);
+        final GhiHornController controller = getActiveController();
 
-        int i = tabbedPane.getSelectedIndex();
-        final GhiHornFrontEnd display = frontEndMap.get(i);
+        controller.setDisplaySettings(displaySettings);
 
-        display.setDisplaySettings(displaySettings);
-
-        display.refresh();
+        controller.refresh();
     }
 
     /**
@@ -530,7 +540,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
      */
     public void highlightAnswer(final GhiHornAnswer answer) {
 
-        plugin.goTo(answer.arguments.getStartAddress());
+        plugin.goTo(answer.arguments.getEntryAsAddress());
 
         final AddressSet addrSet = new AddressSet();
         for (GhiHornAnswerGraphVertex vtx : answer.answerGraph.getVertices()) {
@@ -551,7 +561,10 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
                     // Fall back on the call address
 
                     HornProgram hornProg = answer.answerGraph.getHornProgram();
-                    HornFunctionInstance instance = hornProg.getInstanceByID(elm.getInstanceId());
+
+                    HornFunctionInstance instance =
+                            hornProg.getInstanceByID(elm.getInstanceId()).get();
+
                     Address xrefAddr = instance.getXrefAddress();
                     block = basicBlockModel.getFirstCodeBlockContaining(xrefAddr,
                             TaskMonitor.DUMMY);
@@ -593,13 +606,13 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         gbConstraints.anchor = GridBagConstraints.SOUTHWEST;
         mainPanel.add(analysisControlPanel, gbConstraints);
 
-        this.frontEndMap = new HashMap<>();
+        this.controllerUIMap = new HashMap<>();
 
         this.tabbedPane = new JTabbedPane();
-        for (int i = 0; i < displays.size(); i++) {
-            GhiHornFrontEnd dsp = displays.get(i);
-            tabbedPane.addTab(dsp.getName(), dsp.getMaiComponent());
-            frontEndMap.put(i, dsp);
+        for (int i = 0; i < controllers.size(); i++) {
+            GhiHornController dsp = controllers.get(i);
+            tabbedPane.addTab(dsp.getName(), dsp.getMainComponent());
+            controllerUIMap.put(i, dsp);
         }
 
         this.tabbedPane.setSelectedIndex(0);
@@ -639,24 +652,36 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         return s;
     }
 
+    public synchronized void beginAnalysis() {
+
+        startInstant = Instant.now();
+        statusLabel.setText("Analysis started at " + dateFormatter.format(startInstant));
+
+        statusLabel.setForeground(Color.blue);
+
+        z3ParamsButton.setEnabled(false);
+        clearHighlightButton.setEnabled(false);
+        analyzeButton.setEnabled(false);
+    }
+
     /**
      * Update the output
      * 
      * @param output
      */
-    public synchronized void analysisComplete(GhiHornifier.TerminateReason reason) {
+    public synchronized void endAnalysis(boolean isCancelled) {
 
         long duration = Duration.between(startInstant, Instant.now()).toMillis();
         String durStr = DurationFormatUtils.formatDuration(duration, "HH'hrs' mm'mins' ss'sec'");
 
-        if (reason == GhiHornifier.TerminateReason.Completed) {
-            statusLabel
-                    .setText("Analysis completed in " + durStr);
-            statusLabel.setForeground(Color.black);
-        } else if (reason == GhiHornifier.TerminateReason.Cancelled) {
+        if (!isCancelled) {
 
-            statusLabel.setText(
-                    "Analysis cancelled after " + durStr);
+            statusLabel.setText("Analysis completed in " + durStr);
+            statusLabel.setForeground(Color.black);
+
+        } else {
+
+            statusLabel.setText("Analysis cancelled after " + durStr);
             statusLabel.setForeground(Color.red);
         }
 
@@ -673,9 +698,8 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
      */
     public void updateStatus(final String statusUpdate) {
 
-        int selectedIndex = tabbedPane.getSelectedIndex();
-        GhiHornFrontEnd horn = this.frontEndMap.get(selectedIndex);
-        horn.status(statusUpdate);
+        GhiHornController hornController = getActiveController();
+        hornController.status(statusUpdate);
     }
 
     @Override
@@ -782,6 +806,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         if (service != null) {
             service.setHighlightProvider(highlightProvider, program);
         }
+
     }
 
     @Override
@@ -792,9 +817,29 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
         }
     }
 
-    //@Override
-    // This is not present in older Ghidras, so don't include @Override.
+    // Uncommenting this introduces a dependency for Ghidra 10
+    // @Override
     public String getTextSelection() {
+        // TODO Auto-generated method stub
         return null;
+    }
+
+    /**
+     * Set the selected entry points
+     * 
+     * @param entryPointList
+     */
+    public void setEntryPoints(List<Address> entryPointList) {
+
+        if (!entryPointList.isEmpty()) {
+            if (entryComboBox.getItemCount()>0) {
+                entryComboBox.removeAllItems();
+            }
+            entryPointList.stream()
+                    .map(f -> f.toString())                    
+                    .forEach(entryComboBox::addItem);
+            entryComboBox.setSelectedIndex(0);
+            controllers.forEach(c -> c.setEntryPoint(entryPointList.get(0)));
+        }
     }
 }

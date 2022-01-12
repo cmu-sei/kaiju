@@ -2,21 +2,19 @@ package kaiju.tools.ghihorn.hornifer.horn.expression;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
-import com.microsoft.z3.Z3Exception;
-
 import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.Msg;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornConstant;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable;
+import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable.Scope;
+import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariableName;
 import kaiju.tools.ghihorn.z3.GhiHornBitVectorType;
-import kaiju.tools.ghihorn.z3.GhiHornBooleanType;
 import kaiju.tools.ghihorn.z3.GhiHornContext;
 import kaiju.tools.ghihorn.z3.GhiHornType;
 
@@ -49,9 +47,17 @@ public class PcodeExpression implements HornExpression {
         this.operation = null;
         this.pcode = pcode;
 
+        // First the I/O variables must be computed
         computeIOVariables();
-        computeDefUseVariables();
+
+        // Second the operations need to be generated from the I/O variables. This will
+        // in effect identify the def/use variables because p-code has an equational
+        // format where output = OP(inputs ...). The def variable is the output and the
+        // use variables are the inputs
+
         makeOperation();
+
+        computeDefUseVariables();
     }
 
     @Override
@@ -66,6 +72,7 @@ public class PcodeExpression implements HornExpression {
      * generate input/output variables
      */
     private void computeIOVariables() {
+
         for (int i = 0; i < pcode.getNumInputs(); i++) {
 
             Varnode vin = pcode.getInput(i);
@@ -75,14 +82,33 @@ public class PcodeExpression implements HornExpression {
                 HornVariable v = HornVariable.mkVariable(highVar);
                 inVariables.add(v);
             } else {
-                inVariables.add(new HornConstant(vin));
+                if (vin.isConstant()) {
+                    inVariables.add(new HornConstant(vin));
+                } else {
+                    // We have a varnode that has no high variable backing it. Create an empty
+                    // variable
+                    inVariables.add(
+                            new HornVariable(new HornVariableName(String.valueOf(vin.getOffset())),
+                                    new GhiHornBitVectorType(), Scope.Unknown));
+                }
             }
         }
 
         Varnode vout = pcode.getOutput();
         if (vout != null) {
             HighVariable outHighVar = vout.getHigh();
-            outVariable = HornVariable.mkVariable(outHighVar);
+            if (outHighVar != null) {
+                outVariable = HornVariable.mkVariable(outHighVar);
+            } else {
+                // No high variable, take a similar approach as for inputs
+                if (vout.isConstant()) {
+                    outVariable = new HornConstant(vout);
+                } else {
+                    outVariable =
+                            new HornVariable(new HornVariableName(String.valueOf(vout.getOffset())),
+                                    new GhiHornBitVectorType(), Scope.Unknown);
+                }
+            }
         }
     }
 
@@ -101,14 +127,16 @@ public class PcodeExpression implements HornExpression {
             } else if (pcode.getOpcode() == PcodeOp.INT_ZEXT) {
                 if (!inVariables.isEmpty() && outVariable != null) {
                     HornVariable inVar = inVariables.get(0);
-                    if (outVariable.getType() == GhiHornType.BitVec && inVar.getType() == GhiHornType.BitVec) {
+                    if (outVariable.getType() == GhiHornType.BitVec
+                            && inVar.getType() == GhiHornType.BitVec) {
                         operation = new ZextExpression(outVariable, inVariables.get(0));
                     }
                 }
             } else if (pcode.getOpcode() == PcodeOp.INT_SEXT) {
                 if (!inVariables.isEmpty() && outVariable != null) {
                     HornVariable inVar = inVariables.get(0);
-                    if (outVariable.getType() == GhiHornType.BitVec && inVar.getType() == GhiHornType.BitVec) {
+                    if (outVariable.getType() == GhiHornType.BitVec
+                            && inVar.getType() == GhiHornType.BitVec) {
                         operation = new SextExpression(outVariable, inVariables.get(0));
                     }
                 }
@@ -120,13 +148,25 @@ public class PcodeExpression implements HornExpression {
                 operation = new UdivExpression(inVariables.get(0), inVariables.get(1));
             } else if (pcode.getOpcode() == PcodeOp.INT_SDIV) {
                 operation = new SdivExpression(inVariables.get(0), inVariables.get(1));
-            } else if (pcode.getOpcode() == PcodeOp.INT_AND || pcode.getOpcode() == PcodeOp.BOOL_AND) {
+            } else if (pcode.getOpcode() == PcodeOp.INT_AND) {
                 operation = new AndExpression(inVariables.get(0), inVariables.get(1));
-            } else if (pcode.getOpcode() == PcodeOp.INT_OR || pcode.getOpcode() == PcodeOp.BOOL_OR) {
-                operation = new OrExpression(inVariables.get(0), inVariables.get(1));
-            } else if (pcode.getOpcode() == PcodeOp.INT_XOR || pcode.getOpcode() == PcodeOp.BOOL_XOR) {
+            } else if (pcode.getOpcode() == PcodeOp.BOOL_AND) {
+                operation = new BoolAndExpression(inVariables);
+            } else if (pcode.getOpcode() == PcodeOp.INT_OR) {
+                operation = new BvOrExpression(inVariables.get(0), inVariables.get(1));
+            } else if (pcode.getOpcode() == PcodeOp.BOOL_OR) {
+                operation = new BoolOrExpression(inVariables);
+            }
+
+            // Treating XOR the same for INT and BOOL versions seems wrong, but
+            // more evidence is needed to figure out the proper way to do this.
+
+            else if (pcode.getOpcode() == PcodeOp.INT_XOR
+                    || pcode.getOpcode() == PcodeOp.BOOL_XOR) {
                 operation = new XorExpression(inVariables.get(0), inVariables.get(1));
-            } else if (pcode.getOpcode() == PcodeOp.INT_NOTEQUAL) {
+            }
+
+            else if (pcode.getOpcode() == PcodeOp.INT_NOTEQUAL) {
                 operation = new NeExpression(inVariables.get(0), inVariables.get(1));
             } else if (pcode.getOpcode() == PcodeOp.INT_EQUAL) {
                 operation = new EqExpression(inVariables.get(0), inVariables.get(1));
@@ -149,7 +189,9 @@ public class PcodeExpression implements HornExpression {
             } else if (pcode.getOpcode() == PcodeOp.CAST || pcode.getOpcode() == PcodeOp.COPY) {
                 // For now JSG is treating CAST like a copy. I need to really
                 // think about how to do this right.
-                operation = inVariables.get(0);
+                if (!inVariables.isEmpty() && outVariable != null) {
+                    operation = new CopyExpression(inVariables.get(0));
+                }
             } else if (pcode.getOpcode() == PcodeOp.LOAD) {
                 operation = new LoadExpression(inVariables.get(1));
             } else if (pcode.getOpcode() == PcodeOp.STORE) {
@@ -157,75 +199,31 @@ public class PcodeExpression implements HornExpression {
             } else if (pcode.getOpcode() == PcodeOp.PTRSUB) {
                 operation = new PtrsubExpression(inVariables.get(0), inVariables.get(1));
             } else if (pcode.getOpcode() == PcodeOp.PTRADD) {
-                operation = new PtraddExpression(inVariables.get(1), (HornConstant) inVariables.get(2));
+                operation =
+                        new PtraddExpression(inVariables.get(1), (HornConstant) inVariables.get(2));
             }
         } catch (VerifyError vx) {
             Msg.error(this, vx.getMessage());
-            vx.getStackTrace();
             operation = null;
         }
     }
 
     /**
-     * Determine the def/use variables based on operation
+     * Determine the def/use variables based on operation structure
      */
     private void computeDefUseVariables() {
-        if (!inVariables.isEmpty()) {
 
-            switch (this.pcode.getOpcode()) {
-            // Operations with two use inputs
-            case PcodeOp.INT_LESSEQUAL:
-            case PcodeOp.INT_SLESSEQUAL:
-            case PcodeOp.INT_SLESS:
-            case PcodeOp.INT_LESS:
-            case PcodeOp.INT_ADD:
-            case PcodeOp.INT_SUB:
-            case PcodeOp.INT_MULT:
-            case PcodeOp.INT_DIV:
-            case PcodeOp.INT_SDIV:
-            case PcodeOp.INT_AND:
-            case PcodeOp.BOOL_AND:
-            case PcodeOp.INT_OR:
-            case PcodeOp.BOOL_OR:
-            case PcodeOp.INT_XOR:
-            case PcodeOp.BOOL_XOR:
-            case PcodeOp.INT_NOTEQUAL:
-            case PcodeOp.INT_EQUAL:
-            case PcodeOp.INT_LEFT:
-            case PcodeOp.INT_RIGHT:
-            case PcodeOp.INT_SRIGHT:
-            case PcodeOp.INT_REM:
-            case PcodeOp.INT_SREM:
-                useVariables.add(inVariables.get(0));
-                useVariables.add(inVariables.get(1));
-                break;
-            // Operations with one use variable
-            case PcodeOp.INT_ZEXT:
-            case PcodeOp.INT_SEXT:
-            case PcodeOp.INT_NEGATE:
-            case PcodeOp.BOOL_NEGATE:
-            case PcodeOp.INT_2COMP:
-            case PcodeOp.CAST:
-            case PcodeOp.COPY:
-                useVariables.add(inVariables.get(0));
-                break;
-            // CBRANCH's last input
-            case PcodeOp.CBRANCH:
-            case PcodeOp.LOAD:
-            case PcodeOp.PTRSUB:
-                useVariables.add(inVariables.get(1));
-                break;
-            case PcodeOp.STORE:
-            case PcodeOp.PTRADD:
-                useVariables.add(inVariables.get(1));
-                useVariables.add(inVariables.get(2));
-            default:
-                break;
+        if (this.operation != null) {
+            for (HornExpression x : this.operation.getComponents()) {
+                if (x instanceof HornVariable) {
+                    if (!(x instanceof HornConstant)) { // do not save constants as use variables
+                        this.useVariables.add((HornVariable) x);
+                    }
+                }
             }
         }
-
-        if (outVariable != null) {
-            defVariables.add(outVariable);
+        if (this.outVariable != null) {
+            this.defVariables.add(this.outVariable);
         }
     }
 
@@ -289,16 +287,18 @@ public class PcodeExpression implements HornExpression {
                         // If the operation type is boolean, then make sure the
                         // output variable is a boolean
 
-                        BoolExpr outExpr = (BoolExpr) outVariable.instantiateAs(ctx, new GhiHornBooleanType());
+                        BoolExpr outExpr =
+                                (BoolExpr) outVariable.instantiateAs(GhiHornType.Bool, ctx);
                         Expr<? extends Sort> pcodeExpr = operation.instantiate(ctx);
                         if (!pcodeExpr.isBool()) {
-                            Msg.info(this, "Error");
+                            Msg.error(this, "Error: Cannot instantiate " + toString());
                         }
-                        // BoolExpr pcodeExpr = (BoolExpr) operation.instantiate(ctx);
+
                         return ctx.mkEq(outExpr, (BoolExpr) pcodeExpr);
                     }
 
-                    BitVecExpr outExpr = (BitVecExpr) outVariable.instantiateAs(ctx, new GhiHornBitVectorType());
+                    BitVecExpr outExpr =
+                            (BitVecExpr) outVariable.instantiateAs(GhiHornType.BitVec, ctx);
                     BitVecExpr pcodeExpr = (BitVecExpr) operation.instantiate(ctx);
                     return ctx.mkEq(outExpr, pcodeExpr);
                 }
@@ -310,9 +310,9 @@ public class PcodeExpression implements HornExpression {
                     return (BoolExpr) operation.instantiate(ctx);
                 }
             }
-        } catch (Z3Exception z3x) {
+        } catch (Exception z3x) {
             Msg.error(this, "Failed to make expression for P-Code: " + this);
-            z3x.printStackTrace();
+            // z3x.printStackTrace();
         }
         // This p-code operation cannot be instantiated
         return null;
@@ -337,5 +337,70 @@ public class PcodeExpression implements HornExpression {
         }
 
         return sb.toString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#hashCode()
+     */
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((defVariables == null) ? 0 : defVariables.hashCode());
+        result = prime * result + ((inVariables == null) ? 0 : inVariables.hashCode());
+        result = prime * result + ((operation == null) ? 0 : operation.hashCode());
+        result = prime * result + ((outVariable == null) ? 0 : outVariable.hashCode());
+        result = prime * result + ((pcode == null) ? 0 : pcode.hashCode());
+        result = prime * result + ((useVariables == null) ? 0 : useVariables.hashCode());
+        return result;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!(obj instanceof PcodeExpression))
+            return false;
+        PcodeExpression other = (PcodeExpression) obj;
+        if (defVariables == null) {
+            if (other.defVariables != null)
+                return false;
+        } else if (!defVariables.equals(other.defVariables))
+            return false;
+        if (inVariables == null) {
+            if (other.inVariables != null)
+                return false;
+        } else if (!inVariables.equals(other.inVariables))
+            return false;
+        if (operation == null) {
+            if (other.operation != null)
+                return false;
+        } else if (!operation.equals(other.operation))
+            return false;
+        if (outVariable == null) {
+            if (other.outVariable != null)
+                return false;
+        } else if (!outVariable.equals(other.outVariable))
+            return false;
+        if (pcode == null) {
+            if (other.pcode != null)
+                return false;
+        } else if (!pcode.equals(other.pcode))
+            return false;
+        if (useVariables == null) {
+            if (other.useVariables != null)
+                return false;
+        } else if (!useVariables.equals(other.useVariables))
+            return false;
+        return true;
     }
 }

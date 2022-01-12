@@ -25,9 +25,14 @@ public class BoolNotExpression implements HornExpression {
 
     public BoolExpr instantiate(GhiHornContext ctx) throws Z3Exception {
 
-        Verify.verify(exp.getType() == GhiHornType.Bool, "Bool Not requires boolean term: " + exp);
-
-        return ctx.mkNot((BoolExpr) exp.instantiate(ctx));
+        try {
+            
+            Verify.verify(exp.getType() == GhiHornType.Bool, "Bool Not requires boolean term: " + exp);
+            return ctx.mkNot((BoolExpr) exp.instantiate(ctx));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
@@ -44,4 +49,37 @@ public class BoolNotExpression implements HornExpression {
     public HornExpression[] getComponents() {
         return new HornExpression[] { exp };
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((exp == null) ? 0 : exp.hashCode());
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!(obj instanceof BoolNotExpression))
+            return false;
+        BoolNotExpression other = (BoolNotExpression) obj;
+        if (exp == null) {
+            if (other.exp != null)
+                return false;
+        } else if (!exp.equals(other.exp))
+            return false;
+        return true;
+    }
+
+    
 }

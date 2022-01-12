@@ -3,6 +3,9 @@ package kaiju.tools.ghihorn.display.graph;
 import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
@@ -17,6 +20,7 @@ import ghidra.program.util.ProgramSelection;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import kaiju.tools.ghihorn.GhiHornPlugin;
+import kaiju.tools.ghihorn.answer.GhiHornAnswerAttributes;
 import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettings;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraph;
 import kaiju.tools.ghihorn.answer.graph.display.GhiHornAnswerGraphVisualEdge;
@@ -34,9 +38,51 @@ public class GhiHornAnswerGraphComponent {
         this.graph = g;
     }
 
-    public void build(final GhiHornDisplaySettings s) {
-        GhiHornVisualAnswerGraph vizGraph = graph.toVisualGraph(s);
+    public void build(final GhiHornDisplaySettings settings) {
+
+        GhiHornVisualAnswerGraph vizGraph = graph.toVisualGraph(settings);
         if (vizGraph != null) {
+
+            // filter out extraneous vertices import bodies
+            List<GhiHornAnswerGraphVisualVertex> filterVtxList = new ArrayList<>();
+            Iterator<GhiHornAnswerGraphVisualVertex> vi = vizGraph.getAllVertices();
+            while (vi.hasNext()) {
+                GhiHornAnswerGraphVisualVertex vtx = vi.next();
+                GhiHornAnswerAttributes attributes = vtx.getAttributes();
+                HornElement elm = vtx.getAttributes().getHornElement();
+
+                if (elm.isExternal() || elm.isImported()) {
+                    if (!attributes.isPrecondition()) {
+                        if (settings.hideExternalFunctions()) {
+                            filterVtxList.add(vtx);
+                        }
+                    }
+                } else {
+                    // not external vertex, print if a precondition
+                    if (attributes.isPostcondition()) {
+                        filterVtxList.add(vtx);
+                    }
+                }
+            }
+            if (!filterVtxList.isEmpty()) {
+                for (GhiHornAnswerGraphVisualVertex vtx : filterVtxList) {
+                    if (vizGraph.getPredecessorCount(vtx) > 0
+                            && vizGraph.getSuccessorCount(vtx) > 0) {
+                        GhiHornAnswerGraphVisualVertex prev =
+                                vizGraph.getPredecessors(vtx).iterator().next();
+                        GhiHornAnswerGraphVisualVertex next =
+                                vizGraph.getSuccessors(vtx).iterator().next();
+                        while (next.getAttributes().getHornElement().isImported()) {
+                            next = vizGraph.getSuccessors(next).iterator().next();
+                        }
+
+                        vizGraph.addEdge(new GhiHornAnswerGraphVisualEdge(prev, next));
+                    }
+                }
+
+                vizGraph.filterVertices(filterVtxList);
+            }
+
             // We are displaying these results in Ghidra
 
             VisualGraphView<GhiHornAnswerGraphVisualVertex, GhiHornAnswerGraphVisualEdge, GhiHornVisualAnswerGraph> view =
@@ -94,10 +140,12 @@ public class GhiHornAnswerGraphComponent {
             graphPanel.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
             graphPanel.add(view.getViewComponent(), BorderLayout.CENTER);
         }
+
     }
 
     /**
      * Fetch the component tha holds the graph
+     * 
      * @return
      */
     public JPanel getComponent() {

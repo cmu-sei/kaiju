@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.BoolSort;
 import com.microsoft.z3.Expr;
@@ -16,7 +15,6 @@ import com.microsoft.z3.Sort;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornElement;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornPredicate;
 import kaiju.tools.ghihorn.hornifer.horn.expression.HornExpression;
-import kaiju.tools.ghihorn.hornifer.horn.expression.PcodeExpression;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariableExpression;
 import kaiju.tools.ghihorn.z3.GhiHornContext;
 
@@ -24,16 +22,15 @@ import kaiju.tools.ghihorn.z3.GhiHornContext;
  * (body && constraints) => head
  */
 public class HornClause {
-    private final String name;
+    private String name;
     private final HornElement head;
     private final HornElement body;
-    // private HornRuleExpr ruleExpression;
 
     // Head/Body variables are the actual variables to use in the clause. They
     // are instances, which can set their own representation
     private final SortedSet<HornVariableExpression> bodyVars;
     private final SortedSet<HornVariableExpression> headVars;
-    private final List<HornExpression> constraintList;
+    private final List<HornExpression> constraintList = new ArrayList<>();
 
     /**
      * body && cons => head
@@ -57,6 +54,10 @@ public class HornClause {
         }
     }
 
+    public HornClause(final HornClause other) {
+        this(other.name, other.body, other.head, other.constraintList.toArray(new HornExpression[0]));
+    }
+
     /**
      * Create an unconstrained horn clause with variables sorted lexographically by name
      * 
@@ -69,9 +70,8 @@ public class HornClause {
         this.name = name;
         this.head = head;
         this.body = body;
-        this.constraintList = new ArrayList<>();
-        // this.ruleExpression = null;
 
+        // For simplicity and consistency, sort by variable name
         this.bodyVars = new TreeSet<>(
                 Comparator.comparing(HornVariableExpression::getName,
                         Comparator.nullsFirst(String::compareTo)));
@@ -108,6 +108,13 @@ public class HornClause {
     }
 
     /**
+     * @param name the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
      * 
      * @return the head
      */
@@ -136,8 +143,16 @@ public class HornClause {
      * 
      * @param con the new constraint
      */
-    public void addConstraint(final PcodeExpression con) {
+    public void addConstraint(final HornExpression con) {
         this.constraintList.add(con);
+    }
+    /**
+     * Add a constraint
+     * 
+     * @param con the new constraint
+     */
+    public void addConstraints(final List<HornExpression> cons) {
+        this.constraintList.addAll(cons);
     }
 
     @Override
@@ -166,7 +181,9 @@ public class HornClause {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((body == null) ? 0 : body.hashCode());
+        result = prime * result + ((constraintList == null) ? 0 : constraintList.hashCode());
         result = prime * result + ((head == null) ? 0 : head.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         return result;
     }
 
@@ -180,26 +197,16 @@ public class HornClause {
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
+        if (!(obj instanceof HornClause))
             return false;
-        if (getClass() != obj.getClass())
-            return false;
+        
         HornClause other = (HornClause) obj;
-        if (body == null) {
-            if (other.body != null)
-                return false;
-        } else if (!body.equals(other.body))
-            return false;
-        if (head == null) {
-            if (other.head != null)
-                return false;
-        } else if (!head.equals(other.head))
-            return false;
         if (name == null) {
             if (other.name != null)
                 return false;
         } else if (!name.equals(other.name))
             return false;
+
         return true;
     }
 
@@ -236,7 +243,7 @@ public class HornClause {
      * 
      * @return the head variables
      */
-    public HornVariableExpression[] getHeadVars() {
+    public HornVariableExpression[] getHeadVarExpressions() {
         return this.headVars.toArray(new HornVariableExpression[0]);
     }
 
@@ -245,7 +252,7 @@ public class HornClause {
      * 
      * @return the body variables
      */
-    public HornVariableExpression[] getBodyVars() {
+    public HornVariableExpression[] getBodyVarExpressions() {
         return this.bodyVars.toArray(new HornVariableExpression[0]);
     }
 
@@ -341,4 +348,6 @@ public class HornClause {
 
         return new HornRuleExpr(this.name, context, bodyExpr, headExpr, constraintExpr);
     }
+
+
 }

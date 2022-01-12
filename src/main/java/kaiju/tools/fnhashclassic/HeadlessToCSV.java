@@ -35,14 +35,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.StringJoiner;
 
-import ghidra.program.model.util.PropertyMapManager;
-import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.listing.Program;
-
-import ghidra.util.Msg;
-
+import ghidra.program.model.util.ObjectPropertyMap;
+import ghidra.program.model.util.PropertyMapManager;
 import kaiju.hashing.FnHashSaveable;
 
 public final class HeadlessToCSV {

@@ -27,10 +27,6 @@
  */
 package kaiju.util;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import ghidra.program.model.address.Address;
 
 /**

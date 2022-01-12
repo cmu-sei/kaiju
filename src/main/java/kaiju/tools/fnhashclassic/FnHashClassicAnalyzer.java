@@ -31,35 +31,30 @@
  */
 package kaiju.tools.fnhashclassic;
 
+// For UTF8 charset in crypto functions to standardize across operating systems
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.StringJoiner;
+
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.importer.MessageLog;
-import ghidra.framework.options.Options;
 import ghidra.framework.options.OptionType;
+import ghidra.framework.options.Options;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.util.PropertyMapManager;
 import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.UsrException;
 import ghidra.util.task.TaskMonitor;
-
-// For UTF8 charset in crypto functions to standardize across operating systems
-import java.nio.charset.StandardCharsets;
-
-import java.util.StringJoiner;
-import java.security.MessageDigest;
-
-import kaiju.common.*;
-import kaiju.common.logging.*;
+import kaiju.common.KaijuLogger;
+import kaiju.common.KaijuPropertyManager;
+import kaiju.common.logging.MultiLogLevel;
 import kaiju.hashing.FnHashSaveable;
-import kaiju.tools.fnhashclassic.FnHashOptions;
-import kaiju.tools.fnhashclassic.FnUtils;
 import kaiju.util.HexUtils;
 
 /**
@@ -73,10 +68,6 @@ public class FnHashClassicAnalyzer extends AbstractAnalyzer implements KaijuLogg
     // are available in kaiju.fnhash.FnHashOptions, so that other classes
     // can access these values for working with the Ghidra database
 
-    private Integer min_insns;
-    
-    private boolean include_basic_blocks;
-    
     /**
      * Creates an Fn2Hash instance and registers its name and description within Ghidra.
      */
@@ -87,9 +78,6 @@ public class FnHashClassicAnalyzer extends AbstractAnalyzer implements KaijuLogg
         // all the other analyzers run first.
         // https://ghidra.re/ghidra_docs/api/ghidra/app/services/AnalysisPriority.html
         setPriority(AnalysisPriority.LOW_PRIORITY.after());
-        // initialize analyzer options including logger
-        min_insns = FnHashOptions.MIN_INSNS_OPTION_DEFAULT;
-        include_basic_blocks = FnHashOptions.BASIC_BLOCK_OPTION_DEFAULT;
     }
     
     /**
@@ -144,11 +132,11 @@ public class FnHashClassicAnalyzer extends AbstractAnalyzer implements KaijuLogg
     public void optionsChanged(Options options, Program program) {
 
         if (options.contains(FnHashOptions.MIN_INSNS_OPTION_NAME)) {
-            min_insns = options.getInt(FnHashOptions.MIN_INSNS_OPTION_NAME, FnHashOptions.MIN_INSNS_OPTION_DEFAULT);
+            options.getInt(FnHashOptions.MIN_INSNS_OPTION_NAME, FnHashOptions.MIN_INSNS_OPTION_DEFAULT);
         }
         
         if (options.contains(FnHashOptions.BASIC_BLOCK_OPTION_NAME)) {
-            include_basic_blocks = options.getBoolean(FnHashOptions.BASIC_BLOCK_OPTION_NAME, FnHashOptions.BASIC_BLOCK_OPTION_DEFAULT);
+            options.getBoolean(FnHashOptions.BASIC_BLOCK_OPTION_NAME, FnHashOptions.BASIC_BLOCK_OPTION_DEFAULT);
         }
         
         if (options.contains(FnHashOptions.LOG_LEVEL_OPTION_NAME)) {
@@ -160,9 +148,6 @@ public class FnHashClassicAnalyzer extends AbstractAnalyzer implements KaijuLogg
     public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
             throws CancelledException {
             
-        // try to get FnHashAnalyzer properties, if analyzer has been run
-        Options options = program.getOptions(Program.ANALYSIS_PROPERTIES);
-        
         // set up property maps to store hash data in ghidra program database
         ObjectPropertyMap fnhashobjmap = KaijuPropertyManager.getOrCreateObjectPropertyMap(program, "FnHash", FnHashSaveable.class);
         
@@ -237,19 +222,12 @@ public class FnHashClassicAnalyzer extends AbstractAnalyzer implements KaijuLogg
         //   insn-type-counts (TESTING -- do these compare with pharos implementation?)
         //   cphash,mnemhash,mnemcnthash,mnemcathash,mnemcatcnthash,mnemcntvec,mnemcatcntvec,bbinfo,bbcfginfo
 
-        // need a better way to handle the List fn_[ep]bytes... trying to avoid
-        // repeated calls to HexUtils.byteArrayToHexString(); could build byte array instead
-        // but feels better to inline string for output
-        String fn_ebytes_string = "";
-        String fn_pbytes_string = "";
         for (byte [] feb : fnu.fn_ebytes) {
             for (byte eb: feb) {
-                fn_ebytes_string += String.format("%02X%s",eb,"");
             }
         }
         for (byte [] fpb : fnu.fn_pbytes) {
             for (byte pb: fpb) {
-                fn_pbytes_string += String.format("%02X%s",pb,"");
             }
         }
         // TODO: refactor so either code_units.size() or basic_blocks.size() works here

@@ -34,17 +34,13 @@ package kaiju.tools.fnxrefs;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.StringJoiner;
-
-import ghidra.program.model.util.PropertyMapManager;
-import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.*;
 import ghidra.program.model.mem.Memory;
-import ghidra.program.model.symbol.*;
-
-import ghidra.util.Msg;
+import ghidra.program.model.symbol.Reference;
+import ghidra.program.model.symbol.ReferenceIterator;
+import ghidra.program.model.symbol.ReferenceManager;
 import kaiju.util.AddressUtils;
 
 public final class HeadlessXrefsToCSV {
@@ -89,13 +85,13 @@ public final class HeadlessXrefsToCSV {
             byte[] val = AddressUtils.addressToByteArray(fnEntryAddress);
             Address query = null;
             if (minAddr != null) {
-                query = mem.findBytes​(minAddr, val, null, true, null);
+                query = mem.findBytes(minAddr, val, null, true, null);
             }
             String queryStr = (query == null) ? "false" : "true";
             // search for address in little endian format
             byte[] valLE = AddressUtils.addressToByteArrayLE(fnEntryAddress);
             if (minAddr != null) {
-                query = mem.findBytes​(minAddr, valLE, null, true, null);
+                query = mem.findBytes(minAddr, valLE, null, true, null);
             }
             String leQueryStr = (query == null) ? "false" : "true";
 

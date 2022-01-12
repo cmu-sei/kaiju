@@ -6,16 +6,17 @@ import java.awt.Color;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.Optional;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import docking.GenericHeader;
 import ghidra.graph.viewer.vertex.AbstractVisualVertex;
-import kaiju.tools.ghihorn.answer.GhiHornUnsatAttributes;
 import kaiju.tools.ghihorn.answer.GhiHornAnswerAttributes;
+import kaiju.tools.ghihorn.answer.GhiHornUnsatAttributes;
+import kaiju.tools.ghihorn.answer.format.GhiHornOutputFormatter;
 import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettings;
-import kaiju.tools.ghihorn.answer.format.GhiHornTextFormatter;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornElement;
 import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 
@@ -39,15 +40,19 @@ public class GhiHornAnswerGraphVisualVertex extends AbstractVisualVertex {
             textArea.setLineWrap(false);
 
             genericHeader = new GenericHeader();
-            genericHeader.setTitle(attrs.getName());
 
-            final StringBuilder sb = new StringBuilder();
-            new GhiHornTextFormatter(settings).format(attributes, sb);
-            textArea.setText(sb.toString());
+            if (settings.showAllState()) {
+                genericHeader.setTitle(attributes.getVertexName());
+            } else {
+                genericHeader.setTitle(attributes.getName());
+            }
+
+            textArea.setText(attributes.format(GhiHornOutputFormatter.create(settings)));
 
             textArea.setBackground(Color.white);
 
             if (attributes.getStatus() == GhiHornFixedpointStatus.Satisfiable) {
+
                 if (attributes.isGoal()) {
                     textArea.setBackground(Color.red.brighter());
                 } else if (attributes.isStart()) {
@@ -67,12 +72,23 @@ public class GhiHornAnswerGraphVisualVertex extends AbstractVisualVertex {
                     }
                 }
             } else if (attributes.getStatus() == GhiHornFixedpointStatus.Unsatisfiable) {
-                final boolean result =
-                        ((GhiHornUnsatAttributes) attributes).getResult();
-                if (result) {
-                    textArea.setBackground(Color.green.brighter());
+
+                if (attributes.isStart() || attributes.isGoal()) {
+                    textArea.setBackground(Color.gray.brighter());
                 } else {
-                    textArea.setBackground(Color.red.brighter());
+
+                    final Optional<Boolean> optRes =
+                            ((GhiHornUnsatAttributes) attributes).getConditionAsBoolean();
+
+                    optRes.ifPresentOrElse(result -> {
+                        if (result) {
+                            textArea.setBackground(Color.green.brighter());
+                        } else if (!result) {
+                            textArea.setBackground(Color.red.brighter());
+                        }
+                    },
+                            // This is not a boolean
+                            () -> textArea.setBackground(Color.yellow));
                 }
             }
 
@@ -127,7 +143,7 @@ public class GhiHornAnswerGraphVisualVertex extends AbstractVisualVertex {
 
     @Override
     public String toString() {
-        return textArea.getText();
+        return attributes.getName();
     }
 
     /**

@@ -16,6 +16,7 @@ import kaiju.tools.ghihorn.z3.GhiHornContext;
  */
 
 public interface HornElement {
+    
     public static final String NO_ID = "";
 
     public FuncDecl<BoolSort> declare(final GhiHornContext ctx);

@@ -32,35 +32,26 @@
 package kaiju.tools.fse;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.Vector;
 
 import db.NoTransactionException;
-import ghidra.framework.model.*;
-import ghidra.framework.model.Project;
+import ghidra.framework.model.DomainFile;
+import ghidra.framework.model.DomainFolder;
+import ghidra.framework.model.DomainObject;
 import ghidra.framework.model.ProjectData;
-import ghidra.framework.options.Options;
-import ghidra.framework.plugintool.PluginInfo;
-import ghidra.framework.plugintool.PluginTool;
-import ghidra.framework.plugintool.util.PluginStatus;
-import ghidra.framework.preferences.Preferences;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.program.util.*;
-import ghidra.util.HelpLocation;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.VersionException;
 import ghidra.util.task.ConsoleTaskMonitor;
-
-import kaiju.common.*;
+import kaiju.common.KaijuLogger;
+import kaiju.common.KaijuPropertyManager;
 import kaiju.hashing.FnHashSaveable;
 
 public class FnSetExtractor implements KaijuLogger {

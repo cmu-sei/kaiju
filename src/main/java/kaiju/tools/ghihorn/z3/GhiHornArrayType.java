@@ -9,6 +9,11 @@ public class GhiHornArrayType implements GhiHornDataType {
     private GhiHornDataType indexType;
     private GhiHornDataType valueType;
 
+    public GhiHornArrayType() {
+        indexType = new GhiHornUndefinedType();
+        valueType = new GhiHornUndefinedType();
+    }
+
     public GhiHornArrayType(GhiHornDataType indexType, GhiHornDataType valueType) {
         this.indexType = indexType;
         this.valueType = valueType;

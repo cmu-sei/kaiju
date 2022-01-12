@@ -31,11 +31,12 @@
  */
 package kaiju.tools.disasm;
 
+import java.util.HashSet;
+
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.importer.MessageLog;
-import ghidra.framework.options.Options;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressRangeImpl;
@@ -46,7 +47,6 @@ import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeManager;
 import ghidra.program.model.lang.Processor;
-import ghidra.program.model.listing.BookmarkManager;
 import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Instruction;
@@ -57,10 +57,7 @@ import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
-
-import java.util.HashSet;
-
-import kaiju.common.*;
+import kaiju.common.KaijuLogger;
 
  /**
  * A Ghidra analyzer pass that improves function partitioning in a program.

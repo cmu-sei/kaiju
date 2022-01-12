@@ -9,7 +9,9 @@ import ghidra.graph.GDirectedGraph;
 import ghidra.graph.GraphAlgorithms;
 import ghidra.graph.GraphFactory;
 import ghidra.graph.algo.GraphNavigator;
+import kaiju.tools.ghihorn.answer.format.GhiHornOutputFormatter;
 import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettings;
+import kaiju.tools.ghihorn.answer.format.GhiHornFormattableElement;
 import kaiju.tools.ghihorn.answer.graph.display.GhiHornVisualAnswerGraph;
 import kaiju.tools.ghihorn.hornifer.horn.HornProgram;
 import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
@@ -17,11 +19,13 @@ import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 /**
  * A graph that allows for filtering
  */
-public class GhiHornAnswerGraph {
+public class GhiHornAnswerGraph implements GhiHornFormattableElement {
 
     private final GDirectedGraph<GhiHornAnswerGraphVertex, GhiHornAnswerGraphEdge> graph;
     private final GhiHornFixedpointStatus status;
     private final HornProgram hornProgram;
+    private GhiHornAnswerGraphVertex sink;
+    private GhiHornAnswerGraphVertex source;
 
     /**
      * 
@@ -44,6 +48,28 @@ public class GhiHornAnswerGraph {
     }
 
     /**
+     * @param source the source to set
+     */
+    public void setSource(GhiHornAnswerGraphVertex source) {
+        this.source = source;
+    }
+
+    public GhiHornAnswerGraphVertex getSource() {
+        return this.source;
+    }
+
+    /**
+     * @param sink the sink to set
+     */
+    public void setSink(GhiHornAnswerGraphVertex sink) {
+        this.sink = sink;
+    }
+    
+    public GhiHornAnswerGraphVertex getSink() {
+        return this.sink;
+    }
+
+    /**
      * Add a new vertex
      * 
      * @param v
@@ -56,6 +82,7 @@ public class GhiHornAnswerGraph {
 
     /**
      * Remove a vertex if it exists
+     * 
      * @param v
      */
     public void removeVertex(final GhiHornAnswerGraphVertex v) {
@@ -87,7 +114,7 @@ public class GhiHornAnswerGraph {
      */
     public void addEdge(final GhiHornAnswerGraphEdge e) {
         if (e != null) {
-                    
+
             graph.addEdge(e);
         }
     }
@@ -103,7 +130,7 @@ public class GhiHornAnswerGraph {
 
     /**
      * 
-     * @return vertices in pre order
+     * @return vertices in pre order (in order)
      */
     public List<GhiHornAnswerGraphVertex> getVerticesInPreOrder() {
         return GraphAlgorithms.getVerticesInPreOrder(this.graph,
@@ -144,5 +171,10 @@ public class GhiHornAnswerGraph {
      */
     public GhiHornFixedpointStatus getStatus() {
         return status;
+    }
+
+    @Override
+    public String format(GhiHornOutputFormatter formatter) {
+        return formatter.format(this);
     }
 }

@@ -3,9 +3,9 @@ package kaiju.tools.ghihorn.hornifer.horn.variable;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
-import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.TypeDef;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.pcode.HighConstant;
 import ghidra.program.model.pcode.HighGlobal;
@@ -13,7 +13,6 @@ import ghidra.program.model.pcode.HighParam;
 import ghidra.program.model.pcode.HighVariable;
 import kaiju.tools.ghihorn.hornifer.horn.HornFunctionInstance;
 import kaiju.tools.ghihorn.hornifer.horn.expression.HornExpression;
-import kaiju.tools.ghihorn.z3.GhiHornArrayType;
 import kaiju.tools.ghihorn.z3.GhiHornBitVectorType;
 import kaiju.tools.ghihorn.z3.GhiHornBooleanType;
 import kaiju.tools.ghihorn.z3.GhiHornContext;
@@ -21,11 +20,11 @@ import kaiju.tools.ghihorn.z3.GhiHornDataType;
 import kaiju.tools.ghihorn.z3.GhiHornType;
 
 /**
- * A variable in a horn clause. Variables have a name, type and scope they can
- * be independent expressions or bound to a horn expression. This is more or
- * less the component pattern at work
+ * A variable in a horn clause. Variables have a name, type and scope they can be independent
+ * expressions or bound to a horn expression. This is more or less the component pattern at work
  */
 public class HornVariable implements HornExpression {
+
     protected HornVariableName name;
     protected GhiHornDataType type;
     protected Scope scope;
@@ -107,21 +106,40 @@ public class HornVariable implements HornExpression {
 
         if (highVariable instanceof HighGlobal) {
             scope = HornVariable.Scope.Global;
-        } else if (highVariable instanceof HighParam) {
-            scope = HornVariable.Scope.Function;
-        }
+        } 
+        // Unclear what we will do with function scope variables at this time
+        // else if (highVariable instanceof HighParam) {
+        //     scope = HornVariable.Scope.Function;
+        // }
 
-        final DataType dt = highVariable.getDataType();
+        this.type = null;
+        DataType dt = highVariable.getDataType();
+
         if (dt instanceof BooleanDataType) {
             this.type = new GhiHornBooleanType();
-        } else if (dt instanceof ArrayDataType) {
+        } 
 
-            // In an array , the type length is the number of elements
-            // TODO: diagnose the type of the array
+        // Arrays are interesting cases when they are used in PCODE
+        // else if (dt instanceof ArrayDataType) {
+        //     // In an array , the type length is the number of elements
+        //     // TODO: diagnose the type of the array elements
 
-            this.type =
-                    new GhiHornArrayType(new GhiHornBitVectorType(), new GhiHornBitVectorType());
-        } else {
+        //     this.type =
+        //             new GhiHornArrayType(new GhiHornBitVectorType(), new GhiHornBitVectorType());
+        // }
+
+        // In some systems (e.g. Windows) BOOL is typedef'd from int. There may be other such
+        // typedefs
+        else if (dt instanceof TypeDef) {
+
+            String typedefName = ((TypeDef) highVariable.getDataType()).getName();
+            if (typedefName.equalsIgnoreCase("bool") || typedefName.equalsIgnoreCase("boolean")) {
+                this.type = new GhiHornBooleanType();
+            }
+        }
+
+        // No type decided, default to bitvector
+        if (this.type == null) {
             this.type = new GhiHornBitVectorType();
         }
     }
@@ -183,11 +201,19 @@ public class HornVariable implements HornExpression {
     /**
      * Instantiate as a specific type
      */
-    public Expr<? extends Sort> instantiateAs(GhiHornContext ctx, GhiHornDataType preferredType)
+    public Expr<? extends Sort> instantiateAs(GhiHornType preferredType, GhiHornContext ctx)
             throws Z3Exception {
-        return preferredType.mkConst(ctx, name.getFullName());
+        try {
+            return GhiHornType.create(preferredType).mkConst(ctx, name.getFullName());
+        } catch (NullPointerException npe) {
+            npe.printStackTrace();
+        }
+        return null;
     }
 
+    /**
+     * 
+     */
     @Override
     public Expr<? extends Sort> instantiate(GhiHornContext ctx) throws Z3Exception {
         return type.mkConst(ctx, name.getFullName());
@@ -244,10 +270,15 @@ public class HornVariable implements HornExpression {
     /**
      * @return the true if there is a high variable
      */
-    public boolean hasDecompilerHighVariable() {
+    public boolean hasHighVariable() {
+
         if (this.highVariable != null) {
+
             // If this variable has a symbol, then show it because it will be in
-            // the decompilation
+            // the decompilation. This will eliminate temporary variables
+            //
+            // TODO: reivisit this and possibly make it a configurable setting
+
             if (this.highVariable.getSymbol() != null) {
                 return true;
             }
@@ -266,7 +297,12 @@ public class HornVariable implements HornExpression {
         return name;
     }
 
-    public String formatName() {
+    /**
+     * Format the full name for this variable
+     * 
+     * @return
+     */
+    public String getName() {
         return name.getFullName();
     }
 
@@ -292,9 +328,7 @@ public class HornVariable implements HornExpression {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
-
-        return result;
+        return prime * result + ((name == null) ? 0 : name.getFullName().hashCode());
     }
 
     /*
@@ -302,32 +336,35 @@ public class HornVariable implements HornExpression {
      * 
      * @see java.lang.Object#equals(java.lang.Object)
      */
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof HornVariable)) {
             return false;
         }
 
-        final HornVariable other = (HornVariable) obj;
-
-        if (name != null && other.name != null) {
-            return name.equals(other.name);
+        HornVariable other = (HornVariable) obj;
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
         }
-        // both null
+        // Variable equality is based on name
+        if (!name.getFullName().equals(other.name.getFullName())) {
+            return false;
+        }
+
         return true;
-    }
-
-    public boolean isConstant() {
-        return (this instanceof HornConstant);
     }
 
     public void setHighVariable(final HighParam hv) {
         this.highVariable = hv;
+    }
+
+    public boolean isConstant() {
+        return (this instanceof HornConstant);
     }
 }

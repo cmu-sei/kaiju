@@ -34,10 +34,8 @@ package kaiju.tools.ooanalyzer.jsontypes;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 
 import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 
 /**

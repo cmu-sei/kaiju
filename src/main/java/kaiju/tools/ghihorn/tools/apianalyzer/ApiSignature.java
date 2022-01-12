@@ -1,21 +1,36 @@
 package kaiju.tools.ghihorn.tools.apianalyzer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ApiSignature {
+    public static final String ALL_SIGS = "All";
     private final String name;
     private final String description;
-    private final List<String> sequence;
+    private final List<ApiFunction> sequence;
+
+    /**
+     * Create an empty signature
+     */
+    public ApiSignature() {
+        this.name = "";
+        this.description = "";
+        this.sequence = new ArrayList<>();
+    }
 
     /**
      * @param name
      * @param description
      * @param sequence
      */
-    public ApiSignature(String name, String description, List<String> sequence) {
+    public ApiSignature(String name, String description, List<ApiFunction> sequence) {
         this.name = name;
         this.description = description;
         this.sequence = sequence;
+    }
+
+    public static ApiSignature allSignatures() {
+        return new ApiSignature(ALL_SIGS, "Search for all signatures", null);
     }
 
     /**
@@ -35,7 +50,7 @@ public class ApiSignature {
     /**
      * @return the sequence
      */
-    public List<String> getSequence() {
+    public List<ApiFunction> getSequence() {
         return sequence;
     }
 

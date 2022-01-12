@@ -119,7 +119,7 @@ dependencies {
     implementation(
         ':com.microsoft.z3:4.8.11.0'
     ) { because "Z3 is required to use Kaiju Ghihorn." }
-    
+
     testImplementation(
         'junit:junit:4.12',
         'org.junit.jupiter:junit-jupiter-api:5.4.2',

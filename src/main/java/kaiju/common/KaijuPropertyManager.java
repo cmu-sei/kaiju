@@ -61,7 +61,7 @@ public class KaijuPropertyManager {
         // check if properties exist already, or if need to create
         ObjectPropertyMap kaijuobjmap;
         try {
-            kaijuobjmap = mapmgr.createObjectPropertyMap​(propertyName, saveableClass);
+            kaijuobjmap = mapmgr.createObjectPropertyMap(propertyName, saveableClass);
         } catch (DuplicateNameException e) {
             kaijuobjmap = mapmgr.getObjectPropertyMap(propertyName);
         } catch (NoTransactionException e) {
@@ -96,7 +96,7 @@ public class KaijuPropertyManager {
         if (kaijuintmap == null) {
             // didn't exist so create it!
             try {
-                kaijuintmap = mapmgr.createIntPropertyMap​(propertyName);
+                kaijuintmap = mapmgr.createIntPropertyMap(propertyName);
             } catch (DuplicateNameException e) {
                 // shouldn't get here but ghidra requires catching
                 kaijuintmap = mapmgr.getIntPropertyMap(propertyName);
@@ -133,7 +133,7 @@ public class KaijuPropertyManager {
         if (kaijuintmap == null) {
             // didn't exist so create it!
             try {
-                kaijuintmap = mapmgr.createIntPropertyMap​(propertyName);
+                kaijuintmap = mapmgr.createIntPropertyMap(propertyName);
             } catch (DuplicateNameException e) {
                 // shouldn't get here but ghidra requires catching
                 kaijuintmap = mapmgr.getIntPropertyMap(propertyName);

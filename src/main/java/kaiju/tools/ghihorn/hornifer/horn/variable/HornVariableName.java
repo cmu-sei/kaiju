@@ -16,22 +16,31 @@ import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolTable;
 
 public class HornVariableName implements Comparable<HornVariableName> {
-    private String name, funcId;
+    private String nameId, funcId, programId;
     public static final HornVariableName NO_NAME = new HornVariableName();
 
     private HornVariableName() {
-        name = "";
+        nameId = "";
         funcId = "";
+        programId = "";
     }
 
     public HornVariableName(String n) {
-        name = n;
+        nameId = n;
         funcId = "";
+        programId = "";
     }
 
     public HornVariableName(String n, String f) {
-        name = n;
+        nameId = n;
         funcId = f;
+        programId = "";
+    }
+
+    public HornVariableName(String n, String f, String p) {
+        nameId = n;
+        funcId = f;
+        programId = p;
     }
 
     /**
@@ -39,7 +48,7 @@ public class HornVariableName implements Comparable<HornVariableName> {
      * @return
      */
     public boolean isValid() {
-        return !name.isBlank();
+        return !nameId.isBlank();
     }
 
     /**
@@ -50,8 +59,9 @@ public class HornVariableName implements Comparable<HornVariableName> {
         if (other != null) {
             HornVariableName otherName = other.getVariableName();
             if (otherName != null) {
-                this.name = otherName.name;
+                this.nameId = otherName.nameId;
                 this.funcId = otherName.funcId;
+                this.programId = otherName.programId;
             }
         }
     }
@@ -65,12 +75,14 @@ public class HornVariableName implements Comparable<HornVariableName> {
 
         final HornVariableName hvn = new HornVariableName();
         String name = param.getName();
+
         
         Verify.verify(!name.isBlank() && !name.equals(Parameter.RETURN_NAME),
                 "Could not create horn variable for parameter: " + param);
 
-        hvn.name = name;
+        hvn.nameId = name;
         hvn.funcId = param.getFunction().getName();
+        hvn.programId = param.getFunction().getProgram().getName();
 
         return hvn;
     }
@@ -87,25 +99,37 @@ public class HornVariableName implements Comparable<HornVariableName> {
             return null;
         }
 
+        final Program program = highVar.getHighFunction().getFunction().getProgram();
+        
         if (highVar instanceof HighGlobal) {
             // For global variables
 
-            final Program program = highVar.getHighFunction().getFunction().getProgram();
             HighSymbol globalSym = ((HighGlobal) highVar).getSymbol();
             if (globalSym != null) {
 
                 // prefer the global symbol
+
                 HornVariableName globalName = new HornVariableName();
                 globalName.setName(globalSym.getName());
+
+                // There is no function ID for global variables
+                
+                globalName.setProgramId(program.getName());
+
                 return globalName;
             }
+
             // just in case the symbol is missing attempt to look it up directly
             Address addr = highVar.getRepresentative().getAddress();
             SymbolTable symTable = program.getSymbolTable();
             Symbol sym = symTable.getPrimarySymbol(addr);
             if (sym != null) {
+
                 HornVariableName symName = new HornVariableName();
-                symName.name = sym.getName();
+                symName.setName(sym.getName());
+                symName.setFuncId(highVar.getHighFunction().getFunction().getName());
+                symName.setProgramId(program.getName());
+                
                 return symName;
 
             }
@@ -114,22 +138,23 @@ public class HornVariableName implements Comparable<HornVariableName> {
         HornVariableName variableName = new HornVariableName();
 
         variableName.funcId = highVar.getHighFunction().getFunction().getName();
+        variableName.programId = program.getName();
 
         // Attempt to use the high variable symbol as the basis for the name
         if (!(highVar instanceof HighConstant)) {
 
             // Not a global variable, so include a function part
-            variableName.name = highVar.getName();
+            variableName.nameId = highVar.getName();
 
             // Starting after Ghidra 9.1.2 anonymous variables are named "UNNAMED"
-            if (variableName.name != null && !variableName.name.isEmpty()
-                    && !variableName.name.equals("UNNAMED")) {
+            if (variableName.nameId != null && !variableName.nameId.isEmpty()
+                    && !variableName.nameId.equals("UNNAMED")) {
                 return variableName;
             }
 
             HighSymbol sym = highVar.getSymbol();
             if (sym != null) {
-                variableName.name = sym.getName();
+                variableName.nameId = sym.getName();
                 return variableName;
             }
         }
@@ -155,17 +180,17 @@ public class HornVariableName implements Comparable<HornVariableName> {
         } else {
             typeName = typeName.toLowerCase().substring(0, 1);
         }
-        variableName.name = nameBuf.append(typeName.toLowerCase().charAt(0)).append("Var")
+        variableName.nameId = nameBuf.append(typeName.toLowerCase().charAt(0)).append("Var")
                 .append(repVarNode.getUniqueId()).toString();
 
         return variableName;
     }
 
     /**
-     * @return the name
+     * @return the name without function or program IDs
      */
     public String getName() {
-        return name;
+        return nameId;
     }
 
     /**
@@ -173,10 +198,13 @@ public class HornVariableName implements Comparable<HornVariableName> {
      */
     public String getFullName() {
 
-        final StringBuilder buf = new StringBuilder(name);
+        final StringBuilder buf = new StringBuilder(nameId);
 
         if (!funcId.isEmpty()) {
             buf.append("@").append(funcId);
+        }
+        if (!programId.isEmpty()) {
+            buf.append("!").append(programId);
         }
         return buf.toString();
     }
@@ -185,7 +213,7 @@ public class HornVariableName implements Comparable<HornVariableName> {
      * @param name the name to set
      */
     public void setName(String name) {
-        this.name = name;
+        this.nameId = name;
     }
 
     /**
@@ -193,6 +221,20 @@ public class HornVariableName implements Comparable<HornVariableName> {
      */
     public String getFuncId() {
         return funcId;
+    }
+
+    /**
+     * @return the programId
+     */
+    public String getProgramId() {
+        return programId;
+    }
+
+    /**
+     * @param programId the programId to set
+     */
+    public void setProgramId(String programId) {
+        this.programId = programId;
     }
 
     /**
@@ -207,39 +249,34 @@ public class HornVariableName implements Comparable<HornVariableName> {
         return getFullName().compareTo(o.getFullName());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((funcId == null) ? 0 : funcId.hashCode());
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
-        return result;
-    }
-
     @Override
     public String toString() {
         return this.getFullName();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((funcId == null) ? 0 : funcId.hashCode());
+        result = prime * result + ((nameId == null) ? 0 : nameId.hashCode());
+        result = prime * result + ((programId == null) ? 0 : programId.hashCode());
+        return result;
+    }
+
+    /* (non-Javadoc)
      * @see java.lang.Object#equals(java.lang.Object)
      */
-
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (!(obj instanceof HornVariableName))
             return false;
         HornVariableName other = (HornVariableName) obj;
         if (funcId == null) {
@@ -247,12 +284,19 @@ public class HornVariableName implements Comparable<HornVariableName> {
                 return false;
         } else if (!funcId.equals(other.funcId))
             return false;
-        if (name == null) {
-            if (other.name != null)
+        if (nameId == null) {
+            if (other.nameId != null)
                 return false;
-        } else if (!name.equals(other.name))
+        } else if (!nameId.equals(other.nameId))
+            return false;
+        if (programId == null) {
+            if (other.programId != null)
+                return false;
+        } else if (!programId.equals(other.programId))
             return false;
         return true;
     }
+
+    
 
 }

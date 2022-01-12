@@ -32,37 +32,32 @@
 
 package kaiju.tools.ooanalyzer;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.text.StringCharacterIterator;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.function.Supplier;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.IntStream;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -70,21 +65,17 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
-
+import ghidra.app.util.NamespaceUtils;
 import ghidra.app.util.demangler.CharacterIterator;
 import ghidra.app.util.demangler.DemangledObject;
-import ghidra.app.util.demangler.DemangledType;
 import ghidra.app.util.demangler.Demangler;
 import ghidra.app.util.demangler.DemanglerOptions;
 import ghidra.app.util.demangler.microsoft.MicrosoftDemangler;
-import ghidra.app.util.NamespaceUtils;
 import ghidra.program.database.data.DataTypeUtilities;
 import ghidra.program.flatapi.FlatProgramAPI;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.address.GlobalNamespace;
 import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.data.DataOrganizationImpl;
 import ghidra.program.model.data.DataType;
@@ -123,8 +114,8 @@ import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 import kaiju.tools.ooanalyzer.jsontypes.Member;
 import kaiju.tools.ooanalyzer.jsontypes.Method;
-import kaiju.tools.ooanalyzer.jsontypes.OOAnalyzerJsonRoot;
 import kaiju.tools.ooanalyzer.jsontypes.OOAnalyzerClassType;
+import kaiju.tools.ooanalyzer.jsontypes.OOAnalyzerJsonRoot;
 import kaiju.tools.ooanalyzer.jsontypes.Vfentry;
 import kaiju.tools.ooanalyzer.jsontypes.Vftable;
 
@@ -207,7 +198,7 @@ public class OOAnalyzer {
    * after 9.0.4
    */
   public void allowSwingToProcessEvents() {
-    Class c = null;
+    Class<?> c = null;
     try {
       c = Class.forName("ghidra.util.Swing");
     } catch (ClassNotFoundException e) {
@@ -1653,7 +1644,7 @@ public class OOAnalyzer {
     try {
       Demangler demangler = new MicrosoftDemangler();
       DemanglerOptions demanglerOpts = demangler.createDefaultOptions();
-      demanglerOpts.setDemangleOnlyKnownPatterns​(true);
+      demanglerOpts.setDemangleOnlyKnownPatterns(true);
 
       Msg.debug (OOAnalyzer.class, "Trying to demangle " + mangledName + " using Ghidra");
       DemangledObject demangledObj = demangler.demangle(mangledName, demanglerOpts);

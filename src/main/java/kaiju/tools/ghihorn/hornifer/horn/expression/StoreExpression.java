@@ -54,4 +54,41 @@ public class StoreExpression implements HornExpression {
     public HornExpression[] getComponents() {
         return new HornExpression[] { index, value };
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((index == null) ? 0 : index.hashCode());
+        result = prime * result + ((value == null) ? 0 : value.hashCode());
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!(obj instanceof StoreExpression))
+            return false;
+        StoreExpression other = (StoreExpression) obj;
+        if (index == null) {
+            if (other.index != null)
+                return false;
+        } else if (!index.equals(other.index))
+            return false;
+        if (value == null) {
+            if (other.value != null)
+                return false;
+        } else if (!value.equals(other.value))
+            return false;
+        return true;
+    }
 }

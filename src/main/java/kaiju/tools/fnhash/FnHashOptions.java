@@ -31,11 +31,6 @@
  */
 package kaiju.tools.fnhash;
 
-// For UTF8 charset in crypto functions to standardize across operating systems
-import java.nio.charset.StandardCharsets;
-
-import java.util.StringJoiner;
-
 public class FnHashOptions {
 
     public final static String NAME = "CERT Function Hashing";

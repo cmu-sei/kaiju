@@ -30,36 +30,17 @@
  * DM21-0792
  */
 
-package kaiju.tools.ooanalyzer;
+package kaiju.ooanalyzer;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.lang.System;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Stream;
-import java.util.stream.Collectors;
-
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.NoSuchFileException;
-
-import java.net.URL;
-import java.net.URLClassLoader;
-
-import kaiju.tools.ooanalyzer.OOAnalyzerTest;
-
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 import resources.ResourceManager;
 
 // For some reason, gradle can't find JUnit tests in a class that extends

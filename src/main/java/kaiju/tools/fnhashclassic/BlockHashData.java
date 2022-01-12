@@ -44,8 +44,6 @@ import ghidra.util.task.TaskMonitor;
 import java.util.List;
 import java.util.ArrayList;
 
-import kaiju.util.HexUtils;
-
 /**
  * an inner class to gather and hold basic block (CodeBlock) data for hashing purposes.
  */
@@ -65,14 +63,11 @@ public class BlockHashData {
     // CTOR will do all the real work for gathering the data
     public BlockHashData(CodeBlock bb, CodeManager cm, TaskMonitor monitor) throws Exception {
     
-        String msg;
         ft = bb.getFlowType();
         numaddr = bb.getNumAddresses();
         long curprogress = monitor.getProgress();
         //is_ep = bb.getMinAddress().equals(ep);
         monitor.setProgress(curprogress + numaddr);
-        //msg = "  >> bb @ 0x" + bb.getMinAddress().toString() + "-0x" + bb.getMaxAddress() + ", Entry: " + is_ep + ", Num addr: " + numaddr + ", Flow type: " + ft.toString() + ", Num Dest: " + bb.getNumDestinations(monitor);
-        msg = "  >> bb @ 0x" + bb.getMinAddress().toString() + "-0x" + bb.getMaxAddress() + ", Num addr: " + numaddr + ", Flow type: " + ft.toString() + ", Num Dest: " + bb.getNumDestinations(monitor);
         //debug(msg);
         // iterate over all instructions in the CodeBlock...uh, doesn't seem to
         // be a straightforward way to do that?  Sigh.  The FunctionGraph plugin
@@ -83,11 +78,7 @@ public class BlockHashData {
         eaddr = bb.getMaxAddress();
         bbentries = bb.getStartAddresses(); // uh, really?  can have multiple entry pts?
         if (bbentries.length != 1) {
-            msg = "ERROR: bb @ " + iaddr.toString() + " has multiple entry points: " + bbentries.length;
-            //debug(msg);
         } else if (!bbentries[0].equals(iaddr)) {
-            msg = "ERROR: bb @ " + iaddr.toString() + " has entry point different from min addr: " + bbentries[0].toString();
-            //debug(msg);
         }
         insns = new ArrayList<Instruction>();
         ebytes = new ArrayList<byte []>();
@@ -118,17 +109,11 @@ public class BlockHashData {
             num_bytes += bytes.length;
             byte [] picbytes = insn.getBytes(); // need a copy of it
             InstructionPrototype insnp = insn.getPrototype();
-            // No direct way to just get a default string of the whole Instruction?  Really???
-            msg = iaddr.toString() + " " + insn.getMnemonicString() + " ";
-            Mask mnemMask = insnp.getInstructionMask();
             //Mask picmask = new MaskImpl(picbytes); // a mask really is just a wrapped byte []?
             //debug(((MaskImpl)picmask).toString());
             int numOperands = insn.getNumOperands();
             ArrayList<Mask> opMasks = new ArrayList<Mask>();
-            String opmstr = "     ";
-            String otstr = "     ";
             for (int o=0;o<numOperands;++o) {
-                msg += insn.getDefaultOperandRepresentation(o);
                 String sep = insn.getSeparator(o);
                 // don't want "null" or a trailing comma
                 if (o == numOperands-1) {
@@ -136,10 +121,7 @@ public class BlockHashData {
                 } else if (sep == null) { 
                     sep = ", ";
                 }
-                msg += sep;
                 opMasks.add(insnp.getOperandValueMask(o));
-                // TODO: test if this getBytes() needs StandardCharsets.UTF_8 set as arg
-                opmstr += "opMask" + o + ": " + HexUtils.byteArrayToHexString(opMasks.get(o).getBytes()," ");
                 int ot = insn.getOperandType(o);
                 boolean picit = OperandType.isCodeReference(ot) ||
                                 OperandType.isDataReference(ot) ||
@@ -150,15 +132,6 @@ public class BlockHashData {
                                 OperandType.isRelative(ot) || // maybe? see above
                                 OperandType.isScalar(ot) // maybe? see above
                                 ;
-                // need to have additional checks about addresses/references inside
-                // current chunk vs outside to really decide to PIC or not, but can
-                // ignore for now.  Also, there seem to be some bits being set for
-                // things like [ESI + 4] operands that aren't any of the above that
-                // I think I might want to PIC out too perhaps?  And for that the
-                // mask value is AFAICT for both the register and the offset, not
-                // sure if I can get at either individually, which is a "bit" of a
-                // bummer (pardon the pun)
-                otstr += "op" + o + " type: " + HexUtils.intToHexString(ot) + " (" + OperandType.toString(ot) + ") picit: " + picit + " ";
                 if (picit) {
                     picbytes = opMasks.get(o).complementMask(picbytes,picbytes);
                     // found and reported a bug in complementMask (fixed in 9.0.1 or
@@ -177,17 +150,6 @@ public class BlockHashData {
                     //picmask = new MaskImpl(picbytes);
                 }
             }
-            // print the bytes too?
-            msg += " ; Bytes: ";
-            msg += HexUtils.byteArrayToHexString(bytes," ");
-            //debug(msg);
-            // TODO: test if this instance of getBytes() needs StandardCharsets.UTF_8 set as arg
-            //debug("     mnemMask: " + HexUtils.byteArrayToHexString(mnemMask.getBytes()," "));
-            //debug(opmstr);
-            //debug(otstr);
-            //picbytes = picmask.applyMask(bytes,picbytes);
-            //debug("     picbytes: " + HexUtils.byteArrayToHexString(picbytes," "));
-
             pbytes.add(picbytes);
 
             int len = insn.getLength();

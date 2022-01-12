@@ -31,31 +31,33 @@
  */
 package kaiju.tools.fnxrefs;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
-import javax.swing.*;
-import javax.swing.table.TableColumn;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
 
 import docking.ActionContext;
-import docking.widgets.table.GTableTextCellEditor;
 import docking.widgets.table.threaded.ThreadedTableModelListener;
 import ghidra.app.services.GoToService;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataUtilities;
-import ghidra.program.model.data.StringDataInstance;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.util.ProgramLocation;
 import ghidra.program.util.ProgramSelection;
 import ghidra.util.HelpLocation;
-import ghidra.util.table.*;
+import ghidra.util.table.GhidraTable;
+import ghidra.util.table.GhidraTableFilterPanel;
+import ghidra.util.table.GhidraThreadedTablePanel;
 import ghidra.util.task.TaskMonitor;
 import resources.ResourceManager;
 

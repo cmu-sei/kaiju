@@ -31,40 +31,9 @@
  */
 package kaiju.tools.fnhashclassic;
 
-import ghidra.app.services.BlockModelService;
-import ghidra.framework.plugintool.ServiceProviderStub;
-import ghidra.program.database.ProgramDB;
-import ghidra.program.database.code.CodeManager;
-import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressIterator;
-import ghidra.program.model.address.AddressRange;
-import ghidra.program.model.address.AddressSet;
-import ghidra.program.model.address.AddressSetView;
-import ghidra.program.model.data.Undefined;
-import ghidra.program.model.lang.InstructionPrototype;
-import ghidra.program.model.lang.Language;
-import ghidra.program.model.lang.Mask;
-import ghidra.program.model.lang.OperandType;
-import ghidra.program.model.lang.Processor;
-import ghidra.program.model.listing.CodeUnit;
-import ghidra.program.model.listing.CodeUnitIterator;
-import ghidra.program.model.listing.Data;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.Instruction;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.block.CodeBlock;
-import ghidra.program.model.block.CodeBlockIterator;
-import ghidra.program.model.block.CodeBlockModel;
-import ghidra.program.model.block.CodeBlockReferenceIterator;
-import ghidra.program.model.block.SimpleBlockModel;
-import ghidra.program.model.symbol.FlowType;
-import ghidra.util.exception.CancelledException;
-import ghidra.util.exception.UsrException;
-import ghidra.util.task.TaskMonitor;
-
 // For UTF8 charset in crypto functions to standardize across operating systems
 import java.nio.charset.StandardCharsets;
-
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,14 +42,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.TreeMap;
-import java.security.MessageDigest;
 
-import kaiju.tools.fnhashclassic.BlockHashData;
-import kaiju.tools.fnhashclassic.UnitHashData;
-import kaiju.disasm.context.InsnCategorizer;
+import ghidra.app.services.BlockModelService;
+import ghidra.framework.plugintool.ServiceProviderStub;
+import ghidra.program.database.ProgramDB;
+import ghidra.program.database.code.CodeManager;
+import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressRange;
+import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSetView;
+import ghidra.program.model.block.CodeBlock;
+import ghidra.program.model.block.CodeBlockIterator;
+import ghidra.program.model.block.CodeBlockModel;
+import ghidra.program.model.block.SimpleBlockModel;
+import ghidra.program.model.listing.CodeUnit;
+import ghidra.program.model.listing.CodeUnitIterator;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Program;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.exception.UsrException;
+import ghidra.util.task.TaskMonitor;
 import kaiju.disasm.context.InsnContext;
 import kaiju.util.ByteArrayList;
-import kaiju.util.HexUtils;
 
 /**
  * an inner class to gather Function data for hashing purposes, providing

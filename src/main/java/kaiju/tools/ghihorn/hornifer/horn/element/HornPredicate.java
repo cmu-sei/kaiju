@@ -27,18 +27,17 @@ import kaiju.tools.ghihorn.z3.GhiHornContext;
 /**
  * A predicate, which is an instance
  */
-public class HornPredicate implements HornElement, Comparable<HornPredicate> {
+public class HornPredicate implements HornElement {
 
     protected final String name;
     protected final String id;
 
-    // Variables are to be sorted by name
-    protected final SortedSet<HornVariable> variables =
-            new TreeSet<>(Comparator.comparing(HornVariable::formatName,
-                    Comparator.nullsFirst(String::compareTo)));
+    // As with other horn containers, variables are to be sorted by name
+    protected final SortedSet<HornVariable> variables = new TreeSet<>(
+            Comparator.comparing(HornVariable::getName, Comparator.nullsFirst(String::compareTo)));
 
     private final ProgramLocation locator;
-    protected boolean isPrecondition, isPostcondition, isImported, isExternal;
+    protected boolean isPrecondition, isPostcondition, isImported, isExternal, isEntry;
     protected HornBlock blk;
 
     /**
@@ -141,7 +140,7 @@ public class HornPredicate implements HornElement, Comparable<HornPredicate> {
                 Expr<? extends Sort> inExpr = stateEntry.getKey();
                 Expr<? extends Sort> outExpr = stateEntry.getValue();
 
-                for (HornVariable variable : getVariables()) {
+                for (HornVariable variable : this.variables) {
                     final Expr<? extends Sort> varExpr = variable.instantiate(ctx);
 
                     inExpr = inExpr.substitute(varExpr, variable.instantiate(ctx));
@@ -183,7 +182,6 @@ public class HornPredicate implements HornElement, Comparable<HornPredicate> {
     public String getInstanceId() {
         return this.id;
     }
-
 
     /**
      * Fetch the variables sorted by name
@@ -263,41 +261,26 @@ public class HornPredicate implements HornElement, Comparable<HornPredicate> {
      * @see java.lang.Object#hashCode()
      */
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#hashCode()
+     */
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((blk == null) ? 0 : blk.hashCode());
         result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + (isEntry ? 1231 : 1237);
+        result = prime * result + (isExternal ? 1231 : 1237);
+        result = prime * result + (isImported ? 1231 : 1237);
+        result = prime * result + (isPostcondition ? 1231 : 1237);
+        result = prime * result + (isPrecondition ? 1231 : 1237);
         result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((variables == null) ? 0 : variables.hashCode());
         return result;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        HornPredicate other = (HornPredicate) obj;
-        if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
-            return false;
-        if (name == null) {
-            if (other.name != null)
-                return false;
-        } else if (!name.equals(other.name))
-            return false;
-        return true;
     }
 
     /**
@@ -323,12 +306,12 @@ public class HornPredicate implements HornElement, Comparable<HornPredicate> {
         return (blk != null);
     }
 
-    public void setPrecondition(boolean isPre) {
-        this.isPrecondition = isPre;
+    public void makePrecondition() {
+        this.isPrecondition = true;
     }
 
-    public void setPostcondition(boolean isPost) {
-        this.isPrecondition = isPost;
+    public void makePostcondition() {
+        this.isPrecondition = true;
     }
 
     /**
@@ -345,18 +328,40 @@ public class HornPredicate implements HornElement, Comparable<HornPredicate> {
         return isPostcondition;
     }
 
+    /**
+     * @param isEntry the isEntry to set
+     */
+    public void makeEntry() {
+        this.isEntry = true;
+    }
+
     public void setImported(boolean isImp) {
         this.isImported = isImp;
     }
 
+    /**
+     * A predicate is external if it is not backed by an implementation (e.g. an external block)
+     * 
+     * @param isExt
+     */
     public void setExternal(boolean isExt) {
         this.isExternal = isExt;
+    }
+
+    /**
+     * @return the isEntry
+     */
+    public boolean isEntry() {
+        return isEntry;
     }
 
     public boolean isImported() {
         return this.isImported;
     }
 
+    /**
+     * A predicate is external if it is not backed by an implementation (e.g. an external block)
+     */
     public boolean isExternal() {
         return this.isExternal;
     }
@@ -369,15 +374,68 @@ public class HornPredicate implements HornElement, Comparable<HornPredicate> {
         }
     }
 
-    @Override
-    public int compareTo(HornPredicate o) {
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
 
-        if (locator == null) {
-            return 1;
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+
+    @Override
+    public boolean equals(Object obj) {
+
+
+        if (this == obj) {
+            return true;
         }
-        if (o.locator == null) {
-            return -1;
+        if (obj == null) {
+            return false;
         }
-        return locator.compareTo(o.locator);
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final HornPredicate other = (HornPredicate) obj;
+
+        // With all the object parts being equal, check the locator
+        if (locator != null && other.locator != null) {
+            if (locator.compareTo(other.locator) != 0) {
+                return false;
+            }
+        } else if (id == null) {
+            if (other.id != null) {
+                return false;
+            }
+        } else if (!id.equals(other.id)) {
+            return false;
+        }
+        if (isEntry != other.isEntry) {
+            return false;
+        }
+        if (isExternal != other.isExternal) {
+            return false;
+        }
+        if (isImported != other.isImported) {
+            return false;
+        }
+        if (isPostcondition != other.isPostcondition) {
+            return false;
+        }
+        if (isPrecondition != other.isPrecondition) {
+            return false;
+        }
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+
+        return true;
     }
 }

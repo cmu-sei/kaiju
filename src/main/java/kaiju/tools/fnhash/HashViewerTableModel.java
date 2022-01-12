@@ -35,31 +35,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import db.NoTransactionException;
-import docking.widgets.table.DynamicTableColumn;
 import docking.widgets.table.TableColumnDescriptor;
-import ghidra.app.plugin.core.string.translate.ManualStringTranslationService;
 import ghidra.docking.settings.Settings;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.ServiceProvider;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
-import ghidra.program.model.data.*;
-import ghidra.program.model.listing.*;
-import ghidra.program.model.util.PropertyMapManager;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Listing;
+import ghidra.program.model.listing.Program;
 import ghidra.program.model.util.ObjectPropertyMap;
-import ghidra.program.util.*;
-import ghidra.util.StringUtilities;
+import ghidra.program.util.ProgramLocation;
+import ghidra.program.util.ProgramSelection;
 import ghidra.util.Swing;
 import ghidra.util.datastruct.Accumulator;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.table.AddressBasedTableModel;
-import ghidra.util.table.column.AbstractGColumnRenderer;
-import ghidra.util.table.column.GColumnRenderer;
 import ghidra.util.table.field.AbstractProgramLocationTableColumn;
 import ghidra.util.table.field.AddressBasedLocation;
 import ghidra.util.task.TaskMonitor;
-
-import kaiju.common.*;
+import kaiju.common.KaijuPropertyManager;
 import kaiju.hashing.FnHashSaveable;
 import kaiju.util.HexUtils;
 
@@ -292,50 +287,6 @@ public class HashViewerTableModel extends AddressBasedTableModel<ProgramLocation
                     return "";
                 } else {
                     return prop.getPICHash();
-                }
-            } else {
-                // TODO: fnhashmap doesn't exist, can we auto run the Analyzer here?
-                return "";
-            }
-        }
-
-        @Override
-        public ProgramLocation getProgramLocation(ProgramLocation rowObject, Settings settings,
-                Program program, ServiceProvider serviceProvider) {
-            return rowObject;
-        }
-        
-    }
-    
-    private static class CompositePICHashColumn
-            extends AbstractProgramLocationTableColumn<ProgramLocation, String> {
-
-        @Override
-        public String getColumnName() {
-            return "Composite PIC Hash";
-        }
-
-        @Override
-        public String getValue(ProgramLocation rowObject, Settings settings,
-                Program program, ServiceProvider serviceProvider) throws IllegalArgumentException {
-                
-            ObjectPropertyMap fnhashmap = null;
-            
-            // TODO: this needs a better error handling procedure
-            try {
-                fnhashmap = KaijuPropertyManager.getOrCreateObjectPropertyMap(program, "FnHash", FnHashSaveable.class);
-            } catch (NoTransactionException nte) {
-                return "";
-            }
-            
-            if (fnhashmap != null) {
-                
-                FnHashSaveable prop = (FnHashSaveable) fnhashmap.getObject(rowObject.getAddress());
-                if (prop == null) {
-                    // TODO: hash wasn't computed for this function, why?
-                    return "";
-                } else {
-                    return prop.getCompositePICHash();
                 }
             } else {
                 // TODO: fnhashmap doesn't exist, can we auto run the Analyzer here?

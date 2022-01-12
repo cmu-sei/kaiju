@@ -32,17 +32,8 @@
 package kaiju.common.logging;
 
 import docking.framework.DockingApplicationConfiguration;
-import ghidra.framework.LoggingInitialization;
-import ghidra.framework.plugintool.PluginInfo;
-import ghidra.framework.plugintool.PluginTool;
-import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.util.ErrorLogger;
 import ghidra.util.Msg;
-
-import java.io.File;
-import java.io.PrintStream;
-
-import kaiju.common.logging.MultiLogLevel;
 
 /**
  * Provides easy utility to direct messages to multiple locations at

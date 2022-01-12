@@ -31,10 +31,8 @@
  */
 import java.io.File;
 import java.io.FileWriter;
-import java.util.StringJoiner;
 
 import ghidra.app.script.GhidraScript;
-
 import kaiju.tools.fnxrefs.HeadlessXrefsToCSV;
 
 public class exportXrefsToCSVHeadless extends GhidraScript {

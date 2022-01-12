@@ -3,7 +3,7 @@ package kaiju.tools.ghihorn.answer.graph.display;
 import java.util.HashMap;
 import java.util.Map;
 import ghidra.graph.GDirectedGraph;
-import ghidra.graph.graphs.DefaultVisualGraph;
+import ghidra.graph.graphs.FilteringVisualGraph;
 import ghidra.graph.viewer.layout.VisualGraphLayout;
 import kaiju.tools.ghihorn.answer.format.GhiHornDisplaySettings;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraphEdge;
@@ -14,7 +14,7 @@ import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraphVertex;
  * A visual reprentation of an answer graph
  */
 public class GhiHornVisualAnswerGraph
-        extends DefaultVisualGraph<GhiHornAnswerGraphVisualVertex, GhiHornAnswerGraphVisualEdge> {
+        extends FilteringVisualGraph<GhiHornAnswerGraphVisualVertex, GhiHornAnswerGraphVisualEdge> {
 
     private VisualGraphLayout<GhiHornAnswerGraphVisualVertex, GhiHornAnswerGraphVisualEdge> layout;
     private GDirectedGraph<GhiHornAnswerGraphVertex, GhiHornAnswerGraphEdge> answerGraph;
@@ -36,7 +36,7 @@ public class GhiHornVisualAnswerGraph
 
         for (GhiHornAnswerGraphVertex ansVtx : answerGraph.getVertices()) {
             final GhiHornAnswerGraphVisualVertex vizVtx =
-                    new GhiHornAnswerGraphVisualVertex(ansVtx.getAttributes(), settings);
+                    new GhiHornAnswerGraphVisualVertex(ansVtx.getAttributes(), settings);  
             vtxMap.put(ansVtx, vizVtx);
             addVertex(vizVtx);
         }
@@ -45,6 +45,7 @@ public class GhiHornVisualAnswerGraph
 
             GhiHornAnswerGraphVisualVertex start = vtxMap.get(e.getStart());
             GhiHornAnswerGraphVisualVertex end = vtxMap.get(e.getEnd());
+            
 
             addEdge(new GhiHornAnswerGraphVisualEdge(start, end));
         }

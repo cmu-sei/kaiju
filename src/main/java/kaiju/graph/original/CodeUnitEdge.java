@@ -32,7 +32,6 @@
 package kaiju.graph.original;
 
 import ghidra.graph.GEdge;
-import ghidra.program.model.listing.CodeUnit;
 
 /**
  * An edge that contains properties and state related to a user interface.

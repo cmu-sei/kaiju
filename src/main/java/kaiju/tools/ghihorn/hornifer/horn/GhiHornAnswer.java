@@ -1,13 +1,16 @@
 package kaiju.tools.ghihorn.hornifer.horn;
 
+import kaiju.tools.ghihorn.answer.format.GhiHornOutputFormatter;
+import kaiju.tools.ghihorn.answer.format.GhiHornFormattableElement;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraph;
+import kaiju.tools.ghihorn.cmd.GhiHornCommand;
 import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
 
 /**
  * Convenience class for ApiAnalyzer results
  */
-public class GhiHornAnswer {
-
+public class GhiHornAnswer implements GhiHornFormattableElement {
+    public GhiHornCommand cmd;
     public GhiHornArgument<?> arguments;
     public String errorMessage;
     public String fxString;
@@ -27,7 +30,10 @@ public class GhiHornAnswer {
 
     @Override
     public String toString() {
-        return new StringBuilder(arguments.toString()).append(": ").append(status).toString();
+        return new StringBuilder(arguments.toString())
+                .append(": ")
+                .append(status)
+                .toString();
     }
 
     /*
@@ -86,6 +92,13 @@ public class GhiHornAnswer {
         if (status != other.status)
             return false;
         return true;
+    }
+
+    @Override
+    public String format(GhiHornOutputFormatter formatter) {
+        return formatter.format(this);
+
+        
     }
 }
 

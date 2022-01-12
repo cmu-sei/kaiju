@@ -1,44 +1,56 @@
 package kaiju.tools.ghihorn.answer.format;
 
-import java.util.Map;
-
 public class GhiHornDisplaySettings {
 
-    private boolean showGlobalVars, showAllStateVars, showDecompilerVars;
+    private boolean showGlobalVars, showLocalVars, showAllState, hideTempVars, hideExternalFuncs;
+    private OutputFormat format;
 
-    public static enum VarSettings {
-        ShowGlobalVars {
-            @Override
-            public String toString() {
-                return "Show global variables";
-            }
-        },
+    public enum OutputFormat {
+        JSON, TEXT, DOT;
+    }
 
-        ShowStateVars {
-            @Override
-            public String toString() {
-                return "Show all state variables";
-            }
-        },
+    public enum SettingVariables {
+        //@formatter:off
+        OututJson ("Generate json output"),
+        OuputText ("Generate text output"),
+        ShowGlobalVars ("Show global variables"),
+        ShowLocalVars ("Show local variables"),
+        ShowAllState ("Show all state"),
+        HideTempVars ("Hide temporary variables"),
+        HideExternalFunctions ("Hide external function bodies");
+        //@formatter:on
 
-        ShowDecompilerVars {
-            @Override
-            public String toString() {
-                return "Show decompiler variables";
-            }
+        private String description;
+
+        public String description() {
+            return this.description;
+        }
+
+        private SettingVariables(String desc) {
+            this.description = desc;
         }
     }
 
     public GhiHornDisplaySettings() {
         showGlobalVars = true;
-        showAllStateVars = false;
-        showDecompilerVars = true;
+        showLocalVars = true;
+        hideExternalFuncs = true;
+        hideTempVars = true;
+        format = OutputFormat.TEXT;
     }
 
-    public GhiHornDisplaySettings(Map<VarSettings, Boolean> s) {
-        showGlobalVars = s.getOrDefault(VarSettings.ShowGlobalVars, true);
-        showAllStateVars = s.getOrDefault(VarSettings.ShowStateVars, false);
-        showDecompilerVars = s.getOrDefault(VarSettings.ShowDecompilerVars, true);
+    /**
+     * @param hideExternalFuncs the showExternalApiFuncs to set
+     */
+    public void hideExternalFuncs(boolean x) {
+        hideExternalFuncs = x;
+    }
+
+    /**
+     * @return the showExternalApiFunctions
+     */
+    public boolean hideExternalFunctions() {
+        return hideExternalFuncs;
     }
 
     /**
@@ -49,16 +61,68 @@ public class GhiHornDisplaySettings {
     }
 
     /**
-     * @return the showStateVars
+     * @param t if true, then hide
      */
-    public boolean showAllStateVariables() {
-        return showAllStateVars;
+    public void hideTempVariables(boolean t) {
+        hideTempVars = t;
     }
 
     /**
-     * @return the showDecompilerVars
+     * @return the showGlobalVars
      */
-    public boolean onlyShowDecompilerVariables() {
-        return showDecompilerVars;
+    public boolean hideTempVariables() {
+        return hideTempVars;
     }
+
+    /**
+     * @param g if true, then show
+     */
+    public void showGlobalVariables(boolean g) {
+        showGlobalVars = g;
+    }
+
+    /**
+     * 
+     * @param s if true, then show
+     */
+    public void showLocalVariables(boolean s) {
+        showLocalVars = s;
+    }
+
+    /**
+     * @return true means show local variables
+     */
+    public boolean showLocalVariables() {
+        return showLocalVars;
+    }
+
+    /**
+     * 
+     * @param f
+     */
+    public void setOutputFormat(OutputFormat f) {
+        this.format = f;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public boolean showAllState() {
+        return showAllState;
+    }
+    
+    public void showAllState(boolean b) {
+        this.showAllState = b;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public OutputFormat getOutputFormat() {
+        return this.format;
+    }
+
 }
+

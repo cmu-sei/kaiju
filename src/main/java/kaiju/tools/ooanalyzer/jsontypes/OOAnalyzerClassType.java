@@ -35,13 +35,8 @@ package kaiju.tools.ooanalyzer.jsontypes;
 import java.util.Collection;
 import java.util.Optional;
 
-import com.google.gson.JsonArray;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-
-import ghidra.app.util.demangler.DemangledObject;
-import ghidra.app.util.demangler.Demangler;
-import ghidra.app.util.demangler.microsoft.MicrosoftDemangler;
 
 /**
  * A JSON representation of a C++ class from OOAnalyzer

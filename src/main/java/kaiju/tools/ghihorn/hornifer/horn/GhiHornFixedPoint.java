@@ -10,7 +10,9 @@ import com.microsoft.z3.BoolSort;
 import com.microsoft.z3.Fixedpoint;
 import com.microsoft.z3.FuncDecl;
 import com.microsoft.z3.Params;
+import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
+import kaiju.tools.ghihorn.hornifer.GhiHornifier;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornFact;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornPredicate;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornConstant;
@@ -18,14 +20,13 @@ import kaiju.tools.ghihorn.z3.GhiHornContext;
 import kaiju.tools.ghihorn.z3.GhiHornZ3Parameters;
 
 /**
- * A re
+ * A representation of the fixed point
  */
 public class GhiHornFixedPoint {
-    private HornPredicate goal;
     private final Set<HornClause> rules;
     private final Set<HornFact> facts;
+    private HornPredicate goal;
     private GhiHornZ3Parameters z3Params;
-
 
     public GhiHornFixedPoint(GhiHornZ3Parameters params) {
         goal = null;
@@ -38,27 +39,41 @@ public class GhiHornFixedPoint {
         return this.facts.add(p);
     }
 
-    public boolean addRule(final HornClause c) {
-        return this.rules.add(c);
-    }
-
     public boolean addFacts(final Collection<HornFact> p) {
         return this.facts.addAll(p);
     }
 
+    /**
+     * 
+     * @param c
+     * @return
+     */
     public boolean addRules(final Collection<HornClause> c) {
+
         return this.rules.addAll(c);
     }
 
-    public void setGoal(final HornPredicate g) {
-        this.goal = g;
-    }
 
     /**
      * @return the goal
      */
-    public HornPredicate getGoal() {
+    public HornPredicate getGoalPredicate() {
+        if (goal == null) {
+            goal = (HornPredicate) rules.stream()
+                    // The goal is always to head (consequence of the implication)
+                    .map(r -> r.getHead())
+                    .filter(r -> r.getName().equals(GhiHornifier.GOAL_FACT_NAME))
+                    .findAny()
+                    .orElse(null);
+        }
         return goal;
+    }
+
+    /**
+     * @param r the startClause to set
+     */
+    public boolean addRule(HornClause r) {
+        return this.rules.add(r);
     }
 
     /**
@@ -90,6 +105,17 @@ public class GhiHornFixedPoint {
         return false;
     }
 
+    public String printRuleNames() {
+        final StringBuilder sb = new StringBuilder();
+        this.rules.forEach(r -> {
+            String bName = r.getBody().getName();
+            String hName = r.getHead().getName();
+            sb.append(bName).append(" -> ").append(hName).append("\n");
+        });
+        return sb.toString();
+
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
@@ -101,16 +127,28 @@ public class GhiHornFixedPoint {
 
         final Params parameters = context.mkParams();
 
-        for (Map.Entry<String, Object> entry : z3Params.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
+        if (z3Params == null) {
+            Msg.warn(this, "Cannot configure Z3 parameters, using defaults");
+            parameters.add("fp.engine", "spacer");
+            parameters.add("fp.xform.inline_eager", false);
+            parameters.add("fp.xform.slice", false);
+            parameters.add("fp.xform.inline_linear", false);
+            parameters.add("fp.xform.subsumption_checker", false);
+            parameters.add("fp.datalog.generate_explanations", true);
 
-            if (value instanceof Integer) {
-                parameters.add(key, (Integer) value);
-            } else if (value instanceof Boolean) {
-                parameters.add(key, (Boolean) value);
-            } else if (value instanceof String) {
-                parameters.add(key, (String) value);
+        } else {
+
+            for (Map.Entry<String, Object> entry : z3Params.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                if (value instanceof Integer) {
+                    parameters.add(key, (Integer) value);
+                } else if (value instanceof Boolean) {
+                    parameters.add(key, (Boolean) value);
+                } else if (value instanceof String) {
+                    parameters.add(key, (String) value);
+                }
             }
         }
 
@@ -125,7 +163,7 @@ public class GhiHornFixedPoint {
     public synchronized Fixedpoint instantiate(final GhiHornContext context) {
 
         final Params parameters = makeZ3Parameters(context);
-        
+
         // Combine all the facts, rules and relations from the program
         final Fixedpoint fx = context.mkFixedpoint();
         synchronized (fx) {
@@ -135,14 +173,13 @@ public class GhiHornFixedPoint {
             for (HornFact fact : facts) {
                 final FuncDecl<BoolSort> factDecl = fact.declare(context);
                 fx.registerRelation(factDecl);
-                int varVals[] =
-                        fact.getVariableInstances().stream().sequential().filter(vi -> vi != null)
-                                // Get each expression
-                                .map(v -> v.getExpression())
-                                // This may not be necessary
-                                .filter(x -> x instanceof HornConstant)
-                                // Get the list of integers
-                                .mapToInt(n -> ((HornConstant) n).getValue().intValue()).toArray();
+
+                int varVals[] = fact.getVariableInstances().values().stream().sequential()
+                        .filter(vi -> vi != null)
+                        // This may not be necessary
+                        .filter(x -> x instanceof HornConstant)
+                        // Get the list of integers
+                        .mapToInt(n -> ((HornConstant) n).getValue().intValue()).toArray();
 
                 fx.addFact(factDecl, varVals);
             }
@@ -159,5 +196,10 @@ public class GhiHornFixedPoint {
             }
         }
         return fx;
+    }
+
+    public void removeRule(final HornClause rule) {
+
+        this.rules.remove(rule);
     }
 }

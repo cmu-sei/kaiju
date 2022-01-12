@@ -32,7 +32,6 @@
 package kaiju.graph.original;
 
 import ghidra.graph.GVertex;
-import ghidra.program.model.lang.Mask;
 import ghidra.program.model.lang.OperandType;
 import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Instruction;
@@ -59,8 +58,10 @@ public interface CodeUnitVertex extends CodeUnit, GVertex, InsnControlFlowGraphE
         }
     }
     
+    @SuppressWarnings("unused")
     public default byte[] getPICBytes() {
         byte[] picbytes = getExactBytes();
+        
         // TODO: this needs to be fully implemented
         int numOperands = this.getNumOperands();
         for (int op=0; op < numOperands; ++op) {

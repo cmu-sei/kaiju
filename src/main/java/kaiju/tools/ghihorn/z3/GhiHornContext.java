@@ -129,7 +129,7 @@ public class GhiHornContext extends Context {
      * @return
      */
     public boolean isExprValidVariable(Expr<?> expr) {
-        // TODO: Possible chceck isConst
+        // TODO: Possible check isConst
         return (expr != null && !expr.isNumeral() && !expr.toString().equals("true")
                 && !expr.toString().equals("false"));
     }
@@ -231,11 +231,7 @@ public class GhiHornContext extends Context {
     public FuncDecl<BoolSort> mkRelation(final String name, final Sort[] varSorts) {
 
         if (varSorts != null && varSorts.length > 0) {
-            for (Sort s : varSorts) {
-                if (s == null) {
-                    Msg.info(this, "NULL");
-                }
-            }
+           
             return this.mkFuncDecl(name, varSorts, this.mkBoolSort());
         }
         // without any variables, this is a fact
@@ -296,7 +292,6 @@ public class GhiHornContext extends Context {
                 extractFreeVariables(((Quantifier) e).getBody());
                 throw new RuntimeException("not implemented");
             } else if (e.isApp()) {
-
                 for (Expr<? extends Sort> child : e.getArgs()) {
                     result.addAll(extractFreeVariables(child));
                 }

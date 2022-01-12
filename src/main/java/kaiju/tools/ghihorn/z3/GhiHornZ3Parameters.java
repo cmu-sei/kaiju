@@ -48,7 +48,6 @@ public class GhiHornZ3Parameters {
             return getInt(key);
         } else if (strParams.containsKey(key)) {
             return getStr(key);
-
         } else if (boolParams.containsKey(key)) {
             return getBool(key);
         }
@@ -97,5 +96,15 @@ public class GhiHornZ3Parameters {
         boolParams.clear();
         strParams.clear();
         intParams.clear();
+    }
+
+    @Override
+    public String toString() {
+
+        StringBuilder sb = new StringBuilder();
+        entrySet()
+                .forEach(e -> sb.append(e.getKey()).append("=").append(e.getValue()).append("\n"));
+
+        return sb.toString();
     }
 }

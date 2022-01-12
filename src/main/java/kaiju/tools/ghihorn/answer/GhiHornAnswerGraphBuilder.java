@@ -2,19 +2,20 @@ package kaiju.tools.ghihorn.answer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import com.microsoft.z3.BoolExpr;
+import java.util.Optional;
+import java.util.Set;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Quantifier;
 import com.microsoft.z3.Sort;
 import org.python.google.common.base.Verify;
-import ghidra.graph.DefaultGEdge;
-import ghidra.graph.GDirectedGraph;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraph;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraphEdge;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraphVertex;
 import kaiju.tools.ghihorn.hornifer.horn.GhiHornFixedPoint;
+import kaiju.tools.ghihorn.hornifer.horn.HornClause;
 import kaiju.tools.ghihorn.hornifer.horn.HornProgram;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornElement;
 import kaiju.tools.ghihorn.hornifer.horn.element.HornPredicate;
@@ -25,23 +26,56 @@ import kaiju.tools.ghihorn.z3.GhiHornFixedpointStatus;
  * Build the GHiHorn answer graph
  */
 public class GhiHornAnswerGraphBuilder {
-    private GhiHornAnswerGraph answerGraph;
+
+    // A map of elements indexed by the name
     private Map<String, HornElement> hornElements = new HashMap<>();
     private HornProgram hornProgram;
+    private Expr<? extends Sort> z3Answer;
+    private GhiHornFixedPoint fixedPoint;
+    private GhiHornFixedpointStatus status;
 
     /**
+     * specify the horn program
+     * 
+     * @param hornProgram
+     * @return
+     */
+    public GhiHornAnswerGraphBuilder forHornProgram(HornProgram hornProgram) {
+        this.hornProgram = hornProgram;
+        return this;
+    }
+
+    /**
+     * Set the proof certificate
+     * 
+     * @param z3Answer
+     * @return
+     */
+    public GhiHornAnswerGraphBuilder forZ3ProofCertificate(final Expr<? extends Sort> z3Answer) {
+        this.z3Answer = z3Answer;
+        return this;
+    }
+
+    /**
+     * Set the status
      * 
      * @param status
-     * @param hfp
-     * @param answer
+     * @return
      */
-    public GhiHornAnswerGraphBuilder(final HornProgram hp, final GhiHornFixedpointStatus status,
-            GhiHornFixedPoint hfp,
-            final Expr<? extends Sort> answer) {
+    public GhiHornAnswerGraphBuilder withStatus(final GhiHornFixedpointStatus status) {
+        this.status = status;
+        return this;
+    }
 
-        this.hornProgram = hp;
-
-        hfp.getRules().forEach(c -> {
+    /**
+     * Set the fixed point
+     * 
+     * @param hfp
+     * @return
+     */
+    public GhiHornAnswerGraphBuilder usingFixedPoint(GhiHornFixedPoint hfp) {
+        this.fixedPoint = hfp;
+        this.fixedPoint.getRules().forEach(c -> {
 
             HornElement body = c.getBody();
             String bodyName = (body instanceof HornPredicate) ? ((HornPredicate) body).getFullName()
@@ -53,41 +87,40 @@ public class GhiHornAnswerGraphBuilder {
                     : head.getName();
             hornElements.put(headName, head);
         });
+        return this;
+    }
+
+    /**
+     * Build the graph
+     * 
+     * @param status
+     * @param hfp
+     * @param z3Answer
+     */
+    public Optional<GhiHornAnswerGraph> build() {
 
         try {
+
+            Verify.verify(hornProgram != null, "Missing horn program");
+            Verify.verify(z3Answer != null, "Missing Z3 proof certificate");
+            Verify.verify(status != null, "Missing status");
+            Verify.verify(fixedPoint != null, "Missing fixed point");
+            Verify.verify(!hornElements.isEmpty(), "Missing horn element information");
+
+            // All prerequisites accounted for
+
             if (status == GhiHornFixedpointStatus.Satisfiable) {
-                buildSatProof(answer);
+                return Optional.of(buildSatProof(z3Answer));
+
             } else if (status == GhiHornFixedpointStatus.Unsatisfiable) {
-                buildUnsatProofGraph(answer);
+                return Optional.of(buildUnsatProofGraph());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        List<GhiHornAnswerGraphVertex> vertices = answerGraph.getVerticesInPreOrder();
+        return Optional.empty();
 
-        GhiHornAnswerGraphVertex sink = vertices.get(vertices.size() - 1);
-        GhiHornAnswerGraphVertex nextToSink = vertices.get(vertices.size() - 2);
-        GhiHornAnswerGraphVertex source = vertices.get(0);
-
-        // This is Z3/Spacer cruft that has no bearing on the
-        if (sink.getName().contains("query!")) {
-            this.answerGraph.removeVertex(sink);
-        }
-
-        if (nextToSink.getName().equals("goal")) {
-            nextToSink.makeGoal();
-        }
-        source.makeStart();
-    }
-
-    /**
-     * Fetch the graph
-     * 
-     * @return
-     */
-    public GhiHornAnswerGraph getGraph() {
-        return this.answerGraph;
     }
 
     /**
@@ -123,13 +156,14 @@ public class GhiHornAnswerGraphBuilder {
      * @return
      * @throws Exception
      */
-    private void buildUnsatProofGraph(final Expr<? extends Sort> answer) throws Exception {
+    private GhiHornAnswerGraph buildUnsatProofGraph()
+            throws Exception {
 
-        Verify.verify(answer.isAnd(), "Assumption about UNSAT format proven incorrect");
+        Verify.verify(z3Answer.isAnd(), "Assumption about UNSAT answer format proven incorrect");
 
-        Expr<? extends Sort>[] children = children(answer);
+        Expr<? extends Sort>[] children = children(z3Answer);
 
-        answerGraph =
+        GhiHornAnswerGraph answerGraph =
                 new GhiHornAnswerGraph(this.hornProgram, GhiHornFixedpointStatus.Unsatisfiable);
 
         if (children.length > 0) {
@@ -138,16 +172,15 @@ public class GhiHornAnswerGraphBuilder {
             for (int i = 0; i < children.length; i++) {
                 GhiHornAnswerGraphVertex vtx =
                         new GhiHornAnswerGraphVertex(makeUnsatVertexAttributes(children[i]));
+
                 unsatVertices.put(vtx.getAttributes().hornElement, vtx);
             }
 
-            GDirectedGraph<HornElement, DefaultGEdge<HornElement>> clauseGraph =
-                    hornProgram.buildClauseGraph();
+            for (HornClause clause : this.fixedPoint.getRules()) {
 
-            for (DefaultGEdge<HornElement> clauseEdge : clauseGraph.getEdges()) {
+                GhiHornAnswerGraphVertex src = unsatVertices.get(clause.getBody());
+                GhiHornAnswerGraphVertex tgt = unsatVertices.get(clause.getHead());
 
-                GhiHornAnswerGraphVertex src = unsatVertices.get(clauseEdge.getStart());
-                GhiHornAnswerGraphVertex tgt = unsatVertices.get(clauseEdge.getEnd());
                 if (src != null && tgt != null) {
                     if (!answerGraph.containsVertex(src)) {
                         answerGraph.addVertex(src);
@@ -162,6 +195,8 @@ public class GhiHornAnswerGraphBuilder {
                 }
             }
         }
+
+        return answerGraph;
     }
 
     /**
@@ -197,19 +232,11 @@ public class GhiHornAnswerGraphBuilder {
                 generateSatGraph(kids[i], g, exprToVtxMap);
             }
 
-            GhiHornAnswerGraphVertex srcVtx = null;
-            if (exprToVtxMap.containsKey(kFact)) {
-                srcVtx = exprToVtxMap.get(kFact);
-            } else {
-                srcVtx = new GhiHornAnswerGraphVertex(makeSatVertexAttributes(kFact));
-            }
+            GhiHornAnswerGraphVertex srcVtx = exprToVtxMap.getOrDefault(kFact,
+                    new GhiHornAnswerGraphVertex(makeSatVertexAttributes(kFact)));
 
-            GhiHornAnswerGraphVertex tgtVtx = null;
-            if (exprToVtxMap.containsKey(dst)) {
-                tgtVtx = exprToVtxMap.get(dst);
-            } else {
-                tgtVtx = new GhiHornAnswerGraphVertex(makeSatVertexAttributes(dst));
-            }
+            GhiHornAnswerGraphVertex tgtVtx = exprToVtxMap.getOrDefault(dst,
+                    new GhiHornAnswerGraphVertex(makeSatVertexAttributes(dst)));
 
             g.addEdge(new GhiHornAnswerGraphEdge(srcVtx, tgtVtx));
         }
@@ -220,10 +247,11 @@ public class GhiHornAnswerGraphBuilder {
      * 
      * @return
      */
-    private void buildSatProof(Expr<? extends Sort> answer) throws Exception {
+    private GhiHornAnswerGraph buildSatProof(Expr<? extends Sort> answer) throws Exception {
 
-        this.answerGraph =
+        GhiHornAnswerGraph answerGraph =
                 new GhiHornAnswerGraph(this.hornProgram, GhiHornFixedpointStatus.Satisfiable);
+
         Map<Expr<? extends Sort>, GhiHornAnswerGraphVertex> exprToVtxMap = new HashMap<>();
 
         answer = children(answer)[0];
@@ -237,6 +265,15 @@ public class GhiHornAnswerGraphBuilder {
 
         generateSatGraph(answer, answerGraph, exprToVtxMap);
 
+        List<GhiHornAnswerGraphVertex> vertices = answerGraph.getVerticesInPreOrder();
+
+        // This is Z3/Spacer cruft that has no bearing on the actual answer
+        GhiHornAnswerGraphVertex sink = vertices.get(vertices.size() - 1);
+        if (sink.getVertexName().contains("query!")) {
+            answerGraph.removeVertex(sink);
+        }
+
+        return answerGraph;
     }
 
     /**
@@ -247,38 +284,64 @@ public class GhiHornAnswerGraphBuilder {
     private GhiHornUnsatAttributes makeUnsatVertexAttributes(
             final Expr<? extends Sort> expr) {
 
-        String vtxName = "";
-        Boolean vtxResult = false;
+        Expr<?>[] args = null;
+        Set<String> conds = new HashSet<>();
+
+        // It turns out that the unsat answers are quantified expressions conjoined with the
+        // conditions that are required
         if (expr.isQuantifier()) {
+
             Quantifier q = (Quantifier) expr;
-            BoolExpr qBody = q.getBody();
-            if (qBody.getNumArgs() == 2) {
-                Expr<?>[] vars = qBody.getArgs();
-                vtxName = vars[0].getFuncDecl().getName().toString();
-                vtxResult = Boolean.valueOf(vars[1].toString());
+            args = q.getBody().getArgs();
+
+            // in the answer the 0th argument is the name of the relation
+            String vtxName = args[0].getFuncDecl().getName().toString();
+            HornElement vtxElm = hornElements.get(vtxName);
+
+            // If there is an argument, then that will be the reachability clause or the condition
+            // that cannot be satisfied
+
+            if (args.length > 1) {
+
+                if (args[1].isConst()) {
+                    conds.add(args[1].toString());
+                } else {
+
+                    // If this expression is more than just a boolean, then decode the answer based
+                    // on variables used
+
+                    // The condition that cannot be evaluated, replace it with meaningful variables
+                    Expr<?> cond = args[1];
+                    
+                    // The arguments of hte expression are the variables in order
+                    Expr<?>[] xVars = args[0].getArgs();
+                    HornVariable[] hVars = vtxElm.getVariables().toArray(new HornVariable[0]);
+
+                    String condStr = cond.toString();
+                    // substitute all the variables so that the names are meaningful
+                    for (int i = 0; i < xVars.length; i++) {
+                        if (condStr.contains(xVars[i].toString())) {
+                            condStr = condStr.replaceAll(xVars[i].toString(),
+                                    hVars[i].getVariableName().getName());
+                        }
+                    }
+                    conds.add(condStr);
+                }
             }
-        } else if (expr.isEq()) {
-            if (expr.getNumArgs() == 2) {
-                Expr<?>[] args = expr.getArgs();
-                vtxName = args[0].getFuncDecl().getName().toString();
-                vtxResult = Boolean.valueOf(args[1].toString());
-            }
+            return new GhiHornUnsatAttributes(vtxName, vtxElm, conds);
         }
 
-        final HornElement elm = hornElements.get(vtxName);
-        return new GhiHornUnsatAttributes(vtxName, elm, vtxResult);
+        // Not a quantified expression, so just take the args as they are
+        args = expr.getArgs();
+        String vtxName = "UNKNOWN";
+        if (args.length > 0) {
+            vtxName = args[0].getFuncDecl().getName().toString();
+        }
+        HornElement vtxElm = hornElements.get(vtxName);
+
+        return new GhiHornUnsatAttributes(vtxName, vtxElm, conds);
     }
 
-    /**
-     * 
-     * @param arrayExpr
-     * @return
-     */
-    private String formatArrayExpr(Expr<?> arrayExpr) {
-        // Sort s = arrayExpr.getSort();
-        // return s.toString();
-        return "N/A";
-    }
 
     /**
      * Create satifiable vertex attributes.
@@ -300,7 +363,7 @@ public class GhiHornAnswerGraphBuilder {
 
             for (int i = 0; i < elmVars.size(); i++) {
                 if (vals[i].isArray() || vals[i].isSelect()) {
-                    varVals.put(elmVars.get(i), formatArrayExpr(vals[i]));
+                    varVals.put(elmVars.get(i), "N/A");
                 } else {
                     varVals.put(elmVars.get(i), vals[i].toString());
                 }

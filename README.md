@@ -42,6 +42,13 @@ unzip into the appropriate directory to install.
 CERT Kaiju requires the following runtime dependencies:
 - [Ghidra](https://ghidra-sre.org) 9.2+ or 10.0+
 - Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
+- [Z3](https://github.com/Z3Prover/z3) including Z3 Java bindings .jar
+
+**NOTE**: If you use Linux, installing your distribution's Z3 packages
+may be sufficient. Otherwise, or if you are using Windows or Mac,
+you will need to manually add the Z3 Java bindings to the correct
+location in order to use some tools like Ghihorn. Please see
+the "Installation" section underneath "Ghihorn" later in this README.
 
 **NOTE**: It is also possible to build the extension package
 on your own and install it. Please see the instructions
@@ -145,6 +152,29 @@ Object Oriented Code with Ghidra][ooanalyzer-blog].
     locate the JSON file you wish to import.
     More extensive usage documentation can be found in
     Ghidra's `Help > Contents` menu when using the tool.
+
+### GhiHorn
+A horn encoder for Ghidra version 10.0.
+
+#### Installation
+
+1. You need to install Z3 and the [Z3 java bindings](https://github.com/Z3Prover/z3#java)
+   1. You need to add the jar file (`com.microsoft.z3.jar`) to the `GhiHorn/lib`
+      directory to make it available in the plugin.
+      * On Windows, you can place this `.jar` file in the same directory as `ghidraRun.bat`
+   2. You need to put the z3 and java binding libraries in a location that is available
+      1. On MacOS these files are `libz3.dylib` and `libz3java.dylib`
+      2. On linux these files are: `libz3.so` and `libz3java.so`
+      3. On Windows, these files are `libz3.dll` and `libz3java.dll`
+2. Build the GHiHorn plugin. The plugin build process uses `gradle` with some addtions:
+      * Run `gradle` to build the plugin
+      * Rung `gradle install` to build the ditribution package and copy it to Ghidra
+        * Be sure to set your _GHIDRA_INSTALL_DIR_ to your ghidra installation
+          in the file _gradle.properties_ before attempting to build.
+3. Following step 2, the plugin should be installed. You may need to restart
+   Ghidra to make the plugin available.
+4. You can launch the plugin by pressing `CTRL-G` or selecting GhiHorn from the
+   CERT menu.
 
 
 ### Command-line "Headless" Mode
@@ -390,4 +420,3 @@ originally released under terms of
 [ooanalyzer-blog]: https://insights.sei.cmu.edu/sei_blog/2019/07/using-ooanalyzer-to-reverse-engineer-object-oriented-code-with-ghidra.html
 [logo]: https://commons.wikimedia.org/wiki/File:RapatorCameronSpahn.jpg
 [logo-license]: https://creativecommons.org/licenses/by-sa/4.0/
-
