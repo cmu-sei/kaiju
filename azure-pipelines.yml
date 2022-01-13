@@ -117,7 +117,7 @@ jobs:
       mkdir -p z3/build
       cd z3/build
       cmake -GNinja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
-      ninja
+      ninja install
     condition: succeeded()
     workingDirectory: $(Pipeline.Workspace)
     displayName: Build Z3
