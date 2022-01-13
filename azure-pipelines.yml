@@ -12,10 +12,11 @@ jobs:
     CCACHE_DIR: $(Pipeline.Workspace)/cache
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
-    GRADLE_VERSION: gradle-6.9
+    GHIHORN_TEST_DIR: $(Pipeline.Workspace)/autocats/exe/ghihorn
+    GRADLE_VERSION: gradle-6.9.3
     GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
     GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
-    Z3_VERSION: z3-4.8.12
+    Z3_VERSION: z3-4.8.14
   strategy:
     matrix:
       ghidra-git:
