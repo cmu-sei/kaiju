@@ -77,7 +77,7 @@ jobs:
     displayName: Gradle build cache
   - task: Cache@2
     inputs:
-      key: '"$(AUTOCATS_DIR)" | autocats'
+      key: '"$(AUTOCATS_DIR)" | autocats | "ghihorn"'
       path: $(AUTOCATS_DIR)
     displayName: Cache AUTOCATS
 
@@ -150,7 +150,9 @@ jobs:
     displayName: Build Kaiju extension and plugins
     workingDirectory: .
   - bash: |
+      set -ex
       test -d $AUTOCATS_DIR || git clone https://github.com/cmu-sei/autocats $AUTOCATS_DIR
+      (cd $AUTOCATS_DIR && git pull)
     displayName: Download AUTOCATS
   - bash: |
       set -e
