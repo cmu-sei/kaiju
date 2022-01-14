@@ -28,12 +28,6 @@ jobs:
       ghidra101:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1_build/ghidra_10.1_PUBLIC_20211210.zip"
         ghidraVersion: "10.1"
-      ghidra1004:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0.4_build/ghidra_10.0.4_PUBLIC_20210928.zip"
-        ghidraVersion: "10.0.4"
-      ghidra924:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_9.2.4_build/ghidra_9.2.4_PUBLIC_20210427.zip"
-        ghidraVersion: "9.2.4"
   pool:
     vmImage: 'Ubuntu-20.04'
   steps:
