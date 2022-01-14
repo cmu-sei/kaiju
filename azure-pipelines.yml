@@ -119,7 +119,6 @@ jobs:
       cd z3/build
       cmake -GNinja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
       ninja
-      find .
       echo $LD_LIBRARY_PATH
       echo '##vso[task.setvariable variable=LD_LIBRARY_PATH]$(Pipeline.Workspace)/z3/build'
     condition: succeeded()
