@@ -77,7 +77,8 @@ jobs:
     displayName: Gradle build cache
   - task: Cache@2
     inputs:
-      key: '"$(AUTOCATS_DIR)" | autocats | "ghihorn"'
+      key: '"$(AUTOCATS_DIR)" | "autocats" | "ghihorn"'
+      restoreKeys: "autocats"
       path: $(AUTOCATS_DIR)
     displayName: Cache AUTOCATS
 
