@@ -13,7 +13,7 @@ jobs:
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
     GHIHORN_TEST_DIR: $(Pipeline.Workspace)/autocats/exe/ghihorn
-    GRADLE_VERSION: gradle-6.9.3
+    GRADLE_VERSION: gradle-6.9.2
     GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
     GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
     Z3_VERSION: z3-4.8.14
@@ -149,6 +149,7 @@ jobs:
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
 
   - bash: |
+      set -e
       echo "##vso[task.prependpath]$(GRADLE_INSTALL_DIR)/$(GRADLE_VERSION)/bin"
       test -d $(GRADLE_INSTALL_DIR) && exit 0
       wget $(GRADLE_URL) -O gradle.zip
