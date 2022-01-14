@@ -88,7 +88,7 @@ jobs:
     displayName: Cache Gradle 6.x
 
   - bash: |
-      set -e
+      set -ex
       sudo apt-get -y install ninja-build
       test -d $(Pipeline.Workspace)/z3 || git clone -b $(Z3_VERSION) --depth 1 https://github.com/Z3Prover/z3.git z3
       mkdir -p z3/build
@@ -96,7 +96,6 @@ jobs:
       git checkout $(Z3_VERSION)
       cmake -GNinja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
       ninja
-      echo $LD_LIBRARY_PATH
       echo '##vso[task.setvariable variable=LD_LIBRARY_PATH]$(Pipeline.Workspace)/z3/build'
     condition: succeeded()
     workingDirectory: $(Pipeline.Workspace)
@@ -158,7 +157,7 @@ jobs:
       # Needs a head
       Xvfb :1 &
       echo $AUTOCATS_DIR
-      DISPLAY=:1 Z3CLASSPATH=$(Pipeline.Workspace)/z3/build GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache test
+      DISPLAY=:1 Z3CLASSPATH=$(Pipeline.Workspace)/z3/build GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache --stacktrace --info test
       kill %%
     displayName: Run Kaiju tests
     workingDirectory: .
