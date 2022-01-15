@@ -1,5 +1,5 @@
 # GhiHorn
-A horn encoder for Ghidra version 9.2.4 and above.
+A horn encoder for Ghidra version 10.1+ and above.
 
 ## Installation
 

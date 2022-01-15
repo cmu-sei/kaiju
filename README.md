@@ -40,9 +40,13 @@ Ghidra's graphical interface, but it is also possible to manually
 unzip into the appropriate directory to install.
 
 CERT Kaiju requires the following runtime dependencies:
-- [Ghidra](https://ghidra-sre.org) 9.2+ or 10.0+
+- [Ghidra](https://ghidra-sre.org) 10.1+
 - Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
 - [Z3](https://github.com/Z3Prover/z3) including Z3 Java bindings .jar
+
+**NOTE**: We strongly recommend updating to Ghidra 10.1 or above
+in order to address the log4j vulnerability that exists
+in the library bundled with older versions of Ghidra.
 
 **NOTE**: If you use Linux, installing your distribution's Z3 packages
 may be sufficient. Otherwise, or if you are using Windows or Mac,
@@ -154,7 +158,7 @@ Object Oriented Code with Ghidra][ooanalyzer-blog].
     Ghidra's `Help > Contents` menu when using the tool.
 
 ### GhiHorn
-A horn encoder for Ghidra version 10.0.
+A horn encoder for Ghidra version 10.1+.
 
 #### Installation
 
@@ -251,8 +255,8 @@ Kaiju yourself.
 ### Build Dependencies
 
 CERT Kaiju requires the following build dependencies:
-- [Ghidra](https://ghidra-sre.org) 9.2+ or 10.0+
-- [gradle](https://gradle.org/install/) 6.9+ for Ghidra 9.x, or 7+ for Ghidra 10.x
+- [Ghidra](https://ghidra-sre.org) 10.1+
+- [gradle](https://gradle.org/install/) 6.9+ or 7+
 - [GSON](https://github.com/google/gson) 2.8.6 (handled automatically by gradle)
 - [JOpt Simple](https://github.com/jopt-simple/jopt-simple) 5.0.4 (handled automatically by gradle)
 - [Z3](https://github.com/Z3Prover/z3) 4.8.11+, built with the Java API
