@@ -13,50 +13,21 @@ jobs:
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
     GHIHORN_TEST_DIR: $(Pipeline.Workspace)/autocats/exe/ghihorn
-    GRADLE_VERSION: gradle-6.9.3
+    GRADLE_VERSION: gradle-6.9.2
     GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
     GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
     Z3_VERSION: z3-4.8.14
   strategy:
     matrix:
-      ghidra-git:
-        ghidraVersion: "master"
+      # This isn't working right now...
+      # ghidra-git:
+      #   ghidraVersion: "master"
       ghidra1011:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.1_build/ghidra_10.1.1_PUBLIC_20211221.zip"
         ghidraVersion: "10.1.1"
       ghidra101:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1_build/ghidra_10.1_PUBLIC_20211210.zip"
         ghidraVersion: "10.1"
-      ghidra1004:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0.4_build/ghidra_10.0.4_PUBLIC_20210928.zip"
-        ghidraVersion: "10.0.4"
-      ghidra1003:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0.3_build/ghidra_10.0.3_PUBLIC_20210908.zip"
-        ghidraVersion: "10.0.3"
-      ghidra1002:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0.2_build/ghidra_10.0.2_PUBLIC_20210804.zip"
-        ghidraVersion: "10.0.2"
-      ghidra1001:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0.1_build/ghidra_10.0.1_PUBLIC_20210708.zip"
-        ghidraVersion: "10.0.1"
-      ghidra100:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.0_build/ghidra_10.0_PUBLIC_20210621.zip"
-        ghidraVersion: "10.0"
-      ghidra924:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_9.2.4_build/ghidra_9.2.4_PUBLIC_20210427.zip"
-        ghidraVersion: "9.2.4"
-      ghidra923:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_9.2.3_build/ghidra_9.2.3_PUBLIC_20210325.zip"
-        ghidraVersion: "9.2.3"
-      ghidra922:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.2.2_PUBLIC_20201229.zip"
-        ghidraVersion: "9.2.2"
-      ghidra921:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.2.1_PUBLIC_20201215.zip"
-        ghidraVersion: "9.2.1"
-      ghidra92:
-        ghidraUrl: "https://ghidra-sre.org/ghidra_9.2_PUBLIC_20201113.zip"
-        ghidraVersion: "9.2"
   pool:
     vmImage: 'Ubuntu-20.04'
   steps:
@@ -96,12 +67,13 @@ jobs:
   - task: Cache@2
     inputs:
       key: 'gradle | "$(Agent.OS)" | "$(System.JobDisplayName)" '
-      restoreKeys: gradle
+      restoreKeys: 'gradle'
       path: $(GRADLE_USER_HOME)
     displayName: Gradle build cache
   - task: Cache@2
     inputs:
-      key: '"$(AUTOCATS_DIR)" | autocats'
+      key: '"$(AUTOCATS_DIR)" | "autocats" | "ghihorn"'
+      restoreKeys: "autocats"
       path: $(AUTOCATS_DIR)
     displayName: Cache AUTOCATS
 
@@ -112,13 +84,15 @@ jobs:
     displayName: Cache Gradle 6.x
 
   - bash: |
-      set -e
+      set -ex
       sudo apt-get -y install ninja-build
       test -d $(Pipeline.Workspace)/z3 || git clone -b $(Z3_VERSION) --depth 1 https://github.com/Z3Prover/z3.git z3
       mkdir -p z3/build
       cd z3/build
+      git checkout $(Z3_VERSION)
       cmake -GNinja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
       ninja
+      echo '##vso[task.setvariable variable=LD_LIBRARY_PATH]$(Pipeline.Workspace)/z3/build'
     condition: succeeded()
     workingDirectory: $(Pipeline.Workspace)
     displayName: Build Z3
@@ -146,6 +120,7 @@ jobs:
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
 
   - bash: |
+      set -e
       echo "##vso[task.prependpath]$(GRADLE_INSTALL_DIR)/$(GRADLE_VERSION)/bin"
       test -d $(GRADLE_INSTALL_DIR) && exit 0
       wget $(GRADLE_URL) -O gradle.zip
@@ -171,14 +146,15 @@ jobs:
     displayName: Build Kaiju extension and plugins
     workingDirectory: .
   - bash: |
+      set -ex
       test -d $AUTOCATS_DIR || git clone https://github.com/cmu-sei/autocats $AUTOCATS_DIR
+      (cd $AUTOCATS_DIR && git pull)
     displayName: Download AUTOCATS
   - bash: |
       set -e
       # Needs a head
       Xvfb :1 &
-      echo $AUTOCATS_DIR
-      DISPLAY=:1 Z3CLASSPATH=$(Pipeline.Workspace)/z3/build GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache test
+      DISPLAY=:1 Z3CLASSPATH=$(Pipeline.Workspace)/z3/build GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle -PKAIJU_AUTOCATS_DIR=$AUTOCATS_DIR --build-cache --stacktrace --info test
       kill %%
     displayName: Run Kaiju tests
     workingDirectory: .
