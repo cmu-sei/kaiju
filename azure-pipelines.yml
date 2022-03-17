@@ -22,6 +22,9 @@ jobs:
       # This isn't working right now...
       ghidra-git:
         ghidraVersion: "master"
+      ghidra1012:
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.2_build/ghidra_10.1.2_PUBLIC_20220125.zip"
+        ghidraVersion: "10.1.2"
       ghidra1011:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.1_build/ghidra_10.1.1_PUBLIC_20211221.zip"
         ghidraVersion: "10.1.1"
