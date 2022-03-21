@@ -1,10 +1,14 @@
-schedules:
-- cron: "0 12 * * 0"
-  displayName: Weekly Sunday build
-  branches:
-    include:
-    - main
-  always: true
+on:
+  push:
+    tags:
+      - '*'
+  schedule:
+  - cron: "0 12 * * 0"
+    displayName: Weekly Sunday build
+    branches:
+      include:
+      - main
+    always: true
 
 jobs:
 - job: Build_Kaiju
@@ -73,6 +77,7 @@ jobs:
       restoreKeys: 'gradle'
       path: $(GRADLE_USER_HOME)
     displayName: Gradle build cache
+
   - task: Cache@2
     inputs:
       key: '"$(AUTOCATS_DIR)" | "autocats" | "ghihorn"'
@@ -107,6 +112,7 @@ jobs:
     condition: and(succeeded(), ne(variables['ghidraUrl'], ''))
     workingDirectory: $(Pipeline.Workspace)
     displayName: Download Ghidra binary from $(ghidraUrl)
+
   - bash: |
       set -e
       sudo apt-get -y install bison flex xvfb
@@ -131,6 +137,7 @@ jobs:
       rm gradle.zip
     workingDirectory: $(Pipeline.Workspace)
     displayName: Download gradle 6.x binary from $(GRADLE_URL)
+
   - bash: |
       set -ex
       cd ghidra
@@ -143,16 +150,19 @@ jobs:
     condition: and(succeeded(), eq(variables['ghidraUrl'], ''))
     workingDirectory: $(Pipeline.Workspace)
     displayName: Download and build Ghidra from git part 2
+
   - bash: |
       set -e
       Z3CLASSPATH=$(Pipeline.Workspace)/z3/build GHIDRA_INSTALL_DIR=$(find $(Pipeline.Workspace) -maxdepth 1 -type d -name 'ghidra_*') gradle --build-cache
     displayName: Build Kaiju extension and plugins
     workingDirectory: .
+
   - bash: |
       set -ex
       test -d $AUTOCATS_DIR || git clone https://github.com/cmu-sei/autocats $AUTOCATS_DIR
       (cd $AUTOCATS_DIR && git pull)
     displayName: Download AUTOCATS
+
   - bash: |
       set -e
       # Needs a head
@@ -161,6 +171,7 @@ jobs:
       kill %%
     displayName: Run Kaiju tests
     workingDirectory: .
+
   - script: gradle --stop
   - publish: dist/
   - task: GitHubRelease@0
