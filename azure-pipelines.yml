@@ -1,14 +1,10 @@
-on:
-  push:
-    tags:
-      - '*'
-  schedule:
-  - cron: "0 12 * * 0"
-    displayName: Weekly Sunday build
-    branches:
-      include:
-      - main
-    always: true
+schedules:
+- cron: "0 12 * * 0"
+  displayName: Weekly Sunday build
+  branches:
+    include:
+    - main
+  always: true
 
 jobs:
 - job: Build_Kaiju
