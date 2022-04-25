@@ -16,7 +16,7 @@ jobs:
     GRADLE_VERSION: gradle-6.9.2
     GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
     GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
-    Z3_VERSION: z3-4.8.15
+    Z3_VERSION: z3-4.8.14
   strategy:
     matrix:
       ghidra-git:
