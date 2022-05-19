@@ -29,18 +29,17 @@
  *
  * DM21-0792
  */
-package kaiju.common;
+import ghidra.app.script.GhidraScript;
+import kaiju.common.di.GhidraDI;
 
-import ghidra.framework.plugintool.util.PluginPackage;
-import resources.ResourceManager;
+public class KaijuVersionPrinterHeadless extends GhidraScript {  
 
-public class KaijuPluginPackage extends PluginPackage {
-    public static final String NAME = "CERT Kaiju";
-    
-    public KaijuPluginPackage() {
-        super(NAME, ResourceManager.loadImage("images/Kaiju.png"),
-                "The CERT Kaiju binary analysis framework. Includes extra analyzers, plugins, and development classes to aid development of other binary analysis tools.",
-                CORE_PRIORITY);
+    @Override
+    protected void run() throws Exception {
+        print("Printing version information...");
+        print("CERT Kaiju 220519");
+        print("Using Ghidra " + GhidraDI.getGhidraVersionStr());
+        print("Finished.");
     }
-    
+
 }

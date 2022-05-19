@@ -29,18 +29,37 @@
  *
  * DM21-0792
  */
-package kaiju.common;
+package kaiju.common.di;
 
-import ghidra.framework.plugintool.util.PluginPackage;
-import resources.ResourceManager;
+public interface GhidraVersionSpecific {
+    
+    /**
+     * Generic function that is overriden for each
+     * version of Ghidra supported by the
+     * dependency injection.
+     */
+     public void doVersionSpecificAction();
+     
+// The rough implementation looks something like this:
+//     import java.lang.reflect.*;
+//     Class<?> c = null;
+//     try {
+//       c = Class.forName("ghidra.util.Swing");
+//     } catch (ClassNotFoundException e) {
+//       try {
+//         c = Class.forName("ghidra.util.SystemUtilities");
+//       } catch (ClassNotFoundException e2) {}
+//     }
+// 
+//     try
+//     {
+//       c.getDeclaredMethod("allowSwingToProcessEvents");
+//       try {
+//         c.getDeclaredMethod("allowSwingToProcessEvents").invoke(this);
+//       } catch (Exception e) {
+//         Msg.warn(this, "Error invoking function.");
+//     } catch(NoSuchMethodException e) {
+//       Msg.warn(this, "Unable to locate allowSwingToProcessEvents. The GUI may be irresponsive.");
+//     }
 
-public class KaijuPluginPackage extends PluginPackage {
-    public static final String NAME = "CERT Kaiju";
-    
-    public KaijuPluginPackage() {
-        super(NAME, ResourceManager.loadImage("images/Kaiju.png"),
-                "The CERT Kaiju binary analysis framework. Includes extra analyzers, plugins, and development classes to aid development of other binary analysis tools.",
-                CORE_PRIORITY);
-    }
-    
 }

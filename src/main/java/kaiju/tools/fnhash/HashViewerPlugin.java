@@ -222,9 +222,7 @@ public class HashViewerPlugin extends ProgramPlugin implements DomainObjectListe
             @Override
             public void actionPerformed(ActionContext context) {
                 try {
-                    DataSettingsDialog dialog = provider.getSelectedRowCount() == 1
-                            ? new DataSettingsDialog(currentProgram, provider.getSelectedData())
-                            : new DataSettingsDialog(currentProgram, provider.selectData());
+                    DataSettingsDialog dialog = new DataSettingsDialog(currentProgram, provider.selectData());
 
                     tool.showDialog(dialog);
                     dialog.dispose();

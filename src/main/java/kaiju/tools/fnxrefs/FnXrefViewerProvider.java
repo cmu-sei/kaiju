@@ -48,6 +48,7 @@ import docking.widgets.table.threaded.ThreadedTableModelListener;
 import ghidra.app.services.GoToService;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
@@ -269,6 +270,28 @@ public class FnXrefViewerProvider extends ComponentProviderAdapter {
         }
         ProgramLocation location = xrefModel.getRowObject(selectedRow);
         return DataUtilities.getDataAtLocation(location);
+    }
+    
+    public ProgramSelection getProgramSelection() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow < 0) {
+            return null;
+        }
+        ProgramLocation location = xrefModel.getRowObject(selectedRow);
+        return new ProgramSelection(new AddressSet(location.getAddress()));
+    }
+    
+    public ProgramSelection getProgramSelection(Predicate<Data> filter) {
+        AddressSet list = new AddressSet();
+        int[] selectedRows = table.getSelectedRows();
+        for (int row : selectedRows) {
+            ProgramLocation location = xrefModel.getRowObject(row);
+            Data data = DataUtilities.getDataAtLocation(location);
+            if (passesFilter(data, filter)) {
+                list.add(location.getAddress());
+            }
+        }
+        return new ProgramSelection(list);
     }
 
     public List<Data> getSelectedDataList(Predicate<Data> filter) {

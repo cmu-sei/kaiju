@@ -29,18 +29,31 @@
  *
  * DM21-0792
  */
-package kaiju.common;
+package kaiju.common.di;
 
-import ghidra.framework.plugintool.util.PluginPackage;
-import resources.ResourceManager;
+import ghidra.framework.Application;
 
-public class KaijuPluginPackage extends PluginPackage {
-    public static final String NAME = "CERT Kaiju";
+public class GhidraDI {
     
-    public KaijuPluginPackage() {
-        super(NAME, ResourceManager.loadImage("images/Kaiju.png"),
-                "The CERT Kaiju binary analysis framework. Includes extra analyzers, plugins, and development classes to aid development of other binary analysis tools.",
-                CORE_PRIORITY);
-    }
-    
+    /**
+     * Returns the version of the Ghidra being run.
+     * This is the version check GhidraScript uses,
+     * duplicated here
+     * @return the version of the Ghidra being run,
+     *         in the format: "x.y.z".
+     */
+     public static final String getGhidraVersionStr() {
+        return Application.getApplicationVersion();
+     }
+     
+     public static final boolean isNewerThanGhidraMinorVersion(String version) {
+        String[] current = versionStrToStrList(getGhidraVersionStr());
+        String[] given = versionStrToStrList(version);
+        return Integer.parseInt(given[1]) >= Integer.parseInt(current[1]);
+     }
+     
+     private static String[] versionStrToStrList(String version) {
+        return version.split(".", 3);
+     }
+
 }

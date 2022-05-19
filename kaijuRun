@@ -61,6 +61,10 @@ sub_help(){
     echo "$ProgName <subcommand> -h|--help"
     echo ""
 }
+
+sub_version(){
+    $GHIDRA_INSTALL_DIR/support/analyzeHeadless /tmp tmpGhidraProj -okToDelete -deleteProject -postScript KaijuVersionPrinterHeadless.java
+}
   
 sub_fn2hash(){
     if [ $# -eq 0 ]; then
@@ -147,6 +151,9 @@ subcommand=$1
 case $subcommand in
     "" | "-h" | "--help")
         sub_help
+        ;;
+    "-v" | "--version")
+        sub_version
         ;;
     "fn2hash" | "fn2yara" | "xrefs")
         shift

@@ -32,7 +32,7 @@
 package kaiju.tools.fnxrefs;
 
 import java.io.File;
-
+import java.lang.reflect.*;
 import javax.swing.ImageIcon;
 
 import docking.ActionContext;
@@ -59,11 +59,13 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.util.ChangeManager;
 import ghidra.program.util.ProgramChangeRecord;
 import ghidra.program.util.ProgramLocation;
+import ghidra.program.util.ProgramSelection;
 import ghidra.util.HelpLocation;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.table.SelectionNavigationAction;
 import ghidra.util.table.actions.MakeProgramSelectionAction;
 import ghidra.util.task.SwingUpdateManager;
+import kaiju.common.di.GhidraDI;
 import kaiju.common.KaijuLogger;
 import kaiju.common.KaijuPluginPackage;
 import kaiju.export.GTableToCSV;
@@ -189,9 +191,7 @@ public class FnXrefViewerPlugin extends ProgramPlugin implements DomainObjectLis
             @Override
             public void actionPerformed(ActionContext context) {
                 try {
-                    DataSettingsDialog dialog = provider.getSelectedRowCount() == 1
-                            ? new DataSettingsDialog(currentProgram, provider.getSelectedData())
-                            : new DataSettingsDialog(currentProgram, provider.selectData());
+                    DataSettingsDialog dialog = new DataSettingsDialog(currentProgram, provider.selectData());
 
                     tool.showDialog(dialog);
                     dialog.dispose();
