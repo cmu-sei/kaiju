@@ -139,7 +139,7 @@ public class GhiHornCommand extends BackgroundCommand implements CancelledListen
             return false;
         } catch (VerifyException | GhiHornException gve) {
             setStatusMsg("Could not complete analysis: " + gve.getMessage());
-
+            return false;
             // These are command-specific failures are not worth displaying a dialog, so return true
         } catch (Exception e) {
             e.printStackTrace();

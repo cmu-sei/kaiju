@@ -77,3 +77,6 @@ data/apidb_src/kernel32.cpp
 os/osx64/libz3java.dylib
 os/osx64/libz3.dylib
 .project
+gradlew
+gradle/wrapper/gradle-wrapper.properties
+gradlew.bat

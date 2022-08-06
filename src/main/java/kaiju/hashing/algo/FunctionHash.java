@@ -1,6 +1,6 @@
 /***
  * CERT Kaiju
- * Copyright 2021 Carnegie Mellon University.
+ * Copyright 2022 Carnegie Mellon University.
  *
  * NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE ENGINEERING
  * INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS. CARNEGIE MELLON UNIVERSITY
@@ -29,29 +29,44 @@
  *
  * DM21-0792
  */
-package kaiju.hashing;
+package kaiju.hashing.algo;
 
-// a simple wrapper class to use in place of String for better typing and clearer intent
+import ghidra.program.model.listing.Function;
+import kaiju.hashing.algo.impl.ExactMd5Algorithm;
+import kaiju.hashing.algo.impl.PosIndCodeMd5Algorithm;
+
+/**
+ * A helper class to encapsulate function hashes and allow
+ * choosing of appropriate hashing algorithm programmatically.
+ * Makes use of the "Strategy" design pattern:
+ * https://howtodoinjava.com/design-patterns/behavioral/strategy-design-pattern/
+ */
 public class FunctionHash {
 
-    private String hash;
-    
-    FunctionHash() {
-        hash = "";
-    }
-    
-    FunctionHash(String x) {
-        hash = x;
-    }
-    
-    public void setHash(String x) {
-        hash = x;
-    }
-    
-    public String toString() {
-        return hash;
-    }
+    HashAlgorithm algo;
 
+    // sets the strategy so appropriate implementation class is called
+    public void setHashingAlgorithm(HashAlgorithm impl) {
+        this.algo = impl;
+    }
+    
+    // convenience function allowing to specify string representation
+    // of an algorithm rather than a specific class
+    public void setHashingAlgorithm(String implName) throws InvalidHashAlgorithmException {
+
+        String pick = implName.toLowerCase();
+
+        if (pick.equals("exact_md5")) {
+            setHashingAlgorithm(new ExactMd5Algorithm());
+        } else if (pick.equals("pic_md5")) {
+            setHashingAlgorithm(new PosIndCodeMd5Algorithm());
+        } else {
+            throw new InvalidHashAlgorithmException();
+        }
+
+    }
+    
+    public byte[] computeHash(Function fn) {
+        return algo.computeHash(fn);
+    }
 }
-
-

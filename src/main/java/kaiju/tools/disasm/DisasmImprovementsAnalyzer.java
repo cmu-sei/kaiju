@@ -37,6 +37,7 @@ import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.importer.MessageLog;
+import ghidra.framework.task.gui.GProgressBar;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressRangeImpl;
@@ -58,12 +59,15 @@ import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import kaiju.common.KaijuLogger;
+import kaiju.tools.disasm.DisasmImprover;
+import kaiju.tools.disasm.GhidraTypeUtilities;
+import kaiju.util.Pair;
 
  /**
  * A Ghidra analyzer pass that improves function partitioning in a program.
  * Previously known as "MakeAlignment".
  * Documentation is at:
- * https://ghidra.re/ghidra_docs/api/ghidra/app/services/AbstractAnalyzer.html
+ * docs/api/ghidra/app/services/AbstractAnalyzer.html
  */
 public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements KaijuLogger {
     public static final boolean doingdebug = true;
@@ -78,7 +82,7 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
 
         // Data type propagation is the latest analysis phase. This will run after
         // that because it needs to update functions and data types, see:
-        // https://ghidra.re/ghidra_docs/api/ghidra/app/services/AnalysisPriority.html
+        // docs/api/ghidra/app/services/AnalysisPriority.html
         setPriority(AnalysisPriority.DATA_TYPE_PROPOGATION.after());
 
         // Analysis is enabled by default,
@@ -96,16 +100,13 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
     private AddressSetView undefinedAddresses;
     private TaskMonitor monitor;
     private Program currentProgram;
+    private DisasmImprover improver;
 
     // Records of what we've done.
     private AddressSet alignmentAddresses;
     private AddressSet codeAddresses;
     private AddressSet stringAddresses;
     private HashSet<Address> skippedAddresses;
-
-    public enum BlockType {
-        CODE, DATA, ALIGNMENT, OTHER
-    }
 
     /** 
      * This analyzer is selected by default to run in the Auto-Analyze feature.
@@ -124,10 +125,10 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
     @Override
     public boolean canAnalyze(final Program program) {
 
-        // Only analyze 32-bit or less X86 programs. OOAnalyzer can handle nothing else
+        // Only analyze 32-bit X86 programs. OOAnalyzer can handle nothing else.
         // TODO: is this restriction an unnecessary holdover from pharos?
         final Processor processor = program.getLanguage().getProcessor();
-        if (program.getLanguage().getDefaultSpace().getSize() > 32) {
+        if (program.getLanguage().getDefaultSpace().getSize() != 32) {
             return false;
         }
         return processor.equals(Processor.findOrPossiblyCreateProcessor("x86"));
@@ -159,16 +160,28 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
 
         // Find the "Alignment" type in the builtin data type manager.
         dataTypeManager = BuiltInDataTypeManager.getDataTypeManager();
-        alignmentType = findGhidraType("Alignment");
+        alignmentType = GhidraTypeUtilities.findGhidraType("Alignment");
         if (alignmentType == null) {
             debug(this, "Unable to find builtin alignment type! Aborting.");
             return false;
         }
         // Find the "string" type in the builtin data type manager.
-        stringType = findGhidraType("string");
+        stringType = GhidraTypeUtilities.findGhidraType("string");
         if (stringType == null) {
             debug(this, "Unable to find builtin string type! Aborting.");
             return false;
+        }
+        
+        improver = new DisasmImprover(currentProgram, monitor);
+        // TODO: should we check arch here or inside the improver?
+        // can we share code with the canAnalyze() function?
+        try {
+            final Processor processor = currentProgram.getLanguage().getProcessor();
+            if (processor.equals(Processor.findOrPossiblyCreateProcessor("x86"))) {
+                improver.setImproverStrategy("x86");
+            }
+        } catch (InvalidImproverStrategyException e) {
+            // TODO: need to safely abort if we couldn't set an exception
         }
 
         // currentProgram getminAddress() and getMaxAddress()?
@@ -179,18 +192,35 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
         stringAddresses = new AddressSet();
         skippedAddresses = new HashSet<Address>();
 
-        int total_changes = 0;
+        // loop over the undefined addresses until either they are identified
+        // or there's no heuristics left to run.
+        // CancelledListener cancelledListener
+        GProgressBar progress = new GProgressBar​(null, true, true, true, 12);
+        progress.setMessage("Analyzing gaps...");
+        progress.initialize(0);
+        
+        long num_addrs_undefined = 0;
+        undefinedAddresses = this.listing.getUndefinedRanges(allAddresses, false, monitor);
+        for (final AddressRange range : undefinedAddresses) {
+            num_addrs_undefined += range.getLength();
+        }
+        progress.setMaximum(num_addrs_undefined);
+        
         while (true) {
-            int changed = 0;
+            long changed = 0;
             debug(this, "Analyzing gaps...");
 
-            undefinedAddresses = this.listing.getUndefinedRanges(allAddresses, false, monitor);
             for (final AddressRange range : undefinedAddresses) {
-                changed += analyzeGap(range);
+                //long range_change = improver.analyzeGap(range);
+                Pair<AddressRange, Integer> range_pair = improver.analyzeGap(range);
+                long range_change = range_pair.second;
+                progress.incrementProgress(range_change);
+                changed += range_change;
             }
             if (changed == 0)
                 break;
-            total_changes += changed;
+            // set up for next loop
+            undefinedAddresses = this.listing.getUndefinedRanges(allAddresses, false, monitor);
         }
 
         // Report what we've done (in "ranges" where we can)...
@@ -207,205 +237,6 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
     // Lots of unmade functions around 0x417b50 - 0x417cb8
     // Problems with exception handler data structures not made correctly around 0x412a1e
     // Next on todo list is to handle the very-large-gap bug I just fixed in ROSE.
-
-    public int analyzeGap(final AddressRange range) {
-        // debug(this, "Undefined bytes at " + range);
-        final Address minAddr = range.getMinAddress();
-        
-        // If we've already processed this address, don't try again.
-        if (skippedAddresses.contains(minAddr))
-            return 0;
-
-        // debug(this, "Analyzing gap: " + range + " with block type " + getBlockType(minAddr));
-
-        // Upgrade the byte to an integer because types are signed in Java.
-        int b = 0;
-        try {
-            b = memory.getByte(minAddr) & 0xFF;
-        } catch (final MemoryAccessException e) {
-            e.printStackTrace();
-            return 0;
-        }
-
-        // Address previous = minAddr.subtract(1);
-
-        final BlockType previousBlockType = getPreviousBlockType(minAddr);
-        switch (previousBlockType) {
-            case CODE:
-                if (b == 0xCC)
-                    return makeAlignment(minAddr);
-                else
-                    return makeCode(minAddr);
-            case DATA:
-                if (b == 0x00)
-                    return makeAlignment(minAddr);
-                break;
-            case ALIGNMENT:
-                debug(this, "I'm a little surprised to find alignment at " + minAddr);
-                break;
-            case OTHER:
-                debug(this, "I'm a little surprised to find other at " + minAddr);
-                break;
-        }
-
-        debug(this, "Skipping address: " + minAddr);
-        skippedAddresses.add(minAddr);
-        return 0;
-    }
-    
-    public int makeAlignment(final Address address) {
-        Data alignData;
-        try {
-            alignData = listing.createData(address, alignmentType);
-            final Address minAddr = alignData.getMinAddress();
-            final Address maxAddr = alignData.getMaxAddress();
-            final AddressRange range = new AddressRangeImpl(minAddr, maxAddr);
-            debug(this, "Created alignment at: " + range);
-            alignmentAddresses.add(range);
-            return 1;
-        } catch (final CodeUnitInsertionException e) {
-            // Don't report the exception, because we're going to just leave the address alone?
-            debug(this, "Failed to make alignment at " + address);
-            skippedAddresses.add(address);
-            return 0;
-        }
-    }
-    
-    public int makeCode(final Address address) {
-        // Making code at a previous gap might have converted this gap to code, so we need to
-        // check again to see if this address range is still a gap...
-        if (getBlockType(address) == BlockType.CODE)
-            return 0;
-
-        // debug(this, "Making code at " + address);
-        final ghidra.app.cmd.disassemble.DisassembleCommand disassembleCmd =
-                new ghidra.app.cmd.disassemble.DisassembleCommand(address, undefinedAddresses,
-                        true);
-
-        disassembleCmd.enableCodeAnalysis(true);
-        disassembleCmd.applyTo(currentProgram, monitor);
-
-        // I'm not sure what good the status message is really.
-        final String statusMsg = disassembleCmd.getStatusMsg();
-        if (statusMsg != null) {
-            debug(this, "Disassembly status at " + address + " was: " + disassembleCmd.getStatusMsg());
-            skippedAddresses.add(address);
-            return 0;
-        }
-
-        final AddressSet insnsCreated = disassembleCmd.getDisassembledAddressSet();
-        debug(this, "Created instructions at: " + insnsCreated);
-        codeAddresses.add(insnsCreated);
-        return 1;
-    }
-
-    public int makeString(final Address address) {
-        Data stringData;
-        try {
-            stringData = listing.createData(address, stringType);
-            final Address minAddr = stringData.getMinAddress();
-            final Address maxAddr = stringData.getMaxAddress();
-            final AddressRange range = new AddressRangeImpl(minAddr, maxAddr);
-            debug(this, "Created string at: " + range);
-            currentProgram.getBookmarkManager().setBookmark(address, "string", "KaijuDiasmImprovements", "created a string at this address");
-            stringAddresses.add(range);
-            return 1;
-        } catch (final CodeUnitInsertionException e) {
-            // Don't report the exception, because we're going to just leave the address alone?
-            debug(this, "Failed to make string at " + address);
-            skippedAddresses.add(address);
-            return 0;
-        }
-    }
-
-    /* 
-     * Note this gets the Minimum address in a CodeUnit that
-     * may correspond to the Address OR _address_ if no CodeUnit is found;
-     *  this should not be confused
-     * with the getStartAddress() implemented for InstructionBlock:
-     * https://ghidra.re/ghidra_docs/api/ghidra/program/model/lang/InstructionBlock.html#getStartAddress()
-     */
-    private Address getStartAddress(final Address address) {
-        final CodeUnit cu = listing.getCodeUnitContaining(address);
-        if (cu == null) {
-            debug(this, "No CodeUnit for " + address);
-	    // Why is this passed back with no error?
-	    // When do we want to keep processing when
-	    // no CodeUnit is defined with _address_ as
-	    // a member?
-            return address;
-        }
-        return cu.getMinAddress();
-    }
-
-    private Address getPreviousStartAddress(final Address startAddress) {
-        // We can't call getStartAddress here, because previous might not be a valid address.
-        //final Address previous = startAddress.subtract(1);
-        // from the documentation, it seems more correct to use previous() here than subtract():
-        // https://ghidra.re/ghidra_docs/api/ghidra/program/model/address/Address.html#previous()
-        final Address previous = startAddress.previous();
-        if (previous == null)
-            // only happens when startAddress was 0x00 so previous returns null
-            // TODO: is there something better to do here?
-            return startAddress;
-        // Further, getStartAddress will return previous if we failed to find anything.
-        final Address previousStart = getStartAddress(previous);
-        if (previousStart == previous)
-            return startAddress;
-        // Otherwise, everything went smoothly.
-        return previousStart;
-    }
-
-    // Return the type of the block at address.
-    private BlockType getBlockType(final Address address) {
-        // Instruction insn = listing.getInstructionContaining(address);
-        // if (insn != null)
-        final CodeUnit cu = listing.getCodeUnitAt(address);
-        // TODO: put cu in Optional container
-
-        if (cu instanceof Instruction)
-            return BlockType.CODE;
-        // Data data = listing.getDataContaining(address);
-        // if (data == null)
-        if (cu instanceof Data) {
-            final Data tempdata = (Data) cu;
-            if (alignmentType == tempdata.getDataType())
-                return BlockType.ALIGNMENT;
-            return BlockType.DATA;
-        } else {
-            return BlockType.OTHER;
-        }
-
-
-        // I'm a little surprised that an approach like this didn't work:
-        // if (cu.hasProperty(CodeUnit.INSTRUCTION_PROPERTY)) return true;
-        // CodeUnit properties are *not* set by the Framework code
-        // Use /isinstance/ instead.
-    }
-
-    // Return the type of the block immediately before address, skipping over one alignment
-    // block if the immediately preceding block is an alignment block.
-    private BlockType getPreviousBlockType(final Address address) {
-        final Address previous = getPreviousStartAddress(address);
-        // TODO: what happens here if (previous == address)?
-        final BlockType blockType = getBlockType(previous);
-        if (blockType == BlockType.ALIGNMENT) {
-            final Address before_alignment = getPreviousStartAddress(previous);
-            return getBlockType(before_alignment);
-        }
-        return blockType;
-    }
-
-    private DataType findGhidraType(final String name) {
-        DataType dt = dataTypeManager.getDataType(CategoryPath.ROOT, name);
-        if (dt == null) {
-            dt = dataTypeManager.getDataType(CategoryPath.ROOT, name);
-            if (dt != null) {
-                dt = dt.clone(dataTypeManager);
-            }
-        }
-        return dt;
-    }
 
 
 }

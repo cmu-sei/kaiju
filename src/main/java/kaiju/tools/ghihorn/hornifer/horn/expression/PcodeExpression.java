@@ -10,6 +10,7 @@ import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.Msg;
+import kaiju.tools.ghihorn.exception.GhiHornException;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornConstant;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable;
 import kaiju.tools.ghihorn.hornifer.horn.variable.HornVariable.Scope;
@@ -48,7 +49,12 @@ public class PcodeExpression implements HornExpression {
         this.pcode = pcode;
 
         // First the I/O variables must be computed
-        computeIOVariables();
+        try {
+            computeIOVariables();
+        } catch (Exception e) {
+            Msg.error(this, "Failed to generate variables for p-code: " + pcode);
+            throw new GhiHornException("Failed to generate variables for p-code: " + pcode + ". This is an issue with Ghidra's HighConstant class");
+        }
 
         // Second the operations need to be generated from the I/O variables. This will
         // in effect identify the def/use variables because p-code has an equational

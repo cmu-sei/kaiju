@@ -139,6 +139,11 @@ buildExtension {
     excludes ['buildSrc/**']
 }
 
+task printGhidraDir {
+    println 'Using Ghidra install directory ' + ghidraInstallDir
+    println 'Using test directory ' + project.property('KAIJU_AUTOCATS_DIR')
+}
+
 task copyToLib(type: Copy) {
     outputs.file file("lib/gson-2.8.6.jar")
     if (!file("lib/gson-2.8.6.jar").exists()) {
@@ -180,6 +185,7 @@ task copyToLib(type: Copy) {
         into "lib"
     }
 }
+copyDependencies.dependsOn(copyToLib)
 buildExtension.dependsOn(copyToLib)
 compileJava.dependsOn(copyToLib)
 indexHelp.dependsOn(copyToLib)

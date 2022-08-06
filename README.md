@@ -278,6 +278,28 @@ and place it in the `kaiju/lib` directory before building.
 
 ### Build Instructions
 
+#### Building Z3 with Java bindings
+
+If you use linux, your distro may provide Java bindings.
+If not, you will need to build Z3 with the appropriate findings:
+```bash
+cmake \
+  -DZ3_BUILD_LIBZ3_SHARED=true \
+  -DZ3_USE_LIB_GMP=true \
+  -DZ3_BUILD_JAVA_BINDINGS=true \
+  -DZ3_INSTALL_JAVA_BINDINGS=true \
+  -DZ3_JAVA_JAR_INSTALLDIR=%{_javadir} \
+  -DZ3_JAVA_JNI_LIB_INSTALLDIRR=%{_jnidir} \
+  -DZ3_ENABLE_EXAMPLE_TARGETS=false \
+  -DZ3_LINK_TIME_OPTIMIZATION=true \
+  -DCMAKE_BUILD_TYPE=Release
+```
+
+The extra `Z3_BUILD_JAVA_BINDINGS` flag ensures that the Java bindings are built
+with the library. From here, install Z3 like normal.
+
+#### Building Kaiju
+
 Once dependencies are installed, Kaiju may be built as a Ghidra
 extension by using the `gradle` build tool. It is recommended to
 first set a Ghidra environment variable, as Ghidra installation

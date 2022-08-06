@@ -17,6 +17,62 @@
             ]
         },
         {
+            "Name": "TaskList",
+            "Description": "List running processes",
+            "Sequence": [
+                {
+                    "API": "Kernel32.DLL::CreateToolhelp32Snapshot",
+                    "Retn": "S"
+                },
+                {
+                    "API": "Kernel32.DLL::Process32First",
+                    "Args": [
+                        "S"
+                    ]
+                },
+                {
+                    "API": "Kernel32.DLL::Process32Next",
+                    "Args": [
+                        "S"
+                    ]
+                },
+                {
+                    "API": "Kernel32.DLL::CloseHandle",
+                    "Args": [
+                        "S"
+                    ]
+                }
+            ]
+        },
+        {
+            "Name": "Open/Read/WriteClose a file",
+            "Description": "Open/Read/Write/Close a file",
+            "Sequence": [
+                {
+                    "API": "Kernel32.DLL::CreateFileA",
+                    "Retn": "H"
+                },
+                {
+                    "API": "Kernel32.DLL::ReadFile",
+                    "Args": [
+                        "H"
+                    ]
+                },
+                {
+                    "API": "Kernel32.DLL::WriteFile",
+                    "Args": [
+                        "H"
+                    ]
+                },
+                {
+                    "API": "Kernel32.DLL::CloseHandle",
+                    "Args": [
+                        "H"
+                    ]
+                }
+            ]
+        },
+        {
             "Name": "Read/Write a file",
             "Description": "Read/Write a file",
             "Sequence": [
