@@ -19,8 +19,9 @@ jobs:
     Z3_VERSION: z3-4.8.14
   strategy:
     matrix:
-      ghidra-git:
-        ghidraVersion: "master"
+      # Disabled because we can't even build ghidra master with gradle 6.9.2
+      #ghidra-git:
+      #  ghidraVersion: "master"
       ghidra1015:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.5_build/ghidra_10.1.5_PUBLIC_20220726.zip"
         ghidraVersion: "10.1.5"
