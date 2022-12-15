@@ -13,15 +13,24 @@ jobs:
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
     GHIHORN_TEST_DIR: $(Pipeline.Workspace)/autocats/exe/ghihorn
-    GRADLE_VERSION: gradle-6.9.2
+    GRADLE_VERSION: gradle-7.5.1
     GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
     GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
     Z3_VERSION: z3-4.8.14
   strategy:
     matrix:
-      # Disabled because we can't even build ghidra master with gradle 6.9.2
+      # disabled until make needed changes for Ghidra 10.3
       #ghidra-git:
       #  ghidraVersion: "master"
+      ghidra1022:
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.2.2_build/ghidra_10.2.2_PUBLIC_20221115.zip"
+        ghidraVersion: "10.2.2"
+      ghidra1021:
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.2.1_build/ghidra_10.2.1_PUBLIC_20221110.zip"
+        ghidraVersion: "10.2.1"
+      ghidra1020:
+        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.2_build/ghidra_10.2_PUBLIC_20221101.zip"
+        ghidraVersion: "10.2.0"
       ghidra1015:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.5_build/ghidra_10.1.5_PUBLIC_20220726.zip"
         ghidraVersion: "10.1.5"
@@ -34,12 +43,6 @@ jobs:
       ghidra1012:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.2_build/ghidra_10.1.2_PUBLIC_20220125.zip"
         ghidraVersion: "10.1.2"
-      ghidra1011:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.1_build/ghidra_10.1.1_PUBLIC_20211221.zip"
-        ghidraVersion: "10.1.1"
-      ghidra101:
-        ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1_build/ghidra_10.1_PUBLIC_20211210.zip"
-        ghidraVersion: "10.1"
   pool:
     vmImage: 'Ubuntu-20.04'
   steps:
@@ -61,7 +64,14 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]$(JAVA_HOME_11_X64)"
       echo "##vso[task.prependpath]$(JAVA_HOME_11_X64)/bin:$(PATH)"
-    displayName: "Set java version"
+    displayName: "Set Java 11"
+    condition: or(eq(variables['ghidraVersion'], '10.1.5'), or(eq(variables['ghidraVersion'], '10.1.4'), or(eq(variables['ghidraVersion'], '10.1.3'), eq(variables['ghidraVersion'], '10.1.2'))))
+    
+  - script: |
+      echo "##vso[task.setvariable variable=JAVA_HOME]$(JAVA_HOME_17_X64)"
+      echo "##vso[task.prependpath]$(JAVA_HOME_17_X64)/bin:$(PATH)"
+    displayName: "Set Java 17"
+    condition: or(eq(variables['ghidraVersion'], 'master'), or(eq(variables['ghidraVersion'], '10.2.2'), or(eq(variables['ghidraVersion'], '10.2.1'), eq(variables['ghidraVersion'], '10.2.0'))))
 
   - task: Cache@2
     inputs:
@@ -94,7 +104,7 @@ jobs:
     inputs:
       key: '"$(GRADLE_URL)" | gradle'
       path: $(GRADLE_INSTALL_DIR)
-    displayName: Cache Gradle 6.x
+    displayName: Cache Gradle 7.x
 
   - bash: |
       set -ex
@@ -141,7 +151,7 @@ jobs:
       unzip -d $(GRADLE_INSTALL_DIR) gradle.zip
       rm gradle.zip
     workingDirectory: $(Pipeline.Workspace)
-    displayName: Download gradle 6.x binary from $(GRADLE_URL)
+    displayName: Download gradle 7.x binary from $(GRADLE_URL)
 
   - bash: |
       set -ex
