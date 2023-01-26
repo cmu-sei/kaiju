@@ -13,10 +13,10 @@ jobs:
     GRADLE_USER_HOME: $(Pipeline.Workspace)/.gradle
     AUTOCATS_DIR: $(Pipeline.Workspace)/autocats
     GHIHORN_TEST_DIR: $(Pipeline.Workspace)/autocats/exe/ghihorn
-    GRADLE_VERSION: gradle-7.5.1
+    GRADLE_VERSION: gradle-7.6
     GRADLE_URL: https://services.gradle.org/distributions/$(GRADLE_VERSION)-bin.zip
     GRADLE_INSTALL_DIR: $(Pipeline.Workspace)/gradle
-    Z3_VERSION: z3-4.8.14
+    Z3_VERSION: z3-4.12.0
   strategy:
     matrix:
       # disabled until make needed changes for Ghidra 10.3
@@ -44,7 +44,7 @@ jobs:
         ghidraUrl: "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.2_build/ghidra_10.1.2_PUBLIC_20220125.zip"
         ghidraVersion: "10.1.2"
   pool:
-    vmImage: 'Ubuntu-20.04'
+    vmImage: 'Ubuntu-22.04'
   steps:
 
   - bash: |
@@ -110,10 +110,11 @@ jobs:
       set -ex
       sudo apt-get -y install ninja-build
       test -d $(Pipeline.Workspace)/z3 || git clone -b $(Z3_VERSION) --depth 1 https://github.com/Z3Prover/z3.git z3
+      rm -r z3/build
       mkdir -p z3/build
       cd z3/build
       git checkout $(Z3_VERSION)
-      cmake -GNinja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
+      cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DZ3_BUILD_JAVA_BINDINGS=On ..
       ninja
       echo '##vso[task.setvariable variable=LD_LIBRARY_PATH]$(Pipeline.Workspace)/z3/build'
     condition: succeeded()
