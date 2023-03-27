@@ -47,6 +47,8 @@ jobs:
           7z x z3-4.12.1-x64-glibc-2.35.zip
           cp z3-4.12.1-x64-glibc-2.35/bin/*.jar ${{ github.workspace }}/lib/
           cp z3-4.12.1-x64-glibc-2.35/bin/*.so ${{ github.workspace }}/os/linux_x86_64/
+          rm z3-4.12.1-x64-glibc-2.35.zip
+          rm -r z3-4.12.1-x64-glibc-2.35/
     - name: Download Z3 for Windows x64
       uses: robinraju/release-downloader@v1.7
       with:
@@ -57,6 +59,8 @@ jobs:
       run: |
           7z x z3-4.12.1-x64-win.zip
           cp z3-4.12.1-x64-win/bin/*.dll ${{ github.workspace }}/os/win_x86_64/
+          rm z3-4.12.1-x64-win.zip
+          rm -r z3-4.12.1-x64-win/
     - name: Download Z3 for MacOS x64
       uses: robinraju/release-downloader@v1.7
       with:
@@ -67,6 +71,8 @@ jobs:
       run: |
           7z x z3-4.12.1-x64-osx-10.16.zip
           cp z3-4.12.1-x64-osx-10.16/bin/*.dylib ${{ github.workspace }}/os/mac_x86_64/
+          rm z3-4.12.1-x64-osx-10.16.zip
+          rm -r z3-4.12.1-x64-osx-10.16/
       
     - name: Set up Gradle
       uses: gradle/gradle-build-action@v2
@@ -89,6 +95,6 @@ jobs:
         tag: ${{ github.ref }}
         commit: 'main'
         body: "See CHANGELOG.md for more information."
-        artifacts: '${{ github.workspace }}/ghidra_${{ matrix.ghidra_version }}_PUBLIC/dist/*.zip'
+        artifacts: '${{ github.workspace }}/dist/*.zip'
         artifactContentType: 'application/zip'
         allowUpdates: true
