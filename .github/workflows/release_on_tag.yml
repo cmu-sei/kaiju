@@ -20,7 +20,6 @@ jobs:
         os: [ubuntu-latest]
         ghidra_version: [10.2.3, 10.2.2, 10.2.1, 10.2]
     runs-on: ${{ matrix.os }}
-    needs: create_release
     steps:
     - uses: actions/checkout@v3
     - name: Set up JDK 17
