@@ -85,16 +85,17 @@ jobs:
       run: |
           gradle -PKAIJU_SKIP_Z3_BUILD --build-cache install
           
-    - name: Create Release for Ghidra ${{ matrix.ghidra_version }}
+    - name: Create Release if Needed
       uses: ncipollo/release-action@v1.12.0
-      id: create_release
       with:
+        skipIfReleaseExists: true
         draft: false
         prerelease: false
-        name: ${{ github.ref }}
+        name: ${{ github.event.release.tag_name }}
         tag: ${{ github.ref }}
         commit: 'main'
         body: "See CHANGELOG.md for more information."
-        artifacts: '${{ github.workspace }}/dist/*.zip'
-        artifactContentType: 'application/zip'
         allowUpdates: true
+    - name: Upload Kaiju Extension for Ghidra ${{ matrix.ghidra_version }}
+      run: |
+          gh release upload ${{ github.ref }} ${{ github.workspace }}/dist/*.zip
