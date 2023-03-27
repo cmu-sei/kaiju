@@ -91,7 +91,7 @@ jobs:
         skipIfReleaseExists: true
         draft: false
         prerelease: false
-        name: ${{ github.event.release.tag_name }}
+        name: ${{ github.ref_name }}
         tag: ${{ github.ref }}
         commit: 'main'
         body: "See CHANGELOG.md for more information."
@@ -100,4 +100,4 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ github.workspace }}/dist/*.zip
+          gh release upload ${{ github.ref_name }} ${{ github.workspace }}/dist/*.zip
