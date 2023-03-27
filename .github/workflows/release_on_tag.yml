@@ -79,7 +79,7 @@ jobs:
           gradle -PKAIJU_SKIP_Z3_BUILD --build-cache install
           
     - name: Create Release for Ghidra ${{ matrix.ghidra_version }}
-      uses: ncipollo/create-release@v1
+      uses: ncipollo/release-action@v1.12.0
       id: create_release
       with:
         draft: false
