@@ -45,6 +45,7 @@ jobs:
     - name: Unzip Z3 for Linux x64 (glibc)
       run: |
           7z x z3-4.12.1-x64-glibc-2.35.zip
+          cp z3-4.12.1-x64-glibc-2.35/bin/*.jar ${{ github.workspace }}/lib/
           cp z3-4.12.1-x64-glibc-2.35/bin/*.so ${{ github.workspace }}/os/linux_x86_64/
     - name: Download Z3 for Windows x64
       uses: robinraju/release-downloader@v1.7
