@@ -100,4 +100,4 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-          gh release upload ${{ github.ref }} ${{ github.workspace }}/dist/*.zip
+          gh release upload ${{ github.event.release.tag_name }} ${{ github.workspace }}/dist/*.zip
