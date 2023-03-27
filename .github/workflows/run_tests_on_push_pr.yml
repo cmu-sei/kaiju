@@ -1,0 +1,59 @@
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Run Tests on Push or PR
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ghidra_version: [10.2.3, 10.2.2, 10.2.1, 10.2]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    - name: Download Ghidra ${{ matrix.ghidra_version }}
+      uses: robinraju/release-downloader@v1.7
+      with:
+        repository: "NationalSecurityAgency/ghidra"
+        tag: "Ghidra_${{ matrix.ghidra_version }}_build"
+        fileName: "ghidra*.zip"
+    - name: Unzip Ghidra ${{ matrix.ghidra_version }}
+      run: 7z x ghidra_${{ matrix.ghidra_version }}_*.zip
+    - name: Set up Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: '7.6'
+    - name: Build with Gradle
+      env:
+        GHIDRA_INSTALL_DIR: '${{ github.workspace }}/ghidra_${{ matrix.ghidra_version }}_PUBLIC/'
+        KAIJU_AUTOCATS_DIR: '${{ github.workspace }}/autocats/'
+      run: |
+          gradle --build-cache install
+    - name: Checkout AUTOCATS repo for testing
+      uses: actions/checkout@v3
+      with:
+        repository: CERTCC/autocats
+        path: autocats
+    - name: Run tests with Gradle
+      env:
+        GHIDRA_INSTALL_DIR: '${{ github.workspace }}/ghidra_${{ matrix.ghidra_version }}_PUBLIC/'
+        KAIJU_AUTOCATS_DIR: '${{ github.workspace }}/autocats/'
+        DISPLAY: ':1'
+      run: |
+          sudo Xvfb :1 &
+          DISPLAY=:1 gradle --build-cache --stacktrace --info test
