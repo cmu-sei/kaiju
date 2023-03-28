@@ -33,6 +33,7 @@ jobs:
         repository: "NationalSecurityAgency/ghidra"
         tag: "Ghidra_${{ matrix.ghidra_version }}_build"
         fileName: "ghidra*.zip"
+        out-file-path: "3rdparty"
     - name: Unzip Ghidra ${{ matrix.ghidra_version }}
       run: 7z x ghidra_${{ matrix.ghidra_version }}_*.zip
       
@@ -80,7 +81,7 @@ jobs:
         gradle-version: '7.6'
     - name: Build with Gradle
       env:
-        GHIDRA_INSTALL_DIR: '${{ github.workspace }}/ghidra_${{ matrix.ghidra_version }}_PUBLIC/'
+        GHIDRA_INSTALL_DIR: '${{ github.workspace }}/3rdparty/ghidra_${{ matrix.ghidra_version }}_PUBLIC/'
         KAIJU_AUTOCATS_DIR: '${{ github.workspace }}/autocats/'
       run: |
           gradle -PKAIJU_SKIP_Z3_BUILD --build-cache install
@@ -92,10 +93,7 @@ jobs:
         draft: false
         prerelease: false
         name: ${{ github.ref_name }}
-        tag: ${{ github.ref }}
-        commit: 'main'
         body: "See CHANGELOG.md for more information."
-        allowUpdates: true
     - name: Upload Kaiju Extension for Ghidra ${{ matrix.ghidra_version }}
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
