@@ -35,7 +35,7 @@ jobs:
         fileName: "ghidra*.zip"
         out-file-path: "3rdparty"
     - name: Unzip Ghidra ${{ matrix.ghidra_version }}
-      run: 7z x ghidra_${{ matrix.ghidra_version }}_*.zip
+      run: 7z x 3rdparty/ghidra_${{ matrix.ghidra_version }}_*.zip -o3rdparty/
       
     - name: Download Z3 for Linux x64 (glibc)
       uses: robinraju/release-downloader@v1.7
