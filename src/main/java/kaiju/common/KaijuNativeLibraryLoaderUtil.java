@@ -44,7 +44,7 @@ public final class KaijuNativeLibraryLoaderUtil {
     public static void loadLibrary(String name) throws FileNotFoundException, UnsatisfiedLinkError {
         // System.mapLibraryName will add "lib" and proper extension depending on OS
         // so e.g., call mapLibraryName("z3") to get libz3.so on linux
-        File libraryPath = Application.getOSFile(System.mapLibraryName(name));
+        File libraryPath = Application.getOSFile("kaiju", System.mapLibraryName(name));
         System.load(libraryPath.getAbsolutePath());
     }
 }
