@@ -42,7 +42,10 @@ import docking.DialogComponentProvider;
 import docking.DockingWindowManager;
 import docking.widgets.checkbox.GCheckBox;
 import docking.widgets.label.GLabel;
+import ghidra.framework.Platform;
 import resources.ResourceManager;
+
+import kaiju.common.*;
 
 import com.microsoft.z3.Version;
 
@@ -55,6 +58,27 @@ class KaijuStatusCheckDialog extends DialogComponentProvider {
     private JTextArea tipArea;
     private int tipIndex = 0;
     private List<String> tips;
+    
+    private static boolean z3LibsFound;
+    
+    static {
+        try {
+            if (Platform.CURRENT_PLATFORM == Platform.WIN_X86_64) {
+                // load dependents first if on windows
+                KaijuNativeLibraryLoaderUtil.loadLibrary("vcruntime140");
+                KaijuNativeLibraryLoaderUtil.loadLibrary("vcruntime140_1");
+                KaijuNativeLibraryLoaderUtil.loadLibrary("msvcp140");
+                KaijuNativeLibraryLoaderUtil.loadLibrary("libz3");
+                KaijuNativeLibraryLoaderUtil.loadLibrary("libz3java");
+            } else {
+                KaijuNativeLibraryLoaderUtil.loadLibrary("z3");
+                KaijuNativeLibraryLoaderUtil.loadLibrary("z3java");
+            }
+            z3LibsFound = true;
+        } catch (Throwable t) {
+            z3LibsFound = false;
+        }
+    }
 
     KaijuStatusCheckDialog(KaijuStatusCheckPlugin plugin, List<String> tips) {
         super("Kaiju Status Check", false, false, true, false);
@@ -63,12 +87,12 @@ class KaijuStatusCheckDialog extends DialogComponentProvider {
         this.tips = tips;
 
         JLabel z3VerLabel = new GLabel("", ResourceManager.loadImage("images/red-x.png"), SwingConstants.LEFT);
-        boolean z3LibsFound = false;
+        //boolean z3LibsFound = false;
         try {
             z3VerLabel.setText("Z3 loaded successfully. Using Z3 version: " + Version.getFullVersion());
             // by calling getFullVersion() above, we are implicitly
             // checking that Z3 is loaded. If not, it will throw an exception.
-            z3LibsFound = true;
+            //z3LibsFound = true;
         } catch (NoClassDefFoundError nce) {
             z3VerLabel.setText("Warning: NoClassDefFoundError while loading Z3. Some tools like Ghihorn will be disabled.");
         } catch (UnsatisfiedLinkError e) {
