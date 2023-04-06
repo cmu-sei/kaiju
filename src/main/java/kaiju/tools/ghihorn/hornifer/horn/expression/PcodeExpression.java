@@ -6,6 +6,7 @@ import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
@@ -32,6 +33,7 @@ public class PcodeExpression implements HornExpression {
     private HornVariable outVariable;
     private HornExpression operation;
     private final PcodeOp pcode;
+    private Address address;
 
     /**
      * @param defVariables
@@ -39,6 +41,12 @@ public class PcodeExpression implements HornExpression {
      * @param inVariables
      * @param outVariable
      */
+
+    public PcodeExpression(PcodeOp pcode, Address address) {
+        this(pcode);
+        this.address = address;
+    }
+
     public PcodeExpression(PcodeOp pcode) {
 
         this.defVariables = new ArrayList<>();
@@ -47,13 +55,23 @@ public class PcodeExpression implements HornExpression {
         this.outVariable = null;
         this.operation = null;
         this.pcode = pcode;
+        this.address = null;
 
         // First the I/O variables must be computed
         try {
             computeIOVariables();
         } catch (Exception e) {
-            Msg.error(this, "Failed to generate variables for p-code: " + pcode);
-            throw new GhiHornException("Failed to generate variables for p-code: " + pcode + ". This is an issue with Ghidra's HighConstant class");
+            StringBuilder errorMessage = new StringBuilder("Failed to generate variables for p-code");
+            if (this.address != null) {
+                errorMessage.append(" at address " + this.address + ":");
+            } else {
+                errorMessage.append(":");
+            }
+            errorMessage.append(pcode);
+            errorMessage.append(", exception: " + e.getMessage());
+            errorMessage.append(". This is an issue with Ghidra's HighConstant class.");
+            Msg.error(this, errorMessage);
+            throw new GhiHornException(errorMessage.toString());
         }
 
         // Second the operations need to be generated from the I/O variables. This will
