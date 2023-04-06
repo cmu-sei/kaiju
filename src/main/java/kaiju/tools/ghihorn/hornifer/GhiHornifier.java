@@ -799,7 +799,7 @@ public abstract class GhiHornifier {
             // Go through each pcode operation and add it as an expression for
             // this block
             for (final PcodeOp pcode : vertex.getEntity().getPcode()) {
-                PcodeExpression pcX = new PcodeExpression(pcode);
+                PcodeExpression pcX = new PcodeExpression(pcode, vertex.getLocator());
                 pcX.getUseVariables().forEach(newBlock::addUseVariable);
                 pcX.getDefVariables().forEach(newBlock::addDefVariable);
                 newBlock.addExpression(pcode, pcX);
