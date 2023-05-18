@@ -98,7 +98,7 @@ public class FnXrefViewerPlugin extends ProgramPlugin implements DomainObjectLis
     private static final String LAST_EXPORT_FILE = "LAST_EXPORT_DIR";
 
     public FnXrefViewerPlugin(PluginTool tool) {
-        super(tool, false, false);
+        super(tool);
     }
 
     void doReload() {
@@ -131,9 +131,8 @@ public class FnXrefViewerPlugin extends ProgramPlugin implements DomainObjectLis
                 reload();
             }
         };
-        ImageIcon refreshIcon = Icons.REFRESH_ICON;
         refreshAction.setDescription("Reruns the FnXref analyzer on the current program");
-        refreshAction.setToolBarData(new ToolBarData(refreshIcon));
+        refreshAction.setToolBarData(new ToolBarData(Icons.REFRESH_ICON));
         refreshAction.setHelpLocation(new HelpLocation("FnXrefViewerPlugin", "ReAnalyze"));
         tool.addLocalAction(provider, refreshAction);
         
@@ -168,9 +167,8 @@ public class FnXrefViewerPlugin extends ProgramPlugin implements DomainObjectLis
                 }
             }
         };
-        ImageIcon arrowIconC = Icons.ARROW_DOWN_RIGHT_ICON;
         exportCSVAction.setDescription("Exports selected or entire function list to CSV format");
-        exportCSVAction.setToolBarData(new ToolBarData(arrowIconC));
+        exportCSVAction.setToolBarData(new ToolBarData(Icons.ARROW_DOWN_RIGHT_ICON));
         exportCSVAction.setPopupMenuData(new MenuData(
             new String[] { "Export", "Export to CSV..." }, 
             ResourceManager.loadImage("images/application-vnd.oasis.opendocument.spreadsheet-template.png"),

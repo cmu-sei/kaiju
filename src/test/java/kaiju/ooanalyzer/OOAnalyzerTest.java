@@ -48,18 +48,18 @@ class OOAnalyzerTest extends AbstractGhidraHeadedIntegrationTest {
     private TestEnv env;
     private OOAnalyzerGhidraPlugin plugin;
     
-    OOAnalyzerTest () throws Exception {
+    OOAnalyzerTest() throws Exception {
     }
 
-    public void doTest (Path exe, Path json, Boolean useNs) throws Exception {
+    public void doTest(Path exe, Path json, Boolean useNs) throws Exception {
         env = new TestEnv();
-        setErrorGUIEnabled (false);
+        setErrorGUIEnabled(false);
 
         // Import the program
-        Program p = env.getGhidraProject ().importProgram (exe.toFile ());
+        Program p = env.getGhidraProject().importProgram(exe.toFile());
 
         // Open in the tool
-        env.open (p);
+        env.open(p);
 
         // Analyze it
         // NOTE: get heap exhaustion errors when doing analysis with Fn2Hash, etc.
@@ -68,24 +68,24 @@ class OOAnalyzerTest extends AbstractGhidraHeadedIntegrationTest {
         //env.getGhidraProject ().analyze (p, false);
 
         // And mark it as analyzed?  Ok ghidra whatever.
-        GhidraProgramUtilities.setAnalyzedFlag (p, true);
+        GhidraProgramUtilities.markProgramAnalyzed(p);
 
         plugin = env.addPlugin(OOAnalyzerGhidraPlugin.class);
 
         // Import json.
-        OOAnalyzerGhidraPlugin.ImportCommand cmd = plugin.configureAndExecute (json.toFile (), useNs);
+        OOAnalyzerGhidraPlugin.ImportCommand cmd = plugin.configureAndExecute(json.toFile(), useNs);
 
         // Use a semaphore or something. Get the tool's TaskMonitor?
         while (!cmd.getCompleted ()) {
-            Msg.debug (this, "Sleeping until completed.");
+            Msg.debug(this, "Sleeping until completed.");
             Thread.sleep(1000);
         }
 
-        Msg.info (this, "We didn't crash!");
+        Msg.info(this, "We didn't crash!");
 
-        env.close (p);
+        env.close(p);
         
-        env.dispose ();
+        env.dispose();
 
     }
 

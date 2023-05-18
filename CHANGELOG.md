@@ -8,6 +8,19 @@
 
 # Current Release
 
+## 230518
+
+- New Features:
+  * Updated to require Ghidra 10.3+ due to API changes
+
+
+# Past Releases
+
+## 230406
+
+- Bugfixes:
+  * Includes a small patch to print better debugging information, to help address #38
+
 ## 230330
 
 - New Features:
@@ -20,6 +33,3 @@
   * Fix errors loading Z3 libraries (#6, #20, #30)
   * Catch GhiHorn error from Ghidra HighVariable (#23)
   * Catch an error with java time (#34)
-
-
-# Past Releases

@@ -8,25 +8,15 @@ Kaiju yourself.
 
 ## Build Dependencies
 
-This release of CERT Kaiju supports Ghidra 10.1 and 10.2+,
-which have different build requirements due to Ghidra dependencies.
+This release of CERT Kaiju supports Ghidra 10.3,
+and the following dependencies:
 
-For Ghidra 10.2+:
-- [Ghidra](https://ghidra-sre.org) 10.2+
-- [gradle](https://gradle.org/install/) 7+
+- [Ghidra](https://ghidra-sre.org) 10.3.x
+- [gradle](https://gradle.org/install/) 7.6+
 - [GSON](https://github.com/google/gson) 2.8.6 (handled automatically by gradle)
 - [JOpt Simple](https://github.com/jopt-simple/jopt-simple) 5.0.4 (handled automatically by gradle)
 - Java 17+ (we recommend [OpenJDK 17](https://openjdk.java.net/install/))
-- cmake, ninja, for building [Z3](https://github.com/Z3Prover/z3) 4.8.11+ with the Java API
-
-For Ghidra 10.1.x (which is considered deprecated and not likely supported
-by future Kaiju releases):
-- [Ghidra](https://ghidra-sre.org) 10.1+
-- [gradle](https://gradle.org/install/) 6.9+ or 7+
-- [GSON](https://github.com/google/gson) 2.8.6 (handled automatically by gradle)
-- [JOpt Simple](https://github.com/jopt-simple/jopt-simple) 5.0.4 (handled automatically by gradle)
-- Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
-- cmake, ninja, for building [Z3](https://github.com/Z3Prover/z3) 4.8.11+ with the Java API
+- cmake, ninja, for building [Z3](https://github.com/Z3Prover/z3) 4.12.x with the Java API
 
 **NOTE ABOUT GRADLE**: Please ensure that gradle is building against the same
 JDK version in use by Ghidra on your system, or you may experience

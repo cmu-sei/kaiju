@@ -105,8 +105,7 @@ public class FnHashPlugin extends ProgramPlugin implements DomainObjectListener,
     private HashViewerProvider provider;
 
     public FnHashPlugin(PluginTool tool) {
-        //TODO: this api is marked deprecated in ghidra 10.2
-        super(tool, false, false);
+        super(tool);
     }
 
     void doReload() {
@@ -155,9 +154,8 @@ public class FnHashPlugin extends ProgramPlugin implements DomainObjectListener,
                 reload();
             }
         };
-        ImageIcon refreshIcon = Icons.REFRESH_ICON;
         refreshAction.setDescription("Reruns the Fn2Hash analyzer on the current program");
-        refreshAction.setToolBarData(new ToolBarData(refreshIcon));
+        refreshAction.setToolBarData(new ToolBarData(Icons.REFRESH_ICON));
         refreshAction.setHelpLocation(new HelpLocation("FnHashPlugin", "ReAnalyze"));
         tool.addLocalAction(provider, refreshAction);
         
@@ -191,9 +189,8 @@ public class FnHashPlugin extends ProgramPlugin implements DomainObjectListener,
                 }
             }
         };
-        ImageIcon arrowIconC = Icons.ARROW_DOWN_RIGHT_ICON;
         exportCSVAction.setDescription("Exports selected or entire function list to CSV format");
-        exportCSVAction.setToolBarData(new ToolBarData(arrowIconC));
+        exportCSVAction.setToolBarData(new ToolBarData(Icons.ARROW_DOWN_RIGHT_ICON));
         exportCSVAction.setPopupMenuData(new MenuData(
             new String[] { "Export", "Export to CSV..." }, 
             ResourceManager.loadImage("images/application-vnd.oasis.opendocument.spreadsheet-template.png"),
@@ -220,9 +217,8 @@ public class FnHashPlugin extends ProgramPlugin implements DomainObjectListener,
                 }
             }
         };
-        ImageIcon arrowIcon = Icons.ARROW_DOWN_RIGHT_ICON;
         exportYaraAction.setDescription("Exports selected or entire function list to YARA format");
-        exportYaraAction.setToolBarData(new ToolBarData(arrowIcon));
+        exportYaraAction.setToolBarData(new ToolBarData(Icons.ARROW_DOWN_RIGHT_ICON));
         exportYaraAction.setPopupMenuData(new MenuData(
             new String[] { "Export", "Export to YARA..." }, 
             ResourceManager.loadImage("images/application-vnd.oasis.opendocument.spreadsheet-template.png"),

@@ -109,7 +109,7 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
      */
     public GhiHornPlugin(final PluginTool tool) {
 
-        super(tool, true, true);
+        super(tool);
 
         monitor = new TaskMonitorAdapter(true);
 

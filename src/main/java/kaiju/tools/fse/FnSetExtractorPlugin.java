@@ -107,9 +107,8 @@ public class FnSetExtractorPlugin extends Plugin implements KaijuLogger {
                 reload();
             }
         };
-        ImageIcon refreshIcon = Icons.REFRESH_ICON;
         refreshAction.setDescription("Refresh the intersection table data");
-        refreshAction.setToolBarData(new ToolBarData(refreshIcon));
+        refreshAction.setToolBarData(new ToolBarData(Icons.REFRESH_ICON));
         refreshAction.setHelpLocation(new HelpLocation("FnSetExtractorPlugin", "RefreshTable"));
         tool.addLocalAction(provider, refreshAction);
 

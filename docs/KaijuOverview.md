@@ -49,7 +49,7 @@ fn2hash.
 ## Licensing
     
 CERT Kaiju is released as open source software under terms of an
-BSD-like license. See the full [License](./license.htm) for details.
+BSD-like license. See the full [License](./license.html) for details.
 
 The CERT Kaiju logo is based on [art][logo] created by Cameron Spahn,
 originally released under terms of
