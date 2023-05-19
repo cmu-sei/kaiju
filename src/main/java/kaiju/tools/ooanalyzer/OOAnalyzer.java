@@ -88,6 +88,7 @@ import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined;
+import ghidra.program.model.lang.CompilerSpec;
 import ghidra.program.model.lang.PrototypeModel;
 import ghidra.program.model.listing.AutoParameterImpl;
 import ghidra.program.model.listing.AutoParameterType;
@@ -701,9 +702,7 @@ public class OOAnalyzer {
           continue;
         }
 
-        PrototypeModel convention = ghidraMethod.getCallingConvention();
-        if (convention != null
-            && convention.getGenericCallingConvention() == GenericCallingConvention.thiscall) {
+        if (ghidraMethod.getCallingConventionName() == CompilerSpec.CALLING_CONVENTION_thiscall) {
 
           // This is already a thiscall method. Leverage this to
           // determine something about

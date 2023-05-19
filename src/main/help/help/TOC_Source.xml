@@ -20,7 +20,7 @@
 	During the help build time, all TOC_Source.xml files will be parsed and	validated to ensure
 	that all <tocref> tags point to valid <tocdef> tags.  From these files will be generated
 	<module name>_TOC.xml files, which are table of contents files written in the format 
-	desired by the JavaHelp system.   Additionally, the genated files will be merged together
+	desired by the JavaHelp system.   Additionally, the generated files will be merged together
 	as they are loaded by the JavaHelp system.  In the end, when displaying help in the Ghidra
 	help GUI, there will be on table of contents that has been created from the definitions in 
 	all of the modules' TOC_Source.xml files.
@@ -54,6 +54,7 @@
             <tocdef id="Function Hashing" sortgroup="a" text="Function Hashing"  target="help/topics/kaiju/FnHashing.html" />
             <tocdef id="OOAnalyzer JSON Importer" sortgroup="b" text="OOAnalyzer JSON Importer"  target="help/topics/kaiju/OOAnalyzerImporter.html" />
             <tocdef id="Disassembly Improvements" sortgroup="c" text="Disassembly Improvements"  target="help/topics/kaiju/DisAsmImprovements.html" />
+			<tocdef id="GhiHorn" sortgroup="d" text="GhiHorn"  target="help/topics/kaiju/GhiHorn.html" />
         </tocdef>
 	</tocref>
 </tocroot>

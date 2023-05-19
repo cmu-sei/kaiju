@@ -50,6 +50,7 @@ import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.listing.Program;
+import ghidra.program.util.GhidraProgramUtilities;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
 import kaiju.common.KaijuPluginPackage;
@@ -79,7 +80,7 @@ public class OOAnalyzerGhidraPlugin extends ProgramPlugin {
    * Setup the plugin
    */
   public OOAnalyzerGhidraPlugin(PluginTool tool) {
-    super(tool, true, true);
+    super(tool);
     setupActions();
   }
 
@@ -136,7 +137,7 @@ public class OOAnalyzerGhidraPlugin extends ProgramPlugin {
     private void cmdConfigureAndExecute(TaskMonitor monitor) {
 
       // Refuse to continue unless program has been analyzed
-      if (!currentProgram.getOptions(Program.PROGRAM_INFO).getBoolean(Program.ANALYZED, false)) {
+      if (!GhidraProgramUtilities.isAnalyzed(currentProgram)) {
         Msg.showError(this, null, "Error", "Please run auto analysis before using the OOAnalyzer Ghidra Plugin");
         return;
       }

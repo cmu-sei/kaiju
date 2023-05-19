@@ -61,7 +61,8 @@ import ghidra.app.plugin.core.colorizer.ColorizingService;
 import ghidra.app.plugin.core.gotoquery.DefaultNavigatableLocationMemento;
 import ghidra.app.script.AskDialog;
 import ghidra.app.services.CodeViewerService;
-import ghidra.app.util.HighlightProvider;
+// this API changed in Ghidra 10.3
+import ghidra.app.util.ListingHighlightProvider;
 import ghidra.framework.Application;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.framework.plugintool.PluginTool;
@@ -818,7 +819,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
     }
 
     @Override
-    public void setHighlightProvider(HighlightProvider highlightProvider, Program program) {
+    public void setHighlightProvider(ListingHighlightProvider highlightProvider, Program program) {
         CodeViewerService service = tool.getService(CodeViewerService.class);
         if (service != null) {
             service.setHighlightProvider(highlightProvider, program);
@@ -827,7 +828,7 @@ public class GhiHornProvider extends ComponentProviderAdapter implements Navigat
     }
 
     @Override
-    public void removeHighlightProvider(HighlightProvider highlightProvider, Program program) {
+    public void removeHighlightProvider(ListingHighlightProvider highlightProvider, Program program) {
         CodeViewerService service = tool.getService(CodeViewerService.class);
         if (service != null) {
             service.removeHighlightProvider(highlightProvider, program);

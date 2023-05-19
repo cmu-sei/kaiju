@@ -22,8 +22,8 @@ dist/*
 VSCODE.classpath
 
 # ignore the gradle-generated help files, see originals in docs/ folder
-src/main/help/help/topics/kaiju/*.html
-src/main/help/help/topics/kaiju/images/*
+src/main/help/help/topics/kaiju/*
+!src/main/help/help/topics/kaiju/README.md
 !3rdparty/
 3rdparty/*
 !3rdparty/README.md

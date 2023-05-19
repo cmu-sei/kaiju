@@ -1,6 +1,7 @@
 # GhiHorn
-A horn encoder for Ghidra version 10.1+ and above.
-GhiHorn uses Z3 SMT library.
+A horn encoder for Ghidra for using SMT solvers
+to computer paths within control flow.
+GhiHorn uses the Z3 SMT library.
 
 ## Old Z3 Installation
 

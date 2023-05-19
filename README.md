@@ -40,16 +40,12 @@ Ghidra's graphical interface, but it is also possible to manually
 unzip into the appropriate directory to install.
 
 CERT Kaiju requires the following runtime dependencies:
-- [Ghidra](https://ghidra-sre.org) 10.1+
-- Java 11+ (we recommend [OpenJDK 11](https://openjdk.java.net/install/))
+- [Ghidra](https://ghidra-sre.org) 10.3.x
+- Java 17+ (we recommend [OpenJDK 17](https://openjdk.java.net/install/))
 - [Z3](https://github.com/Z3Prover/z3) including Z3 Java bindings .jar
 
 Z3 is provided pre-compiled as part of the pre-built packages,
 or you may build Z3 on your own or use your Linux distribution's package.
-
-**NOTE**: We strongly recommend updating to Ghidra 10.1.2 or above
-in order to address the log4j vulnerability that exists
-in the library bundled with older versions of Ghidra.
 
 ### Graphical Installation
 
@@ -128,6 +124,7 @@ The GUI tools include:
 - **GhiHorn** = a plugin to calculate paths and reachability in
 control flow graphs, utilizing Z3.
     - Select `Kaiju > GhiHorn` to access this tool from Ghidra's CodeBrowser.
+      You can also launch the plugin by pressing `CTRL-G`.
 - **Function Hash Viewer** = a plugin that displays an interactive list
 of functions in a program and several types of hashes. Analysts can use this
 to export one or more functions from a program into YARA signatures.
@@ -154,13 +151,6 @@ Object Oriented Code with Ghidra][ooanalyzer-blog].
     locate the JSON file you wish to import.
     More extensive usage documentation can be found in
     Ghidra's `Help > Contents` menu when using the tool.
-
-### GhiHorn
-A horn encoder for Ghidra version 10.1+.
-
-
-You can launch the plugin by pressing `CTRL-G` or selecting GhiHorn from
-the CERT menu.
 
 
 ### Command-line "Headless" Mode
