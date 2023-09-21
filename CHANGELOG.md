@@ -3,18 +3,19 @@
 - New Features:
   * 
 - Bugfixes:
-  * 
-
 
 # Current Release
+
+## 230921
+
+- Updated to build extensions for Ghidra 10.3.1, 10.3.2, 10.3.3
+
+# Past Releases
 
 ## 230518
 
 - New Features:
   * Updated to require Ghidra 10.3+ due to API changes
-
-
-# Past Releases
 
 ## 230406
 
