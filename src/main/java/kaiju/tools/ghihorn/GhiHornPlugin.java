@@ -89,6 +89,7 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
             z3LibsFound = true;
         } catch (Throwable t) {
             z3LibsFound = false;
+            Msg.warn(GhiHornPlugin.class, "Error while loading Z3 libraries: " + t.getMessage(), t);
         }
     }
 
