@@ -221,7 +221,9 @@ task downloadAndUnzipZ3Source(dependsOn: downloadZ3Source, type: Copy) {
         }
     }
     
-    outputs.upToDateWhen { file('3rdparty/z3/CMakeLists.txt').exists() }
+    onlyIf {
+        !file('3rdparty/z3/CMakeLists.txt').exists()
+    }
 }
 
 buildExtension.dependsOn(downloadAndUnzipZ3Source)
@@ -275,15 +277,23 @@ cmake {
 }
 
 tasks.clean.dependsOn(tasks.cmakeClean)
-tasks.build.dependsOn(tasks.cmakeBuild)
-tasks.cmakeBuild.dependsOn(downloadAndUnzipZ3Source)
-// since we are building the same version of z3, no need to rebuild
-// once we built it once because it won't change
-tasks.cmakeBuild.outputs.upToDateWhen( (output)-> {
-    file('build/cmake/z3/linux-amd64/libz3.so').exists() ||
-    file('build/cmake/z3/windows-amd64/libz3.dll').exists() ||
-    file('build/cmake/z3/osx-amd64/libz3.dylib').exists()
-})
+
+// This is our task for building z3.  It's only really needed to work around a
+// bug in the gradle cmake plugin that always causes linking to occur, which is
+// slow because LTO. So we dynamically decide whether to set tasks.cmakeBuild as
+// a dependency depending on whether z3 appears to be built.
+task buildZ3 {
+    if (!(file('build/cmake/z3/linux-amd64/libz3.so').exists() ||
+          file('build/cmake/z3/windows-amd64/libz3.dll').exists() ||
+          file('build/cmake/z3/osx-amd64/libz3.dylib').exists())) {
+        logger.warn("We are adding a dependency")
+        dependsOn(tasks.cmakeBuild)
+    } 
+}
+
+tasks.build.dependsOn(tasks.buildZ3)
+buildExtension.dependsOn(tasks.buildZ3)
+copyToLib.dependsOn(tasks.buildZ3)
 
 project.getTasks().matching(
     (task)-> {
@@ -295,9 +305,6 @@ project.getTasks().matching(
     }
 );
 
-buildExtension.dependsOn(tasks.cmakeBuild)
-copyToLib.dependsOn(tasks.cmakeBuild)
-
 if (os.isLinux()) {
     task copyZ3toOsLinux(type: Copy) {
         from ("build/cmake/z3/linux-amd64/libz3.so")
@@ -305,7 +312,7 @@ if (os.isLinux()) {
         into "os/linux_x86_64"
     }
     
-    copyZ3toOsLinux.dependsOn(tasks.cmakeBuild)
+    copyZ3toOsLinux.dependsOn(tasks.buildZ3)
     copyToLib.dependsOn(copyZ3toOsLinux)
 }
 
@@ -316,7 +323,7 @@ if (os.isWindows()) {
         into "os/win_x86_64"
     }
     
-    copyZ3toOsWin.dependsOn(tasks.cmakeBuild)
+    copyZ3toOsWin.dependsOn(tasks.buildZ3)
     copyToLib.dependsOn(copyZ3toOsWin)
 }
 
@@ -327,7 +334,7 @@ if (os.isMacOsX()) {
         into "os/mac_x86_64"
     }
     
-    copyZ3toOsMac.dependsOn(tasks.cmakeBuild)
+    copyZ3toOsMac.dependsOn(tasks.buildZ3)
     copyToLib.dependsOn(copyZ3toOsMac)
 }
 
