@@ -531,6 +531,31 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
             edge.setGuard(guard);
         }
 
+        // Sometimes there is not a HighCFG vertex for the Function's entry point.
+        // This is a hack to try to find the entry point from the first pcode op.
+        if (cfg.getEntryVertex() == null) {
+            var firstop = highFunction.getPcodeOps().next();
+            var firstaddr = firstop.getSeqnum().getTarget();
+            // See if we can find the BB that contains firstaddr
+            var bbstart = (Address) null;
+            for (var bb : blocks) {
+                if (bb.contains(firstaddr)) {
+                    bbstart = bb.getStart();
+                    //cfg.setEntryLocation(bb.getStart());
+                    break;
+                }
+            }
+            if (bbstart == null) {
+                throw new RuntimeException("No entry point found for function: " + highFunction.getFunction().getName() + ".");
+            } else {
+                Msg.warn(HighCfg.class, "No entry point found for function: " + highFunction.getFunction().getName() + ". I'm going to try the first pcode op at " + bbstart.toString() + ". This is experimental and might not work right!");
+                cfg.setEntryLocation(bbstart);
+                if (cfg.getEntryVertex() == null) {
+                    throw new RuntimeException("The workaround did not work for function " + highFunction.getFunction().getName());
+                }
+            }
+        }
+
         return cfg;
     }
 

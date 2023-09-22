@@ -783,6 +783,7 @@ public abstract class GhiHornifier {
 
         var highCfg = hornFunction.getHighCfg();
         if (highCfg == null) {
+            Msg.warn(this, "No CFG for function " + hornFunction.getName());
             return;
         }
 
@@ -869,6 +870,11 @@ public abstract class GhiHornifier {
                     // (external) API
                     if (calledFunc == null) {
                         CodeUnit cu = listing.getCodeUnitAt(calledAddr);
+                        if (cu == null) {
+                            throw new RuntimeException("Cannot find code unit at " + calledAddr
+                                    + " for call at " + endPcode.getSeqnum().getTarget()
+                                    + " in function " + hornFunction.getName());
+                        }
                         Reference ref = cu.getPrimaryReference(0);
                         if (ref != null) {
                             Symbol s = cu.getProgram().getSymbolTable()
