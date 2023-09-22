@@ -85,10 +85,15 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
                 KaijuNativeLibraryLoaderUtil.loadLibrary("z3");
                 KaijuNativeLibraryLoaderUtil.loadLibrary("z3java");
             }
+
+            // Tell z3 not to reload the z3 libraries!
+            System.setProperty("z3.skipLibraryLoad", "true");
+
             String z3status = "Z3 version: " + Version.getFullVersion();
             z3LibsFound = true;
         } catch (Throwable t) {
             z3LibsFound = false;
+            Msg.warn(GhiHornPlugin.class, "Error while loading Z3 libraries: " + t.getMessage(), t);
         }
     }
 
@@ -152,14 +157,7 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
 
         super.programActivated(program);
 
-        // Rerun auto analysis to remove/fix badness, such as non-returning
-        // functions
         AutoAnalysisManager aam = AutoAnalysisManager.getAnalysisManager(program);
-        if (!aam.isAnalyzing()) {
-            Msg.info(this, "Rerunning auto-analysis");
-            aam.reAnalyzeAll(program.getMemory());
-        }
-
         aam.addListener(this);
 
         // Install a new action to show the GhiHorn interface
@@ -178,8 +176,21 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
                     .keyBinding("ctrl G")
                     .enabled(false)
                     .buildAndInstall(tool);
+
+            if (z3LibsFound) {
+               ghihornAction.setEnabled(true);
+            } else {
+                ghihornAction.setMenuBarData(new MenuData(new String[]{"&Kaiju", "GhiHorn is missing Z3"}));
+            }
         } else {
             Msg.info(this, "Running in headless mode, use the GhiHorn script!");
+
+            // Rerun auto analysis to remove/fix badness, such as non-returning
+            // functions
+            if (!aam.isAnalyzing()) {
+                Msg.info(this, "Rerunning auto-analysis");
+                aam.reAnalyzeAll(program.getMemory());
+            }
         }
 
         if (!SystemUtilities.isInHeadlessMode()) {
@@ -187,6 +198,8 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
         } else {
             this.apiDatabase = new GhiHornApiDatabase(new GhiHornParallelDecompiler(this.tool));
         }
+
+        updateEntryPoints();
 
         Msg.info(this, PLUGIN_NAME + " activated");
     }
@@ -224,10 +237,7 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
         return this.apiDatabase;
     }
 
-
-    @Override
-    public void analysisEnded(AutoAnalysisManager manager) {
-
+    public void updateEntryPoints() {
         List<Address> entryPoints = new ArrayList<>();
         AddressIterator ai = this.currentProgram.getSymbolTable().getExternalEntryPointIterator();
 
@@ -247,10 +257,11 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
 
         provider.setEntryPoints(entryPoints);
 
-        if (z3LibsFound) {
-            ghihornAction.setEnabled(true);
-        } else {
-            ghihornAction.setMenuBarData(new MenuData(new String[]{"&Kaiju", "GhiHorn is missing Z3"}));
-        }
+
+    }
+
+    @Override
+    public void analysisEnded(AutoAnalysisManager manager) {
+        updateEntryPoints();
     }
 }

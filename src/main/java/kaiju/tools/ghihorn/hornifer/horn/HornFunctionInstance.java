@@ -106,6 +106,9 @@ public class HornFunctionInstance {
             // parameters
 
             HornBlock entryBlock = hornFunction.getEntryBlock();
+            if (entryBlock == null) {
+                throw new RuntimeException("No entry block for function " + function.getName());
+            }
             startLoc = new ProgramLocation(function.getProgram(), entryBlock.getStartAddress());
 
             // TODO: Really handle multiple output parameters

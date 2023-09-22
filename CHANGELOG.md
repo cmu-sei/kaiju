@@ -6,6 +6,17 @@
 
 # Current Release
 
+## 240921
+
+- Bugfixes:
+* Fix packaged extensions so they can use the included z3 libraries
+* Add workaround for when HighCFG entry vertex is incorrectly identified (Fix #40)
+* Add workaround for #38, where an Indirect pcode op causes an exception
+
+- Improvements:
+* Improve UI responsiveness during DisasmImprovements
+* Avoid relinking z3 when rebuilding with gradle
+
 ## 230921
 
 - Updated to build extensions for Ghidra 10.3.1, 10.3.2, 10.3.3

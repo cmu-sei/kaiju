@@ -348,13 +348,16 @@ public abstract class GhiHornifier {
             // rules/relations for each function. Calls will be connected in
             // subseqent steps
 
+            monitor.setMessage("Hornifying function " + hornFunction.getName());
+
             hornifyFunction(hornProgram, hornFunction, monitor);
 
-            monitor.setMessage("Completed hornification of function " + hornFunction.getName());
             monitor.incrementProgress(1);
         }
 
         Msg.info(this, "Hornification completed");
+        monitor.setMessage("Encoding function calls");
+        monitor.setIndeterminate(true);
         Msg.info(this, "Encoding function calls");
 
         // Encoding the function instances makes the call connections
@@ -376,6 +379,7 @@ public abstract class GhiHornifier {
         Msg.info(this, "Encoding completed");
 
         Msg.info(this, "Propagating state through calls");
+        monitor.setMessage("Propagating state through calls");
 
         // Once all the connections have been made propgate the state based on calls
         propagateStateThruCalls(hornProgram);
@@ -783,6 +787,7 @@ public abstract class GhiHornifier {
 
         var highCfg = hornFunction.getHighCfg();
         if (highCfg == null) {
+            Msg.warn(this, "No CFG for function " + hornFunction.getName());
             return;
         }
 
@@ -869,6 +874,11 @@ public abstract class GhiHornifier {
                     // (external) API
                     if (calledFunc == null) {
                         CodeUnit cu = listing.getCodeUnitAt(calledAddr);
+                        if (cu == null) {
+                            throw new RuntimeException("Cannot find code unit at " + calledAddr
+                                    + " for call at " + endPcode.getSeqnum().getTarget()
+                                    + " in function " + hornFunction.getName());
+                        }
                         Reference ref = cu.getPrimaryReference(0);
                         if (ref != null) {
                             Symbol s = cu.getProgram().getSymbolTable()
@@ -1054,6 +1064,8 @@ public abstract class GhiHornifier {
                     HornVariable hvp = new HornVariable(param);
                     hornFunction.addParameter(p, hvp);
                 } else {
+                    Msg.warn(this, "Unable to find HighParam for parameter " + p + " in function " +
+                            function.getName() + " in program " + program.getName());
                     HornVariable hvp = new HornVariable();
                     hornFunction.addParameter(p, hvp);
                 }
@@ -1267,6 +1279,8 @@ public abstract class GhiHornifier {
 
         queue.addProgressListener(progressListener);
         queue.add(arguments);
+
+        monitor.setMessage("Solving horn clauses with Z3...");
 
         try {
 

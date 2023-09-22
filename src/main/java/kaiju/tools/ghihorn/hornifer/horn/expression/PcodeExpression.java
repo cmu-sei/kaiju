@@ -55,7 +55,16 @@ public class PcodeExpression implements HornExpression {
         this.outVariable = null;
         this.operation = null;
         this.pcode = pcode;
-        this.address = null;
+        this.address = pcode.getSeqnum().getTarget();
+
+        if (pcode.getOpcode() == PcodeOp.INDIRECT) {
+            // INDIRECT pcodes are ignored by makeOperation(), but can still
+            // raise an exception when the input is a constant larger than 64
+            // bits.  Ideally we should move the call to computeIOVariables into
+            // makeOperation, but for now we'll just exit early when we see
+            // INDIRECT.
+            return;
+        }
 
         // First the I/O variables must be computed
         try {
@@ -63,7 +72,7 @@ public class PcodeExpression implements HornExpression {
         } catch (Exception e) {
             StringBuilder errorMessage = new StringBuilder("Failed to generate variables for p-code");
             if (this.address != null) {
-                errorMessage.append(" at address " + this.address + ":");
+                errorMessage.append(" at address " + this.address.toString() + ": ");
             } else {
                 errorMessage.append(":");
             }

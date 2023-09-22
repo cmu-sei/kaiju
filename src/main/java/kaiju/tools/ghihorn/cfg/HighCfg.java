@@ -274,7 +274,7 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
      * The CFG builder. The CFG is constructed in a way that splits basic blocks
      * when a call is made, which ghidra does not do by default. The resulting CFG
      * is based on the addresses used in the high function p-code, which may not
-     * correspond to actuall basic block addresses, but should suffice for CHC
+     * correspond to actual basic block addresses, but should suffice for CHC
      * encoding
      * 
      * @param highFunction
@@ -389,7 +389,7 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
                 blockStopAddress = bb.getStop();
             }
 
-            // Add the fiinal block or the only block
+            // Add the final block or the only block
             final HighCfgVertex<Address, VertexAttributes> newVtx = new HighCfgVertex<>(blockStartAddress,
                     new VertexAttributes(new AddressSet(blockStartAddress, blockStopAddress),
                             bbPcodeList.subList(blockStartIndex, blockStopIndex + 1)));
@@ -529,6 +529,31 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
                 } 
             }
             edge.setGuard(guard);
+        }
+
+        // Sometimes there is not a HighCFG vertex for the Function's entry point.
+        // This is a hack to try to find the entry point from the first pcode op.
+        if (cfg.getEntryVertex() == null) {
+            var firstop = highFunction.getPcodeOps().next();
+            var firstaddr = firstop.getSeqnum().getTarget();
+            // See if we can find the BB that contains firstaddr
+            var bbstart = (Address) null;
+            for (var bb : blocks) {
+                if (bb.contains(firstaddr)) {
+                    bbstart = bb.getStart();
+                    //cfg.setEntryLocation(bb.getStart());
+                    break;
+                }
+            }
+            if (bbstart == null) {
+                throw new RuntimeException("No entry point found for function: " + highFunction.getFunction().getName() + ".");
+            } else {
+                Msg.warn(HighCfg.class, "No entry point found for function: " + highFunction.getFunction().getName() + ". I'm going to try the first pcode op at " + bbstart.toString() + ". This is experimental and might not work right!");
+                cfg.setEntryLocation(bbstart);
+                if (cfg.getEntryVertex() == null) {
+                    throw new RuntimeException("The workaround did not work for function " + highFunction.getFunction().getName());
+                }
+            }
         }
 
         return cfg;
