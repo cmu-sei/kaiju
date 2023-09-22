@@ -196,26 +196,24 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
         // or there's no heuristics left to run.
         // CancelledListener cancelledListener
         //GProgressBar progress = new GProgressBar​(null, true, true, true, 12);
-        monitor.setMessage("Analyzing gaps...");
-        monitor.initialize(0);
         
-        long num_addrs_undefined = 0;
         undefinedAddresses = this.listing.getUndefinedRanges(allAddresses, false, monitor);
-        for (final AddressRange range : undefinedAddresses) {
-            num_addrs_undefined += range.getLength();
-        }
-        monitor.initialize(num_addrs_undefined);
         
+        long iteration = 0;
+
         while (true) {
             long changed = 0;
-            debug(this, "Analyzing gaps...");
+            iteration++;
+            debug(this, "Analyzing gaps (iteration " + iteration + ")...");
+            monitor.setMessage("Analyzing gaps (iteration " + iteration + ")...");
 
+            monitor.initialize(undefinedAddresses.getNumAddressRanges());
             for (final AddressRange range : undefinedAddresses) {
                 monitor.checkCancelled();
                 //long range_change = improver.analyzeGap(range);
                 Pair<AddressRange, Integer> range_pair = improver.analyzeGap(range);
                 long range_change = range_pair.second;
-                monitor.incrementProgress(range_change);
+                monitor.incrementProgress(1);
                 changed += range_change;
             }
             if (changed == 0)
