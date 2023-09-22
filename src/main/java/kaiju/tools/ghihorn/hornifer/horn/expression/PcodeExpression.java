@@ -55,7 +55,7 @@ public class PcodeExpression implements HornExpression {
         this.outVariable = null;
         this.operation = null;
         this.pcode = pcode;
-        this.address = null;
+        this.address = pcode.getSeqnum().getTarget();
 
         // First the I/O variables must be computed
         try {
@@ -63,7 +63,7 @@ public class PcodeExpression implements HornExpression {
         } catch (Exception e) {
             StringBuilder errorMessage = new StringBuilder("Failed to generate variables for p-code");
             if (this.address != null) {
-                errorMessage.append(" at address " + this.address + ":");
+                errorMessage.append(" at address " + this.address.toString() + ": ");
             } else {
                 errorMessage.append(":");
             }
