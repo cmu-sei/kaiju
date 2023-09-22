@@ -10,6 +10,8 @@
 
 - Bugfixes:
 * Fix packaged extensions so they can use the included z3 libraries
+* Add workaround for when HighCFG entry vertex is incorrectly identified (Fix #40)
+* Add workaround for #38, where an Indirect pcode op causes an exception
 
 - Improvements:
 * Improve UI responsiveness during DisasmImprovements
