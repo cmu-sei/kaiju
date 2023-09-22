@@ -274,7 +274,7 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
      * The CFG builder. The CFG is constructed in a way that splits basic blocks
      * when a call is made, which ghidra does not do by default. The resulting CFG
      * is based on the addresses used in the high function p-code, which may not
-     * correspond to actuall basic block addresses, but should suffice for CHC
+     * correspond to actual basic block addresses, but should suffice for CHC
      * encoding
      * 
      * @param highFunction
@@ -389,7 +389,7 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
                 blockStopAddress = bb.getStop();
             }
 
-            // Add the fiinal block or the only block
+            // Add the final block or the only block
             final HighCfgVertex<Address, VertexAttributes> newVtx = new HighCfgVertex<>(blockStartAddress,
                     new VertexAttributes(new AddressSet(blockStartAddress, blockStopAddress),
                             bbPcodeList.subList(blockStartIndex, blockStopIndex + 1)));
