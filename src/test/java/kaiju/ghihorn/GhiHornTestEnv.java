@@ -29,7 +29,11 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.util.GhidraProgramUtilities;
 import ghidra.test.TestEnv;
+import ghidra.util.InvalidNameException;
 import ghidra.util.Msg;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.exception.DuplicateNameException;
+import ghidra.util.exception.VersionException;
 import ghidra.util.task.TaskMonitor;
 import kaiju.tools.ghihorn.GhiHornifierBuilder;
 import kaiju.tools.ghihorn.api.ApiDatabase;
@@ -289,29 +293,18 @@ public class GhiHornTestEnv {
 
     }
 
-    public Program importTestProgram(File exe) throws FileNotFoundException {
+    public Program importTestProgram(File exe) throws CancelledException, DuplicateNameException, InvalidNameException, VersionException, IOException {
 
-        try {
+        // Import the program
+        Program p = env.getGhidraProject().importProgram(exe);
+        env.open(p);
 
-            // Import the program
-            Program p = env.getGhidraProject().importProgram(exe);
-            env.open(p);
-            try {
-                env.getGhidraProject().analyze(p, true);
-            } catch (NullPointerException npe) {
-                // this happens from time to time and it seems we can ignore it
-            }
+        env.getGhidraProject().analyze(p, true);
 
-            // And mark it as analyzed? Ok ghidra whatever.
-            GhidraProgramUtilities.markProgramAnalyzed(p);
+        // And mark it as analyzed? Ok ghidra whatever.
+        GhidraProgramUtilities.markProgramAnalyzed(p);
 
-            return p;
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        return p;
     }
 
     /**

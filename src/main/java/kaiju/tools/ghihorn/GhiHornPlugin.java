@@ -131,12 +131,6 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
         this.tool.executeBackgroundCommand(cmd, currentProgram);
     }
 
-    public void cancel() {
-        if (this.tool != null) {
-            this.tool.terminateBackgroundCommands(false);
-        }
-    }
-
     @Override
     public boolean goTo(Address addr) {
         return super.goTo(addr);
@@ -169,7 +163,6 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
             this.provider = new GhiHornProvider(tool, this, controllers);
 
             this.ghihornAction = new ActionBuilder("Open GhiHorn", getName())
-                    .supportsDefaultToolContext(true)
                     .menuPath("&Kaiju", "GhiHorn")
                     .onAction(c -> provider.setVisible(true))
                     .menuIcon(null)
@@ -260,8 +253,15 @@ public class GhiHornPlugin extends ProgramPlugin implements AutoAnalysisManagerL
 
     }
 
+#if GHIDRA_10_4 == "true"
+    @Override
+    public void analysisEnded(AutoAnalysisManager manager, boolean isCancelled) {
+        if (!isCancelled) updateEntryPoints();
+    }
+#else
     @Override
     public void analysisEnded(AutoAnalysisManager manager) {
         updateEntryPoints();
     }
+#endif
 }
