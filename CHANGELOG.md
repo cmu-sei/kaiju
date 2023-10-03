@@ -1,12 +1,11 @@
-# Next Release Goals
-
-- New Features:
-  * 
-- Bugfixes:
-
 # Current Release
 
-## 240921
+## 231003
+
+- Improvements:
+* Add support for Ghidra 10.4
+
+## 230921
 
 - Bugfixes:
 * Fix packaged extensions so they can use the included z3 libraries
