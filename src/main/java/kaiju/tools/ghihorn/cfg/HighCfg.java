@@ -310,7 +310,7 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
             // Ensure the p-code is in basicblock order
             final List<PcodeOp> bbPcodeList = getPcodeInBBOrder(bb);
             if (bbPcodeList.isEmpty()) {
-                Msg.warn(null, "Basic block: " + bb.getStart() + " has no p-code");
+                Msg.warn(HighCfg.class, "Basic block: " + bb.getStart() + " has no p-code");
             }
 
             // Create the list of pcodes in a list and split out the calls as
@@ -545,14 +545,28 @@ public class HighCfg<L, E> implements GDirectedGraph<HighCfgVertex<L, E>, HighCf
                     break;
                 }
             }
-            if (bbstart == null) {
-                throw new RuntimeException("No entry point found for function: " + highFunction.getFunction().getName() + ".");
-            } else {
-                Msg.warn(HighCfg.class, "No entry point found for function: " + highFunction.getFunction().getName() + ". I'm going to try the first pcode op at " + bbstart.toString() + ". This is experimental and might not work right!");
+            if (bbstart != null) {
+                Msg.warn(HighCfg.class,
+                        "No entry point found for function: " + highFunction.getFunction().getName()
+                                + ". I'm going to try the first pcode op at " + bbstart.toString()
+                                + ". This is experimental and might not work right!");
+            } else if (blocks.size() > 0) {
+                bbstart = blocks.get(0).getStart();
+                Msg.warn(HighCfg.class,
+                        "No entry point found for function: " + highFunction.getFunction().getName()
+                                + ". I'm going to try the first block in the list of HighFunction blocks at "
+                                + bbstart.toString() + ". This is experimental and might not work right!");
+            } 
+            
+            if (bbstart != null) {
                 cfg.setEntryLocation(bbstart);
                 if (cfg.getEntryVertex() == null) {
-                    throw new RuntimeException("The workaround did not work for function " + highFunction.getFunction().getName());
+                    throw new RuntimeException(
+                            "The workaround did not work for function " + highFunction.getFunction().getName());
                 }
+            } else {
+                throw new RuntimeException(
+                        "No entry point found for function: " + highFunction.getFunction().getName() + ".");
             }
         }
 
