@@ -1,5 +1,12 @@
 # Current Release
 
+## 231201
+
+- Improvements:
+* Improve HighCfg entry node heuristic
+* Add additional logging when failing to create decompiler
+* Ensure that start and goal addresses are valid instructions
+
 ## 231003
 
 - Improvements:

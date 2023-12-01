@@ -32,7 +32,7 @@ public class DecompilerFactory extends CountingBasicFactory<DecompInterface> {
                 options.grabFromToolAndProgram(null, opt, program);
 			} catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | IllegalArgumentException
 					| InvocationTargetException | SecurityException e) {
-				throw new RuntimeException("Unable to create decompiler");
+				throw new RuntimeException("Unable to create decompiler: " + e.toString(), e);
 			}
 
             decompiler.setOptions(options);
