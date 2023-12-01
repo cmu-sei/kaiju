@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
@@ -415,11 +416,16 @@ public class PathAnalyzerController extends GhiHornController {
         final Address endAddr = program.getAddressFactory().getDefaultAddressSpace()
                 .getAddress(goalAddrText.getText());
 
-        // Make sure that the program contains the specified addresses
-        if (!program.getMemory().contains(startAddr)
-                || !program.getMemory().contains(endAddr)) {
-            throw new RuntimeException();
-        }
+        // Make sure that the program contains the specified addresses as instructions
+        Consumer<Address> verifyAddress = (Address addr) -> {
+            if (program.getListing().getInstructionAt(addr) == null) {
+                throw new RuntimeException("Start or goal address " + addr + " is not an instruction");
+            };
+        };
+
+        verifyAddress.accept(startAddr);
+        verifyAddress.accept(endAddr);
+
         this.startAddrText.setText(startAddr.toString());
 
         status("Looking for path from " + startAddr + " to " + endAddr);
