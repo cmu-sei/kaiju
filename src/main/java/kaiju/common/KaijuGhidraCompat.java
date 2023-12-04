@@ -49,13 +49,22 @@ public class KaijuGhidraCompat {
      * @throws IllegalArgumentException
      **/
     public static ToolOptions getToolOptions(ServiceProvider sp, String serviceName) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, SecurityException {           
-        Class<?> OptionsServiceClass;
+        Class<?> OptionsServiceClass = null;
 
-        try {
-            OptionsServiceClass = Class.forName("ghidra.framework.plugin.util.OptionsService");
+        String[] names = {"ghidra.framework.plugin.util.OptionsService", "ghidra.framework.plugintool.util.OptionsService", "docking.options.OptionsService"};
+
+        for (var name: names) {
+            try {
+                OptionsServiceClass = Class.forName(name);
+                break;
+            }
+            catch (ClassNotFoundException e) {
+                continue;
+            }
         }
-        catch (ClassNotFoundException e) {
-            OptionsServiceClass = Class.forName("ghidra.framework.plugintool.util.OptionsService");
+
+        if (OptionsServiceClass == null) {
+            throw new ClassNotFoundException("Could not find OptionsService class");
         }
 
         var optionService = sp.getService(OptionsServiceClass);
