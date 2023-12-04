@@ -1,5 +1,9 @@
 # Current Release
 
+## 231204:
+- Bugfixes:
+* Fix OptionsService for older versions of Ghidra (#58)
+
 ## 231201
 
 - Improvements:
