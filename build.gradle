@@ -457,6 +457,7 @@ task install() {
 
 testlogger {
     showPassedStandardStreams = false
+    slowThreshold = 5000
 }
 
 test {
@@ -473,11 +474,12 @@ test {
     
     failFast = false
     
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat = 'full'
-        showStackTraces = true
-    }
+    // Use testlogger config/plugin instead.
+    // testLogging {
+    //     events "passed", "skipped", "failed"
+    //     exceptionFormat = 'full'
+    //     showStackTraces = true
+    // }
     
     beforeSuite { descriptor ->
     // check that user has specified the property AND set it (not empty)
