@@ -56,6 +56,7 @@ import kaiju.tools.ghihorn.answer.format.GhiHornOutputFormatter;
 import kaiju.tools.ghihorn.answer.graph.GhiHornAnswerGraphVertex;
 import kaiju.tools.ghihorn.api.ApiEntry;
 import kaiju.tools.ghihorn.cmd.GhiHornCommand;
+import kaiju.tools.ghihorn.decompiler.DecompilerFactory;
 import kaiju.tools.ghihorn.hornifer.GhiHornifier;
 import kaiju.tools.ghihorn.hornifer.block.HornBlock;
 import kaiju.tools.ghihorn.hornifer.horn.GhiHornAnswer;
@@ -2684,6 +2685,22 @@ public class GhiHornTest extends AbstractGhidraHeadedIntegrationTest {
                 }
             }
             assertTrue(apiFunc1.getApiRetnValue().equals("HR1"));
+        }
+
+        // This test is here because the ghihorn tests don't actually test the
+        // DecompilerFactory, which is used in the GUI.
+        @Test
+        public void testDecompilerFactory() {
+            try {
+                Program program = testEnv.importTestProgram("msvc32b-fileopen-single.exe");
+
+                var tool = testEnv.getEnv().getTool();
+
+                var decompiler = new DecompilerFactory(program, tool).createDecompiler();
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("Failed to create decompiler: " + e.getMessage());
+            }
         }
 
         @Test
