@@ -54,9 +54,8 @@ plugins {
     id 'kaiju.gradle.ghidrahtml'
     id "de.undercouch.download" version "5.3.1" // used to download z3 source zip archive
     id "io.github.tomtzook.gradle-cmake" version "1.2.2" // used to build z3 automatically
+    id 'com.adarshr.test-logger' version '4.0.0' // used because gradle sucks at showing test output
 }
-
-
 
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
 def ghidraInstallDir
@@ -454,6 +453,10 @@ task install() {
         // Empty action list
         logger.quiet("Installed CERT Kaiju from zip!")
      }
+}
+
+testlogger {
+    showPassedStandardStreams = false
 }
 
 test {
