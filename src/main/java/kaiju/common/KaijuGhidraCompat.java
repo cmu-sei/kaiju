@@ -55,7 +55,7 @@ public class KaijuGhidraCompat {
             OptionsServiceClass = Class.forName("ghidra.framework.plugin.util.OptionsService");
         }
         catch (ClassNotFoundException e) {
-            OptionsServiceClass = Class.forName("docking.options.OptionsService");
+            OptionsServiceClass = Class.forName("ghidra.framework.plugintool.util.OptionsService");
         }
 
         var optionService = sp.getService(OptionsServiceClass);
