@@ -64,4 +64,4 @@ jobs:
         DISPLAY: ':1'
       run: |
           sudo Xvfb :1 &
-          DISPLAY=:1 gradle --build-cache --stacktrace --info test
+          DISPLAY=:1 gradle --build-cache test

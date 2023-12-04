@@ -54,9 +54,8 @@ plugins {
     id 'kaiju.gradle.ghidrahtml'
     id "de.undercouch.download" version "5.3.1" // used to download z3 source zip archive
     id "io.github.tomtzook.gradle-cmake" version "1.2.2" // used to build z3 automatically
+    id 'com.adarshr.test-logger' version '4.0.0' // used because gradle sucks at showing test output
 }
-
-
 
 //----------------------START "DO NOT MODIFY" SECTION------------------------------
 def ghidraInstallDir
@@ -456,6 +455,11 @@ task install() {
      }
 }
 
+testlogger {
+    showPassedStandardStreams = false
+    slowThreshold = 5000
+}
+
 test {
 
     jvmArgs = ['-Djava.awt.headless=true',
@@ -470,11 +474,12 @@ test {
     
     failFast = false
     
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat = 'full'
-        showStackTraces = true
-    }
+    // Use testlogger config/plugin instead.
+    // testLogging {
+    //     events "passed", "skipped", "failed"
+    //     exceptionFormat = 'full'
+    //     showStackTraces = true
+    // }
     
     beforeSuite { descriptor ->
     // check that user has specified the property AND set it (not empty)
