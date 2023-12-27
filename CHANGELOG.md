@@ -1,5 +1,9 @@
 # Current Release
 
+## 231227
+- Improvements:
+* Support for Ghidra 11.0
+
 ## 231204:
 - Bugfixes:
 * Fix OptionsService for older versions of Ghidra (#58)
