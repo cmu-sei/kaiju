@@ -1,5 +1,9 @@
 # Current Release
 
+## 240106
+- Bugfixes:
+* Improve performance of Disassembly Improvements (#65)
+
 ## 231227
 - Improvements:
 * Support for Ghidra 11.0

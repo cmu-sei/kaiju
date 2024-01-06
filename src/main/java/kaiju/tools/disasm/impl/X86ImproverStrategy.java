@@ -92,8 +92,7 @@ public class X86ImproverStrategy implements DisasmStrategy {
                 if (b == 0xCC) {
                     return makeAlignment(listing, minAddr, monitor);
                 } else {
-                    AddressSetView allAddresses = memory.getAllInitializedAddressSet();
-                    return makeCode(currentProgram, listing, allAddresses, minAddr, monitor);
+                    return makeCode(currentProgram, listing, minAddr, monitor);
                 }
             case DATA:
                 if (b == 0x00)

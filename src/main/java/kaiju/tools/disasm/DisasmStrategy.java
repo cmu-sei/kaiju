@@ -96,7 +96,7 @@ public interface DisasmStrategy extends KaijuLogger {
      * this is a default implementation that shouldn't rely on
      * architecture, but can be overriden if needed for some reason.
      */
-    default Pair<AddressRange, Integer> makeCode(Program currentProgram, Listing listing, AddressSetView allAddresses, final Address address, TaskMonitor monitor) {
+    default Pair<AddressRange, Integer> makeCode(Program currentProgram, Listing listing, final Address address, TaskMonitor monitor) {
         // Making code at a previous gap might have converted this gap to code, so we need to
         // check again to see if this address range is still a gap...
         if (GhidraTypeUtilities.getBlockType(listing, address) == GhidraTypeUtilities.BlockType.CODE) {
@@ -110,14 +110,8 @@ public interface DisasmStrategy extends KaijuLogger {
         }
 
         // debug(this, "Making code at " + address);
-        AddressSetView undefinedAddresses = null;
-        try {
-            undefinedAddresses = listing.getUndefinedRanges(allAddresses, false, monitor);
-        } catch (CancelledException e) {
-            final AddressRange range = new AddressRangeImpl(address, address);
-            return new Pair<AddressRange, Integer>(range, 0);
-        }
-        final DisassembleCommand disassembleCmd = new DisassembleCommand(address, undefinedAddresses, true);
+
+        final DisassembleCommand disassembleCmd = new DisassembleCommand(address, null, true);
         disassembleCmd.enableCodeAnalysis(true);
         disassembleCmd.applyTo(currentProgram, monitor);
 
