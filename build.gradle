@@ -361,6 +361,7 @@ indexHelp.dependsOn(copyToLib)
 indexHelp.dependsOn(markdownToGhidraHtml)
 buildHelp.dependsOn(markdownToGhidraHtml)
 zipSource.dependsOn(markdownToGhidraHtml)
+processResources.dependsOn(markdownToGhidraHtml)
 markdownToGhidraHtml.sourceDir = file('docs/')
 markdownToGhidraHtml.outputDir = file('src/main/help/help/topics/kaiju/')
 
