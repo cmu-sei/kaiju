@@ -52,7 +52,7 @@
 plugins {
     id 'java'
     id 'kaiju.gradle.ghidrahtml'
-    id "de.undercouch.download" version "5.3.1" // used to download z3 source zip archive
+    id "de.undercouch.download" version "5.5.0" // used to download z3 source zip archive
     id "io.github.tomtzook.gradle-cmake" version "1.2.2" // used to build z3 automatically
     id 'com.adarshr.test-logger' version '4.0.0' // used because gradle sucks at showing test output
 }
@@ -296,7 +296,6 @@ task buildZ3 {
     if (!(file('build/cmake/z3/linux-amd64/libz3.so').exists() ||
           file('build/cmake/z3/windows-amd64/libz3.dll').exists() ||
           file('build/cmake/z3/osx-amd64/libz3.dylib').exists())) {
-        logger.warn("We are adding a dependency")
         dependsOn(tasks.cmakeBuild)
     } 
 }
