@@ -1,3 +1,7 @@
+![Dynamic YAML Badge](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fgithub.com%2FCERTCC%2Fkaiju%2Fraw%2Fmain%2F.github%2Fworkflows%2Frelease_on_tag.yml&query=%24.jobs.build_kaiju.strategy.matrix.ghidra_version&label=Supported%20Ghidra%20versions)
+![release_on_tag Badge](https://github.com/CERTCC/kaiju/actions/workflows/release_on_tag.yml/badge.svg)
+![run_tests_on_push_pr Badge](https://github.com/CERTCC/kaiju/actions/workflows/run_tests_on_push_pr.yml/badge.svg)
+
 # CERT Kaiju Binary Analysis Framework for GHIDRA
 
 CERT Kaiju is a collection of binary analysis tools for
