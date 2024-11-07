@@ -1,5 +1,9 @@
 # Current Release
 
+## 241107
+- Improvements:
+* Support for Ghidra 11.2.1
+
 ## 240930
 - Improvements:
 * Support for Ghidra 11.2
