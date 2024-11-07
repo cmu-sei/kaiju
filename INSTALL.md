@@ -10,7 +10,7 @@ Kaiju yourself.
 
 This release of CERT Kaiju requires the following dependencies and versions:
 
-- [Ghidra](https://ghidra-sre.org) 10.3.x, 10.4.x, 11.0.x, 11.1.x, 11.2
+- [Ghidra](https://ghidra-sre.org) 10.3.x, 10.4.x, 11.0.x, 11.1.x, 11.2.x
 - [gradle](https://gradle.org/install/) 8.5+
 - [GSON](https://github.com/google/gson) 2.8.6 (handled automatically by gradle)
 - [JOpt Simple](https://github.com/jopt-simple/jopt-simple) 5.0.4 (handled automatically by gradle)
