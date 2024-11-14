@@ -150,7 +150,7 @@ public interface DisasmStrategy extends KaijuLogger {
             final Address maxAddr = stringData.getMaxAddress();
             final AddressRange range = new AddressRangeImpl(minAddr, maxAddr);
             debug(this, "Created string at: " + range);
-            currentProgram.getBookmarkManager().setBookmark(address, "string", "KaijuDiasmImprovements", "created a string at this address");
+            currentProgram.getBookmarkManager().setBookmark(address, "string", "KaijuDisasmImprovements", "created a string at this address");
             //stringAddresses.add(range);
             return new Pair<AddressRange, Integer>(range, 1);
         } catch (final CodeUnitInsertionException e) {
