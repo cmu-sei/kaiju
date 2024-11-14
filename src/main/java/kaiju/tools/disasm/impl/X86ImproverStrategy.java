@@ -86,7 +86,7 @@ public class X86ImproverStrategy implements DisasmStrategy {
         
         // Address previous = minAddr.subtract(1);
 
-        final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(listing, minAddr);
+        final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(currentProgram, minAddr);
         switch (previousBlockType) {
             case CODE:
                 if (b == 0xCC) {

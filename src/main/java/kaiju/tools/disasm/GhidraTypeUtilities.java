@@ -31,6 +31,8 @@
  */
 package kaiju.tools.disasm;
 
+import ghidra.util.Msg;
+
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.BuiltInDataTypeManager;
 import ghidra.program.model.data.CategoryPath;
@@ -40,6 +42,11 @@ import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
+import ghidra.program.model.listing.Program;
+import ghidra.program.model.listing.Bookmark;
+import ghidra.program.model.listing.BookmarkManager;
+
+import java.util.Arrays;
 
 /**
  * A static class with utility functions for locating Ghidra
@@ -129,13 +136,28 @@ public class GhidraTypeUtilities {
     
     // Return the type of the block immediately before address, skipping over one alignment
     // block if the immediately preceding block is an alignment block.
-    public static BlockType getPreviousBlockType(final Listing listing, final Address address) {
+    public static BlockType getPreviousBlockType(final Program program, final Address address) {
+        final Listing listing = program.getListing();
         final Address previous = getPreviousStartAddress(listing, address);
         // TODO: what happens here if (previous == address)?
         final BlockType blockType = getBlockType(listing, previous);
         if (blockType == BlockType.ALIGNMENT) {
             final Address before_alignment = getPreviousStartAddress(listing, previous);
             return getBlockType(listing, before_alignment);
+        } else if (blockType == BlockType.CODE) {
+            // If the previous block is code, make sure that it did not end with
+            // a disassembly failure.  If it did, we probably do not want to
+            // continue.
+            BookmarkManager bm = program.getBookmarkManager();
+            Bookmark[] bookmarks = bm.getBookmarks(previous);
+
+            boolean hasDisassemblyError = Arrays.stream(bookmarks)
+                .anyMatch(bookmark -> bookmark.getCategory().equals("Error") && bookmark.getTypeString().equals("Disassembly Error"));
+
+            if (hasDisassemblyError) {
+                Msg.debug(GhidraTypeUtilities.class, "Disassembly error at " + previous + "; not returning CODE block.");
+                return BlockType.OTHER;
+            }
         }
         return blockType;
     }
