@@ -90,13 +90,13 @@ public class X86ImproverStrategy implements DisasmStrategy {
         switch (previousBlockType) {
             case CODE:
                 if (b == 0xCC) {
-                    return makeAlignment(listing, minAddr, monitor);
+                    return makeAlignment(listing, minAddr, range.getLength(), monitor);
                 } else {
                     return makeCode(currentProgram, listing, minAddr, monitor);
                 }
             case DATA:
                 if (b == 0x00)
-                    return makeAlignment(listing, minAddr, monitor);
+                    return makeAlignment(listing, minAddr, range.getLength(), monitor);
                 break;
             case ALIGNMENT:
                 debug(this, "I'm a little surprised to find alignment at " + minAddr);

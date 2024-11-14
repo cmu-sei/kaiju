@@ -66,14 +66,14 @@ public interface DisasmStrategy extends KaijuLogger {
      * this is a default implementation that shouldn't rely on
      * architecture, but can be overriden if needed for some reason.
      */
-    default Pair<AddressRange, Integer> makeAlignment(Listing listing, final Address address, TaskMonitor monitor) {
+    default Pair<AddressRange, Integer> makeAlignment(Listing listing, final Address address, long length, TaskMonitor monitor) {
         DataType alignmentType = GhidraTypeUtilities.findGhidraType("Alignment");
         try {
-            Data alignData = listing.createData(address, alignmentType);
+            Data alignData = listing.createData(address, alignmentType, (int) length);
             final Address minAddr = alignData.getMinAddress();
             final Address maxAddr = alignData.getMaxAddress();
             final AddressRange range = new AddressRangeImpl(minAddr, maxAddr);
-            debug(this, "Created alignment at: " + range);
+            debug(this, "Created alignment of " + range.getLength() + " bytes at: " + range);
             //alignmentAddresses.add(range);
             return new Pair<AddressRange, Integer>(range, 1);
         } catch (final CodeUnitInsertionException e) {
