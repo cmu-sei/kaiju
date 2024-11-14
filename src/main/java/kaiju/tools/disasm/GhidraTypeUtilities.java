@@ -152,7 +152,7 @@ public class GhidraTypeUtilities {
             Bookmark[] bookmarks = bm.getBookmarks(previous);
 
             boolean hasDisassemblyError = Arrays.stream(bookmarks)
-                .anyMatch(bookmark -> bookmark.getCategory().equals("Error") && bookmark.getTypeString().equals("Disassembly Error"));
+                .anyMatch(bookmark -> bookmark.getCategory().equals("Bad Instruction") && bookmark.getTypeString().equals("Error"));
 
             if (hasDisassemblyError) {
                 Msg.debug(GhidraTypeUtilities.class, "Disassembly error at " + previous + "; not returning CODE block.");

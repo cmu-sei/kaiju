@@ -102,7 +102,10 @@ public class X86ImproverStrategy implements DisasmStrategy {
                 debug(this, "I'm a little surprised to find alignment at " + minAddr);
                 break;
             case OTHER:
-                debug(this, "I'm a little surprised to find other at " + minAddr);
+                // This is no longer a surprise because we return OTHER when we don't want to
+                // create a long sequence of code blocks.
+
+                //debug(this, "I'm a little surprised to find other at " + minAddr);
                 break;
         }
 
