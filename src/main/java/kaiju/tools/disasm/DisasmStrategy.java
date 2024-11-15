@@ -60,7 +60,7 @@ public interface DisasmStrategy extends KaijuLogger {
 
     // returns array of categories in use by this architecture
     Pair<AddressRange, Integer> analyzeGap(final AddressRange range);
-    
+
     /**
      * recognizes bytes at an address as alignment bytes.
      * this is a default implementation that shouldn't rely on
@@ -78,7 +78,7 @@ public interface DisasmStrategy extends KaijuLogger {
             return new Pair<AddressRange, Integer>(range, 1);
         } catch (final CodeUnitInsertionException e) {
             // Don't report the exception, because we're going to just leave the address alone?
-            debug(this, "Failed to make alignment at " + address);
+            debug(this, "Failed to make alignment at " + address + " length= " + length);
             //skippedAddresses.add(address);
             try {
                 final AddressRange range = new AddressRangeImpl(address, 1);
@@ -89,7 +89,7 @@ public interface DisasmStrategy extends KaijuLogger {
             }
         }
     }
-    
+
     /**
      * recognizes bytes at a starting address as assembly code.
      * this relies on disassembling at the given starting address.
@@ -140,7 +140,7 @@ public interface DisasmStrategy extends KaijuLogger {
             return new Pair<AddressRange, Integer>(range, 1);
         }
     }
-    
+
     default Pair<AddressRange, Integer> makeString(Program currentProgram, Listing listing, final Address address, TaskMonitor monitor) {
         DataType stringType = GhidraTypeUtilities.findGhidraType("string");
         Data stringData;
