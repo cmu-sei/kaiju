@@ -43,10 +43,6 @@ import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.Bookmark;
-import ghidra.program.model.listing.BookmarkManager;
-
-import java.util.Arrays;
 
 /**
  * A static class with utility functions for locating Ghidra
@@ -57,7 +53,7 @@ public class GhidraTypeUtilities {
     public enum BlockType {
         CODE, DATA, ALIGNMENT, OTHER
     }
-    
+
     public static DataType findGhidraType(final String name) {
         DataTypeManager dataTypeManager = BuiltInDataTypeManager.getDataTypeManager();
         DataType dt = dataTypeManager.getDataType(CategoryPath.ROOT, name);
@@ -69,7 +65,7 @@ public class GhidraTypeUtilities {
         }
         return dt;
     }
-    
+
     // Return the type of the block at address.
     public static BlockType getBlockType(final Listing listing, final Address address) {
         // Instruction insn = listing.getInstructionContaining(address);
@@ -95,8 +91,8 @@ public class GhidraTypeUtilities {
         // CodeUnit properties are *not* set by the Framework code
         // Use /isinstance/ instead.
     }
-    
-    /* 
+
+    /*
      * Note this gets the Minimum address in a CodeUnit that
      * may correspond to the Address OR _address_ if no CodeUnit is found;
      *  this should not be confused
@@ -107,15 +103,15 @@ public class GhidraTypeUtilities {
         final CodeUnit cu = listing.getCodeUnitContaining(address);
         if (cu == null) {
             //debug(this, "No CodeUnit for " + address);
-	    // Why is this passed back with no error?
-	    // When do we want to keep processing when
-	    // no CodeUnit is defined with _address_ as
-	    // a member?
+            // Why is this passed back with no error?
+            // When do we want to keep processing when
+            // no CodeUnit is defined with _address_ as
+            // a member?
             return address;
         }
         return cu.getMinAddress();
     }
-    
+
     public static Address getPreviousStartAddress(final Listing listing, final Address startAddress) {
         // We can't call getStartAddress here, because previous might not be a valid address.
         //final Address previous = startAddress.subtract(1);
@@ -133,7 +129,7 @@ public class GhidraTypeUtilities {
         // Otherwise, everything went smoothly.
         return previousStart;
     }
-    
+
     // Return the type of the block immediately before address, skipping over one alignment
     // block if the immediately preceding block is an alignment block.
     public static BlockType getPreviousBlockType(final Program program, final Address address) {
@@ -144,20 +140,6 @@ public class GhidraTypeUtilities {
         if (blockType == BlockType.ALIGNMENT) {
             final Address before_alignment = getPreviousStartAddress(listing, previous);
             return getBlockType(listing, before_alignment);
-        } else if (blockType == BlockType.CODE) {
-            // If the previous block is code, make sure that it did not end with
-            // a disassembly failure.  If it did, we probably do not want to
-            // continue.
-            BookmarkManager bm = program.getBookmarkManager();
-            Bookmark[] bookmarks = bm.getBookmarks(previous);
-
-            boolean hasDisassemblyError = Arrays.stream(bookmarks)
-                .anyMatch(bookmark -> bookmark.getCategory().equals("Bad Instruction") && bookmark.getTypeString().equals("Error"));
-
-            if (hasDisassemblyError) {
-                Msg.debug(GhidraTypeUtilities.class, "Disassembly error at " + previous + "; not returning CODE block.");
-                return BlockType.OTHER;
-            }
         }
         return blockType;
     }

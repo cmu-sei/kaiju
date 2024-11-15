@@ -31,6 +31,8 @@
  */
 package kaiju.tools.disasm.impl;
 
+import java.util.Arrays;
+
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressSetView;
@@ -38,6 +40,8 @@ import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.listing.Bookmark;
+import ghidra.program.model.listing.BookmarkManager;
 import ghidra.util.task.TaskMonitor;
 
 import kaiju.tools.disasm.DisasmStrategy;
@@ -56,22 +60,24 @@ public class X86ImproverStrategy implements DisasmStrategy {
     private TaskMonitor monitor;
     private Memory memory;
     private Listing listing;
-    
+    private BookmarkManager bookmarkManager;
+
     public X86ImproverStrategy(Program currentProgram, TaskMonitor monitor) {
         this.currentProgram = currentProgram;
         this.monitor = monitor;
         memory = currentProgram.getMemory();
         listing = currentProgram.getListing();
+        bookmarkManager = currentProgram.getBookmarkManager();
     }
 
     public Pair<AddressRange, Integer> analyzeGap(final AddressRange range) {
         // debug(this, "Undefined bytes at " + range);
         final Address minAddr = range.getMinAddress();
-        
+
         // If we've already processed this address, don't try again.
         //if (skippedAddresses.contains(minAddr))
         //    return 0;
-        
+
         // debug(this, "Analyzing gap: " + range + " with block type " + getBlockType(minAddr));
 
         // Upgrade the byte to an integer because types are signed in Java.
@@ -83,7 +89,7 @@ public class X86ImproverStrategy implements DisasmStrategy {
             //return 0;
             return new Pair<AddressRange, Integer>(range, 0);
         }
-        
+
         // Address previous = minAddr.subtract(1);
 
         final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(currentProgram, minAddr);
@@ -91,27 +97,56 @@ public class X86ImproverStrategy implements DisasmStrategy {
             case CODE:
                 if (b == 0xCC) {
                     return makeAlignment(listing, minAddr, range.getLength(), monitor);
+                }
+                else if (b == 0x00) {
+                    // If the first byte is zero, check to see if the next three bytes are
+                    // also zero.  Refuse to make two "ADD byte ptr[EAX], AL" instructions
+                    // in a row.
+                    try {
+                        b = memory.getInt(minAddr) & 0xFFFFFFF;
+                    } catch (final MemoryAccessException e) {
+                        e.printStackTrace();
+                        return new Pair<AddressRange, Integer>(range, 0);
+                    }
+                    return makeAlignment(listing, minAddr, range.getLength(), monitor);
                 } else {
-                    return makeCode(currentProgram, listing, minAddr, monitor);
+                    // Make sure the previous block did not end with a disassembly
+                    // failure.  If it did, we probably do not want to make more code at
+                    // that location.
+                    Bookmark[] bookmarks = bookmarkManager.getBookmarks(minAddr);
+
+                    boolean hasDisassemblyError = Arrays.stream(bookmarks)
+                        .anyMatch(bookmark -> bookmark.getCategory().equals("Bad Instruction") && bookmark.getTypeString().equals("Error"));
+
+                    if (hasDisassemblyError) {
+                        if (b == 0) {
+
+                            debug(this, "Disassembly error at " + minAddr + "; making data instead of code.");
+                            return makeAlignment(listing, minAddr, range.getLength(), monitor);
+                        }
+                        debug(this, "Disassembly error at " + minAddr + "; choosing not to make code after.");
+                        return makeAlignment(listing, minAddr, range.getLength(), monitor);
+                        //return new Pair<AddressRange, Integer>(range, 0);
+                    }
+                    else {
+                        return makeCode(currentProgram, listing, minAddr, monitor);
+                    }
                 }
             case DATA:
+                // This should check for _all_ zeros before making alignment.
                 if (b == 0x00)
                     return makeAlignment(listing, minAddr, range.getLength(), monitor);
+                // We should also check for CCs which sometimes follow data and preceed code.
                 break;
             case ALIGNMENT:
                 debug(this, "I'm a little surprised to find alignment at " + minAddr);
                 break;
             case OTHER:
-                // This is no longer a surprise because we return OTHER when we don't want to
-                // create a long sequence of code blocks.
-
-                //debug(this, "I'm a little surprised to find other at " + minAddr);
+                debug(this, "I'm a little surprised to find other at " + minAddr);
                 break;
         }
 
         debug(this, "Skipping address: " + minAddr);
-        //skippedAddresses.add(minAddr);
-        //return 0;
         return new Pair<AddressRange, Integer>(range, 0);
     }
 
