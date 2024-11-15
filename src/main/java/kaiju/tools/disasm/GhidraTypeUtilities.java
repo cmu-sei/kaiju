@@ -31,6 +31,8 @@
  */
 package kaiju.tools.disasm;
 
+import ghidra.util.Msg;
+
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.BuiltInDataTypeManager;
 import ghidra.program.model.data.CategoryPath;
@@ -40,6 +42,7 @@ import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
+import ghidra.program.model.listing.Program;
 
 /**
  * A static class with utility functions for locating Ghidra
@@ -50,7 +53,7 @@ public class GhidraTypeUtilities {
     public enum BlockType {
         CODE, DATA, ALIGNMENT, OTHER
     }
-    
+
     public static DataType findGhidraType(final String name) {
         DataTypeManager dataTypeManager = BuiltInDataTypeManager.getDataTypeManager();
         DataType dt = dataTypeManager.getDataType(CategoryPath.ROOT, name);
@@ -62,7 +65,7 @@ public class GhidraTypeUtilities {
         }
         return dt;
     }
-    
+
     // Return the type of the block at address.
     public static BlockType getBlockType(final Listing listing, final Address address) {
         // Instruction insn = listing.getInstructionContaining(address);
@@ -88,8 +91,8 @@ public class GhidraTypeUtilities {
         // CodeUnit properties are *not* set by the Framework code
         // Use /isinstance/ instead.
     }
-    
-    /* 
+
+    /*
      * Note this gets the Minimum address in a CodeUnit that
      * may correspond to the Address OR _address_ if no CodeUnit is found;
      *  this should not be confused
@@ -100,15 +103,15 @@ public class GhidraTypeUtilities {
         final CodeUnit cu = listing.getCodeUnitContaining(address);
         if (cu == null) {
             //debug(this, "No CodeUnit for " + address);
-	    // Why is this passed back with no error?
-	    // When do we want to keep processing when
-	    // no CodeUnit is defined with _address_ as
-	    // a member?
+            // Why is this passed back with no error?
+            // When do we want to keep processing when
+            // no CodeUnit is defined with _address_ as
+            // a member?
             return address;
         }
         return cu.getMinAddress();
     }
-    
+
     public static Address getPreviousStartAddress(final Listing listing, final Address startAddress) {
         // We can't call getStartAddress here, because previous might not be a valid address.
         //final Address previous = startAddress.subtract(1);
@@ -126,10 +129,11 @@ public class GhidraTypeUtilities {
         // Otherwise, everything went smoothly.
         return previousStart;
     }
-    
+
     // Return the type of the block immediately before address, skipping over one alignment
     // block if the immediately preceding block is an alignment block.
-    public static BlockType getPreviousBlockType(final Listing listing, final Address address) {
+    public static BlockType getPreviousBlockType(final Program program, final Address address) {
+        final Listing listing = program.getListing();
         final Address previous = getPreviousStartAddress(listing, address);
         // TODO: what happens here if (previous == address)?
         final BlockType blockType = getBlockType(listing, previous);
