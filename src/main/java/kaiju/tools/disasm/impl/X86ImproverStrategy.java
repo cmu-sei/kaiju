@@ -35,6 +35,7 @@ import java.util.Arrays;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressRange;
+import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
@@ -70,6 +71,44 @@ public class X86ImproverStrategy implements DisasmStrategy {
         bookmarkManager = currentProgram.getBookmarkManager();
     }
 
+    private Pair<AddressRange, Integer>
+        makeX86Alignment(Listing listing, final AddressRange range, TaskMonitor monitor) {
+        // Length is the length of the gap, not necessarily the length that we want to
+        // turn into alignment.  We should only make alignment from matching CC or zero
+        // bytes.
+
+        // Get the initial byte and ensure that it is 0x00 or 0xCC.
+        final Address minAddr = range.getMinAddress();
+        int initialByte = 0;
+        try {
+            initialByte = memory.getByte(minAddr) & 0xFF;
+        }
+        catch (final MemoryAccessException e) {
+            return new Pair<AddressRange, Integer>(range, 0);
+        }
+        if (initialByte != 0x00 && initialByte != 0xCC) {
+            return new Pair<AddressRange, Integer>(range, 0);
+        }
+
+        // Count how many adjacent bytes are also 0x00 or 0xCC.
+        Address nextAddr;
+        int alignLength = 0;
+        while (alignLength < range.getLength()) {
+            try {
+                nextAddr = minAddr.add(alignLength);
+                if ((memory.getByte(nextAddr) & 0xFF) != initialByte) break;
+            }
+            catch (final MemoryAccessException e) {
+                // If we run past the end of memory,
+                break;
+            }
+            alignLength += 1;
+        }
+
+        // Make alignment just for the bytes that are 0x00 or 0xCC.
+        return makeAlignment(listing, range.getMinAddress(), alignLength, monitor);
+    }
+
     public Pair<AddressRange, Integer> analyzeGap(final AddressRange range) {
         // debug(this, "Undefined bytes at " + range);
         final Address minAddr = range.getMinAddress();
@@ -80,14 +119,21 @@ public class X86ImproverStrategy implements DisasmStrategy {
 
         // debug(this, "Analyzing gap: " + range + " with block type " + getBlockType(minAddr));
 
-        // Upgrade the byte to an integer because types are signed in Java.
-        int b = 0;
+        // Look at the next byte.
+        int byteLookAhead = 0;
         try {
-            b = memory.getByte(minAddr) & 0xFF;
+            byteLookAhead = memory.getByte(minAddr) & 0xFF;
         } catch (final MemoryAccessException e) {
             e.printStackTrace();
-            //return 0;
             return new Pair<AddressRange, Integer>(range, 0);
+        }
+
+        // Look at the next four bytes.
+        int wordLookAhead = 0xFF;
+        try {
+            wordLookAhead = memory.getInt(minAddr) & 0xFFFFFFF;
+        } catch (final MemoryAccessException e) {
+            wordLookAhead = 0xFF;
         }
 
         // Address previous = minAddr.subtract(1);
@@ -95,21 +141,13 @@ public class X86ImproverStrategy implements DisasmStrategy {
         final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(currentProgram, minAddr);
         switch (previousBlockType) {
             case CODE:
-                if (b == 0xCC) {
-                    return makeAlignment(listing, minAddr, range.getLength(), monitor);
+                if (byteLookAhead == 0xCC) {
+                    return makeX86Alignment(listing, range, monitor);
                 }
-                else if (b == 0x00) {
-                    // If the first byte is zero, check to see if the next three bytes are
-                    // also zero.  Refuse to make two "ADD byte ptr[EAX], AL" instructions
-                    // in a row.
-                    try {
-                        b = memory.getInt(minAddr) & 0xFFFFFFF;
-                    } catch (final MemoryAccessException e) {
-                        e.printStackTrace();
-                        return new Pair<AddressRange, Integer>(range, 0);
-                    }
-                    return makeAlignment(listing, minAddr, range.getLength(), monitor);
-                } else {
+                else if (wordLookAhead == 0) {
+                    return makeX86Alignment(listing, range, monitor);
+                }
+                else {
                     // Make sure the previous block did not end with a disassembly
                     // failure.  If it did, we probably do not want to make more code at
                     // that location.
@@ -119,24 +157,17 @@ public class X86ImproverStrategy implements DisasmStrategy {
                         .anyMatch(bookmark -> bookmark.getCategory().equals("Bad Instruction") && bookmark.getTypeString().equals("Error"));
 
                     if (hasDisassemblyError) {
-                        if (b == 0) {
-
-                            debug(this, "Disassembly error at " + minAddr + "; making data instead of code.");
-                            return makeAlignment(listing, minAddr, range.getLength(), monitor);
-                        }
-                        debug(this, "Disassembly error at " + minAddr + "; choosing not to make code after.");
-                        return makeAlignment(listing, minAddr, range.getLength(), monitor);
-                        //return new Pair<AddressRange, Integer>(range, 0);
+                        debug(this, "Disassembly error at " + minAddr + "; making alignment instead of code.");
+                        return makeX86Alignment(listing, range, monitor);
                     }
                     else {
                         return makeCode(currentProgram, listing, minAddr, monitor);
                     }
                 }
             case DATA:
-                // This should check for _all_ zeros before making alignment.
-                if (b == 0x00)
-                    return makeAlignment(listing, minAddr, range.getLength(), monitor);
-                // We should also check for CCs which sometimes follow data and preceed code.
+                // If there's a reference to this address, it is probably NOT alignment!
+                if (byteLookAhead == 0)
+                    return makeX86Alignment(listing, range, monitor);
                 break;
             case ALIGNMENT:
                 debug(this, "I'm a little surprised to find alignment at " + minAddr);
