@@ -1,6 +1,6 @@
 # Function Hashing and Similarity Comparison
 
-CERT Function Hashing is a collection of tools that allow for creation of static hashes
+CERT Kaiju Function Hashing is a collection of tools that allow for creation of static hashes
 that may be used to identify functions within a program or test similarity between programs.
 These hashes may be used in malware analysis and identification, including identifying
 important features of a program to include in YARA signatures.
@@ -15,13 +15,13 @@ The Function Hashing feature consists of:
     
 ## Running the Analyzer
 
-![Ensure the CERT Function Hashing analyzer is selected in the auto-analyze window.](images/analyzer_selection.png  "Selecting the analyzer")
+![Ensure the CERT Kaiju Function Hashing analyzer is selected in the auto-analyze window.](images/analyzer_selection.png  "Selecting the analyzer")
     
-The Function Hashing analyzer may be run as part of Ghidra's Auto-Analysis step, or on its own as a
+The CERT Kaiju Function Hashing analyzer may be run as part of Ghidra's Auto-Analysis step, or on its own as a
 one-shot analyzer via the menu in the Ghidra CodeBrowser. Before running the Auto-Analysis, a couple of
 options may be configured as shown below.
 
-![The Description and Options for the CERT Function Hashing analyzer.](images/fnhash_analyzer_desc.png  "Analyzer Description")
+![The Description and Options for the CERT Kaiju Function Hashing analyzer.](images/fnhash_analyzer_desc.png  "Analyzer Description")
     
 - "Include Basic Blocks". Check this to include basic blocks in the hashing algorithm.
 - "Logging Level". Select the level of logs and notifications to use. The default is "WARN",
@@ -44,7 +44,7 @@ analysis is complete, and giving a count of how many functions were hashed.
 ## Using The GUI Viewer Plugin
     
 You can access the graphical interface (GUI) hash viewer via the Ghidra CodeBrowser menu
-`Window > CERT Function Hash Viewer`. Initially, the window will look blank like
+`Window > CERT Kaiju Function Hash Viewer`. Initially, the window will look blank like
 the following.
 
 ![The initial blank hash viewer. Once the analyzer is run, this viewer will refresh to display the hashing data. If the viewer does not auto-refresh for some reason, you can also manually click the refresh button, which is the green "recycle" looking icon at the top of viewer window..](images/fnhash_table_first_start.png  "FnHash Table First Start")
@@ -59,7 +59,7 @@ Once analyzer data is available, the viewer will look like the following:
     
 The columns can be customized to display different types of hashes by right-clicking
 on the table's title bar and selecting the "Add/Remove Columns" option from the pop-up
-menu. The CERT Function Hashing analyzer currently creates the following types of hashes:
+menu. The CERT Kaiju Function Hashing analyzer currently creates the following types of hashes:
     
 - "Exact Hash". The MD5 hash of the exact bytes that make up the function.
 - "PIC Hash". The MD5 of the "position-independent" bytes. This algorithm attempts to
@@ -93,7 +93,7 @@ the buttons will then export hashing data for all functions in the table.
 ## Using The Function Hash Intersection Visualization Plugin
     
 You can access the graphical interface (GUI) intersection visualization via the Ghidra
-CodeBrowser menu `Window > CERT Function Intersection Visualizer`.
+CodeBrowser menu `Window > CERT Kaiju Function Intersection Visualizer`.
 
 ![An example of using the Hash Intersection Visualization Plugin. Each program is represented by a column on the left side of the screen, in which the cell is marked with an 'X' if the program contains that function PIC hash represented in each row.](images/fnhash_fse.png  "FnHash Intersection Viewer")
 

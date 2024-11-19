@@ -64,8 +64,7 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
     public final static int ITERATION_LIMIT = 30;
 
     public static final boolean doingdebug = true;
-
-    private final static String NAME = "Kaiju Disassembly Improvements";
+    private final static String NAME = "CERT Kaiju Disassembly Improvements";
     private final static String DESCRIPTION = "Improved program partitioning and disassembly algorithm.";
     protected static final String OPTION_NAME_MA_FILE = "Run Kaiju Disassembly Improvements";
 

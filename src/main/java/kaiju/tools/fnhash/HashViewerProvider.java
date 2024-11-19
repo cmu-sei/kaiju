@@ -78,7 +78,7 @@ public class HashViewerProvider extends ComponentProviderAdapter {
     private AtomicReference<ProgramLocation> delayedShowProgramLocation = new AtomicReference<>();
 
     HashViewerProvider(FnHashPlugin plugin) {
-        super(plugin.getTool(), "CERT Function Hash Viewer", plugin.getName());
+        super(plugin.getTool(), "CERT Kaiju Function Hash Viewer", plugin.getName());
         mainPanel = createWorkPanel();
         setIcon(ICON);
         helpLocation = new HelpLocation(plugin.getName(), plugin.getName());
