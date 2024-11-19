@@ -106,10 +106,11 @@ public class X86ImproverStrategy implements DisasmStrategy {
         }
 
         // Make alignment just for the bytes that are 0x00 or 0xCC.
-        return makeAlignment(listing, range.getMinAddress(), alignLength, monitor);
+        return makeAlignment(listing, range, alignLength, monitor);
     }
 
-    public Pair<AddressRange, Integer> analyzeGap(final AddressRange range) {
+    // Returns addresses handled (min, max) and whether anything was changed.
+    public Pair<AddressRange, Integer> analyzePartialGap(final AddressRange range) {
         // debug(this, "Undefined bytes at " + range);
         final Address minAddr = range.getMinAddress();
 
@@ -139,6 +140,7 @@ public class X86ImproverStrategy implements DisasmStrategy {
         // Address previous = minAddr.subtract(1);
 
         final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(currentProgram, minAddr);
+        //debug(this, "Previous type was " +  previousBlockType);
         switch (previousBlockType) {
             case CODE:
                 if (byteLookAhead == 0xCC) {
@@ -157,15 +159,16 @@ public class X86ImproverStrategy implements DisasmStrategy {
                         .anyMatch(bookmark -> bookmark.getCategory().equals("Bad Instruction") && bookmark.getTypeString().equals("Error"));
 
                     if (hasDisassemblyError) {
-                        debug(this, "Disassembly error at " + minAddr + "; making alignment instead of code.");
+                        //debug(this, "Disassembly error at " + minAddr + "; making alignment instead of code.");
                         return makeX86Alignment(listing, range, monitor);
                     }
                     else {
-                        return makeCode(currentProgram, listing, minAddr, monitor);
+                        debug(this, "Calling make code at " + range);
+                        return makeCode(currentProgram, listing, range, monitor);
                     }
                 }
             case DATA:
-                // If there's a reference to this address, it is probably NOT alignment!
+                // BUG! If there's a reference to this address, it is probably NOT alignment!
                 if (byteLookAhead == 0)
                     return makeX86Alignment(listing, range, monitor);
                 break;
@@ -177,8 +180,38 @@ public class X86ImproverStrategy implements DisasmStrategy {
                 break;
         }
 
-        debug(this, "Skipping address: " + minAddr);
+        //debug(this, "Skipping address: " + minAddr);
         return new Pair<AddressRange, Integer>(range, 0);
+    }
+
+    public Pair<AddressRange, Integer> analyzeGap(final AddressRange range) {
+        AddressRangeImpl newRange = new AddressRangeImpl(range);
+        Integer changed = 0;
+        while (true) {
+            Pair<AddressRange, Integer> completed = analyzePartialGap(newRange);
+            // If we changed something, remember that.
+            if (completed.second == 1) {
+                changed = 1;
+            }
+            else {
+                break;
+            }
+
+            // If this action consumed the entire gap, we're done.
+            Address maxCompleted = completed.first.getMaxAddress();
+            Address maxGap = range.getMaxAddress();
+            if (maxCompleted.equals(maxGap)) {
+                break;
+            }
+            // Otherwise, try again after whatever we just created.
+            else {
+                Address nextAddr = maxCompleted.add(1);
+                newRange = new AddressRangeImpl(nextAddr, maxGap);
+                final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(currentProgram, nextAddr);
+                debug(this, "Trying again at " + newRange + ", previous type is " + previousBlockType);
+            }
+        }
+        return new Pair<AddressRange, Integer>(range, changed);
     }
 
 }
