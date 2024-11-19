@@ -1,5 +1,11 @@
 # Current Release
 
+## 241119
+- Bugfixes:
+* Fix bad performance of Disassembly Improvements in specific situations (#81)
+- Improvements:
+* Use "CERT Kaiju" more consistently
+
 ## 241107
 - Improvements:
 * Support for Ghidra 11.2.1
