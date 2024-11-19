@@ -60,6 +60,9 @@ import kaiju.util.Pair;
  * docs/api/ghidra/app/services/AbstractAnalyzer.html
  */
 public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements KaijuLogger {
+
+    public final static int ITERATION_LIMIT = 30;
+
     public static final boolean doingdebug = true;
 
     private final static String NAME = "Kaiju Disassembly Improvements";
@@ -214,7 +217,8 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
             // set up for next loop
             undefinedAddresses = this.listing.getUndefinedRanges(allAddresses, false, monitor);
             // Arbitrary and stupid, but prevents endless loops and eases debugging.
-            if (iteration > 30) {
+            if (iteration > ITERATION_LIMIT) {
+                warn(this, "Too many iterations in DisasmImprovementsAnalyzer.");
                 break;
             }
         }
