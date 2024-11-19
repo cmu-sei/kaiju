@@ -210,7 +210,7 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
     private FnHashSaveable runOneFn(Function function, Program program, TaskMonitor monitor) throws Exception {
 
         Address fn_ep = function.getEntryPoint();
-        String msg = "Kaiju function hashing " + function.getName() + " @ 0x" + fn_ep;
+        String msg = "CERT Kaiju function hashing " + function.getName() + " @ 0x" + fn_ep;
         monitor.setMessage(msg);
         debug(this, msg);
 

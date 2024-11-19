@@ -131,7 +131,7 @@ control flow graphs, utilizing Z3.
 - **Function Hash Viewer** = a plugin that displays an interactive list
 of functions in a program and several types of hashes. Analysts can use this
 to export one or more functions from a program into YARA signatures.
-    - Select `Window > CERT Function Hash Viewer` from the menu to get started
+    - Select `Window > CERT Kaiju Function Hash Viewer` from the menu to get started
     with this tool if it is not already visible. A new window will appear
     displaying a table of hashes and other data. Buttons along the top
     of the window can refresh the table or export data to file or
