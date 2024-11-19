@@ -1,6 +1,6 @@
 # Function Hashing and Similarity Comparison
 
-CERT Function Hashing is a collection of tools that allow for creation of static hashes
+CERT Kaiju Function Hashing is a collection of tools that allow for creation of static hashes
 that may be used to identify functions within a program or test similarity between programs.
 These hashes may be used in malware analysis and identification, including identifying
 important features of a program to include in YARA signatures.
