@@ -79,7 +79,7 @@ public class FnXrefViewerProvider extends ComponentProviderAdapter {
     private AtomicReference<ProgramLocation> delayedShowProgramLocation = new AtomicReference<>();
 
     FnXrefViewerProvider(FnXrefViewerPlugin plugin) {
-        super(plugin.getTool(), "CERT Function Xref Viewer", plugin.getName());
+        super(plugin.getTool(), "CERT Kaiju Function Xref Viewer", plugin.getName());
         mainPanel = createWorkPanel();
         setIcon(ICON);
         helpLocation = new HelpLocation(plugin.getName(), plugin.getName());

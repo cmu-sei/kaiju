@@ -58,7 +58,7 @@ import resources.Icons;
     status = PluginStatus.UNSTABLE, // change to RELEASED when ready
     packageName = KaijuPluginPackage.NAME,
     category = PluginCategoryNames.ANALYSIS,
-    shortDescription = "CERT Function Intersection Visualizer",
+    shortDescription = "CERT Kaiju Function Intersection Visualizer",
     description = "Compare sets of functions across programs in a project."
 )
 //@formatter:on

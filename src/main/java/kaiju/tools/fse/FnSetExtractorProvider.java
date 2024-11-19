@@ -55,7 +55,7 @@ public class FnSetExtractorProvider extends ComponentProviderAdapter {
     private JComponent mainPanel;
     public FnSetExtractorProvider(FnSetExtractorPlugin plugin) {
 
-        super(plugin.getTool(), "CERT Function Intersection Visualizer", plugin.getName());
+        super(plugin.getTool(), "CERT Kaiju Function Intersection Visualizer", plugin.getName());
         
         FnSetExtractor extractor = plugin.getExtractor();
 
