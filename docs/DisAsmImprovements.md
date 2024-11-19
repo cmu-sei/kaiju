@@ -1,6 +1,6 @@
-# CERT Disassembly Improvements
+# Disassembly Improvements
 
-CERT Disassembly Improvements is a Ghidra analyzer that improves the accuracy
+CERT Kaiju Disassembly Improvements is a Ghidra analyzer that improves the accuracy
 of the disassembly output produced within Ghidra.
     
 This analyzer should be run prior to any other CERT Kaiju tools. Most tools rely on
