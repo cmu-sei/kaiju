@@ -5,6 +5,7 @@
 * Fix bad performance of Disassembly Improvements in specific situations (#81)
 - Improvements:
 * Use "CERT Kaiju" more consistently
+* Enable Disassembly Improvements for x86-64
 
 ## 241107
 - Improvements:
