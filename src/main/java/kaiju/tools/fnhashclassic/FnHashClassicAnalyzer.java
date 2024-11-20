@@ -72,7 +72,7 @@ public class FnHashClassicAnalyzer extends AbstractAnalyzer implements KaijuLogg
      * Creates an Fn2Hash instance and registers its name and description within Ghidra.
      */
     public FnHashClassicAnalyzer() {
-        super(FnHashOptions.NAME + " Classic", FnHashOptions.DESCRIPTION + " This implementation uses the classic CHUCK implementation.", AnalyzerType.BYTE_ANALYZER);
+        super(FnHashOptions.NAME, FnHashOptions.DESCRIPTION + " This implementation uses the classic CHUCK implementation.", AnalyzerType.BYTE_ANALYZER);
         // hashing works best after CERT Disassembly Improvements is run, so
         // set the priority to be afterward. Lowest priority ever to ensure
         // all the other analyzers run first.
