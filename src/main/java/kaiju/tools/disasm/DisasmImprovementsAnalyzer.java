@@ -120,9 +120,7 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
         // Only analyze 32-bit X86 programs. OOAnalyzer can handle nothing else.
         // TODO: is this restriction an unnecessary holdover from pharos?
         final Processor processor = program.getLanguage().getProcessor();
-        if (program.getLanguage().getDefaultSpace().getSize() != 32) {
-            return false;
-        }
+        // Only analyze X86 programs
         return processor.equals(Processor.findOrPossiblyCreateProcessor("x86"));
     }
 
