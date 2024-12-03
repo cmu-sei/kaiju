@@ -288,7 +288,12 @@ tasks.clean.dependsOn(tasks.cmakeClean)
 // a dependency depending on whether z3 appears to be built.
 task buildZ3 {
     if (fileTree("build/cmake/z3").matching {
-        include("*-*/libz3{,java}.{so,dll,dylib}")
+        include "*-*/libz3.so"
+        include "*-*/libz3.dll"
+        include "*-*/libz3.dylib"
+        include "*-*/libz3java.so"
+        include "*-*/libz3java.dll"
+        include "*-*/libz3java.dylib"
     }.isEmpty()) {
         dependsOn(tasks.cmakeBuild)
     }
@@ -310,9 +315,26 @@ project.getTasks().matching(
 
 task copyZ3(type: Copy) {
     from ("build/cmake/z3") {
-        include "*-*/libz3{,java}.{so,dll,dylib}"
+        include "*-*/libz3.so"
+        include "*-*/libz3.dll"
+        include "*-*/libz3.dylib"
+        include "*-*/libz3java.so"
+        include "*-*/libz3java.dll"
+        include "*-*/libz3java.dylib"
+
     }
     into "os/${ghidraPlatformName}"
+
+    // https://stackoverflow.com/a/45635959
+    // Flatten the hierarchy by setting the path
+    // of all files to their respective basename
+    eachFile {
+      path = name
+    }
+
+    // Flattening the hierarchy leaves empty directories,
+    // do not copy those
+    includeEmptyDirs = false
 
     copyZ3.dependsOn(tasks.buildZ3)
     copyToLib.dependsOn(copyZ3)
