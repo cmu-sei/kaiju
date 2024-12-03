@@ -77,6 +77,10 @@ else {
 
 OperatingSystem os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem;
 
+// Technically we probably should not be doing this, but we need to know which platform we're on.
+apply from: new File(ghidraInstallDir).getCanonicalPath() + "/GPL/nativePlatforms.gradle"
+def ghidraPlatformName = getCurrentPlatformName()
+
 // change this to set the version of Z3 we're using
 String z3Version = "4.12.1"
 
@@ -151,7 +155,6 @@ task printGhidraDir {
     println 'Using Ghidra install directory ' + ghidraInstallDir
     println 'Using Java ' + targetCompatibility + ' for Ghidra ' + ghidraVersion
     println 'Using AUTOCATS test directory ' + autocatsDir
-    println 'Targeting '+ os.getDisplayName() + ' (' + System.properties['os.name'].toLowerCase() + '-' + System.getProperty('os.arch') + ')'
 }
 
 task copyToLib(type: Copy) {
@@ -284,11 +287,11 @@ tasks.clean.dependsOn(tasks.cmakeClean)
 // slow because LTO. So we dynamically decide whether to set tasks.cmakeBuild as
 // a dependency depending on whether z3 appears to be built.
 task buildZ3 {
-    if (!(file('build/cmake/z3/linux-amd64/libz3.so').exists() ||
-          file('build/cmake/z3/windows-amd64/libz3.dll').exists() ||
-          file('build/cmake/z3/osx-amd64/libz3.dylib').exists())) {
+    if (fileTree("build/cmake/z3").matching {
+        include("*-*/libz3{,java}.{so,dll,dylib}")
+    }.isEmpty()) {
         dependsOn(tasks.cmakeBuild)
-    } 
+    }
 }
 
 tasks.build.dependsOn(tasks.buildZ3)
@@ -305,37 +308,14 @@ project.getTasks().matching(
     }
 );
 
-if (os.isLinux()) {
-    task copyZ3toOsLinux(type: Copy) {
-        from ("build/cmake/z3/linux-amd64/libz3.so")
-        from ("build/cmake/z3/linux-amd64/libz3java.so")
-        into "os/linux_x86_64"
+task copyZ3(type: Copy) {
+    from ("build/cmake/z3") {
+        include "*-*/libz3{,java}.{so,dll,dylib}"
     }
-    
-    copyZ3toOsLinux.dependsOn(tasks.buildZ3)
-    copyToLib.dependsOn(copyZ3toOsLinux)
-}
+    into "os/${ghidraPlatformName}"
 
-if (os.isWindows()) {
-    task copyZ3toOsWin(type: Copy) {
-        from ("build/cmake/z3/windows-amd64/libz3.dll")
-        from ("build/cmake/z3/windows-amd64/libz3java.dll")
-        into "os/win_x86_64"
-    }
-    
-    copyZ3toOsWin.dependsOn(tasks.buildZ3)
-    copyToLib.dependsOn(copyZ3toOsWin)
-}
-
-if (os.isMacOsX()) {
-    task copyZ3toOsMac(type: Copy) {
-        from ("build/cmake/z3/osx-amd64/libz3.dylib")
-        from ("build/cmake/z3/osx-amd64/libz3java.dylib")
-        into "os/mac_x86_64"
-    }
-    
-    copyZ3toOsMac.dependsOn(tasks.buildZ3)
-    copyToLib.dependsOn(copyZ3toOsMac)
+    copyZ3.dependsOn(tasks.buildZ3)
+    copyToLib.dependsOn(copyZ3)
 }
 
 // END: cmake z3 build section
