@@ -1,5 +1,10 @@
 # Current Release
 
+## 241204
+- Improvements:
+* Include Z3 for ARM Macs
+* Stream-line build system a bit
+
 ## 241119
 - Bugfixes:
 * Fix bad performance of Disassembly Improvements in specific situations (#81)

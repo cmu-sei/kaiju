@@ -37,6 +37,8 @@ jobs:
     - name: Unzip Ghidra ${{ matrix.ghidra_version }}
       run: 7z x 3rdparty/ghidra_${{ matrix.ghidra_version }}_*.zip -o3rdparty/
       
+    # ejs: Ummm, macro anyone?
+
     - name: Download Z3 for Linux x64 (glibc)
       uses: robinraju/release-downloader@v1.7
       with:
@@ -74,7 +76,20 @@ jobs:
           cp z3-4.12.1-x64-osx-10.16/bin/*.dylib ${{ github.workspace }}/os/mac_x86_64/
           rm z3-4.12.1-x64-osx-10.16.zip
           rm -r z3-4.12.1-x64-osx-10.16/
-      
+
+    - name: Download Z3 for MacOS arm64
+      uses: robinraju/release-downloader@v1.7
+      with:
+        repository: "Z3Prover/z3"
+        tag: "z3-4.12.1"
+        fileName: "z3-4.12.1-arm64-osx-11.0.zip"
+    - name: Unzip Z3 for MacOS arm64
+      run: |
+          7z x z3-4.12.1-arm64-osx-11.0.zip
+          cp z3-4.12.1-arm64-osx-11.0/bin/*.dylib ${{ github.workspace }}/os/mac_arm_64/
+          rm z3-4.12.1-arm64-osx-11.0.zip
+          rm -r z3-4.12.1-arm64-osx-11.0/
+
     - name: Set up Gradle
       uses: gradle/gradle-build-action@v2
       with:
