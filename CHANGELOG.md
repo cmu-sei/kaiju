@@ -1,5 +1,14 @@
 # Current Release
 
+## 250220
+- Improvements:
+* Support for Ghidra 11.3.1
+
+## 250110
+
+- Improvements:
+* Support for Ghidra 11.3
+
 ## 241204
 - Improvements:
 * Include Z3 for ARM Macs
