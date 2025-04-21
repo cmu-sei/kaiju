@@ -24,9 +24,9 @@ on a virtual machine/resources with only a remote terminal.
 in graphical interface tools, simply due to the nature of
 how a typical user utilizes GUI versus command line tools.
 
-## Using the `runKaiju` script
+## Using the `kaijuRun` script
 
-In the top installation directory of the Kaiju extension is a script called `runKaiju`.
+In the top installation directory of the Kaiju extension is a script called `kaijuRun`.
 
 This script is the easiest way to run Kaiju tools from a command line,
 at least on a Linux distribution.
