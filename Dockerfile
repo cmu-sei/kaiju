@@ -4,7 +4,7 @@ FROM ghidra:11.3.1
 ENV GHIDRA_INSTALL_DIR=/opt/ghidra
 
 # Define build arguments with defaults
-ARG KAIJU_RELEASE_URL=https://github.com/CERTCC/kaiju/releases/download/250220/ghidra_11.3.1_PUBLIC_20250220_kaiju.zip
+ARG KAIJU_RELEASE_URL=https://github.com/CERTCC/kaiju/releases/download/250610/ghidra_11.3.1_PUBLIC_20250610_kaiju.zip
 
 RUN apt-get -y update && apt-get -y install busybox
 
