@@ -65,3 +65,10 @@ jobs:
       run: |
           sudo Xvfb :1 &
           DISPLAY=:1 gradle --build-cache test
+    - name: Test kaijuRun script
+      env:
+        GHIDRA_INSTALL_DIR: '${{ github.workspace }}/ghidra_${{ matrix.ghidra_version }}_PUBLIC/'
+      run: |
+          cp /bin/ls /tmp/ls
+          ./kaijuRun fn2hash /tmp/ls
+          test -f /tmp/ls.FnHashes.csv
