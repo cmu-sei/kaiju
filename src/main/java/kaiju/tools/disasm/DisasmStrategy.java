@@ -60,53 +60,42 @@ public interface DisasmStrategy extends KaijuLogger {
 
     // returns array of categories in use by this architecture
     Pair<AddressRange, Integer> analyzeGap(final AddressRange range);
-    
+
     /**
      * recognizes bytes at an address as alignment bytes.
      * this is a default implementation that shouldn't rely on
      * architecture, but can be overriden if needed for some reason.
      */
-    default Pair<AddressRange, Integer> makeAlignment(Listing listing, final Address address, TaskMonitor monitor) {
+    default Pair<AddressRange, Integer> makeAlignment(
+        Listing listing, final AddressRange range, long length, TaskMonitor monitor) {
+        Address address = range.getMinAddress();
         DataType alignmentType = GhidraTypeUtilities.findGhidraType("Alignment");
         try {
-            Data alignData = listing.createData(address, alignmentType);
+            Data alignData = listing.createData(address, alignmentType, (int) length);
             final Address minAddr = alignData.getMinAddress();
             final Address maxAddr = alignData.getMaxAddress();
-            final AddressRange range = new AddressRangeImpl(minAddr, maxAddr);
-            debug(this, "Created alignment at: " + range);
-            //alignmentAddresses.add(range);
-            return new Pair<AddressRange, Integer>(range, 1);
+            final AddressRange arange = new AddressRangeImpl(minAddr, maxAddr);
+            debug(this, "For range " + range + ", created alignment at " + arange);
+            return new Pair<AddressRange, Integer>(arange, 1);
         } catch (final CodeUnitInsertionException e) {
             // Don't report the exception, because we're going to just leave the address alone?
-            debug(this, "Failed to make alignment at " + address);
-            //skippedAddresses.add(address);
-            try {
-                final AddressRange range = new AddressRangeImpl(address, 1);
-                return new Pair<AddressRange, Integer>(range, 0);
-            } catch (AddressOverflowException aoe) {
-                final AddressRange range = new AddressRangeImpl(address, address);
-                return new Pair<AddressRange, Integer>(range, 0);
-            }
+            debug(this, "Failed to make alignment at " + address + " length = " + length);
+            return new Pair<AddressRange, Integer>(range, 0);
         }
     }
-    
+
     /**
      * recognizes bytes at a starting address as assembly code.
      * this relies on disassembling at the given starting address.
      * this is a default implementation that shouldn't rely on
      * architecture, but can be overriden if needed for some reason.
      */
-    default Pair<AddressRange, Integer> makeCode(Program currentProgram, Listing listing, final Address address, TaskMonitor monitor) {
+    default Pair<AddressRange, Integer> makeCode(Program currentProgram, Listing listing, final AddressRange range, TaskMonitor monitor) {
+        Address address = range.getMinAddress();
         // Making code at a previous gap might have converted this gap to code, so we need to
         // check again to see if this address range is still a gap...
         if (GhidraTypeUtilities.getBlockType(listing, address) == GhidraTypeUtilities.BlockType.CODE) {
-            try {
-                final AddressRange range = new AddressRangeImpl(address, 1);
-                return new Pair<AddressRange, Integer>(range, 0);
-            } catch (AddressOverflowException aoe) {
-                final AddressRange range = new AddressRangeImpl(address, address);
-                return new Pair<AddressRange, Integer>(range, 0);
-            }
+            return new Pair<AddressRange, Integer>(range, 0);
         }
 
         // debug(this, "Making code at " + address);
@@ -119,28 +108,18 @@ public interface DisasmStrategy extends KaijuLogger {
         final String statusMsg = disassembleCmd.getStatusMsg();
         if (statusMsg != null) {
             debug(this, "Disassembly status at " + address + " was: " + disassembleCmd.getStatusMsg());
-            // TODO skippedAddresses.add(address);
-            try {
-                final AddressRange range = new AddressRangeImpl(address, 1);
-                return new Pair<AddressRange, Integer>(range, 0);
-            } catch (AddressOverflowException aoe) {
-                final AddressRange range = new AddressRangeImpl(address, address);
-                return new Pair<AddressRange, Integer>(range, 0);
-            }
+            // BUG?  But we probably DID change something...
+            return new Pair<AddressRange, Integer>(range, 1);
         }
 
+        // Get the set of all addresses where instructions were created.
         final AddressSet insnsCreated = disassembleCmd.getDisassembledAddressSet();
-        debug(this, "Created instructions at: " + insnsCreated);
-        // TODO codeAddresses.add(insnsCreated);
-        try {
-            final AddressRange range = new AddressRangeImpl(address, 1);
-            return new Pair<AddressRange, Integer>(range, 1);
-        } catch (AddressOverflowException aoe) {
-            final AddressRange range = new AddressRangeImpl(address, address);
-            return new Pair<AddressRange, Integer>(range, 1);
-        }
+        // Find the contiguous range of addresse that contains the start address.
+        AddressRange created = insnsCreated.getRangeContaining(address);
+        debug(this, "For range " + range + ", created instructions at: " + insnsCreated + " returning " + created);
+        return new Pair<AddressRange, Integer>(created, 1);
     }
-    
+
     default Pair<AddressRange, Integer> makeString(Program currentProgram, Listing listing, final Address address, TaskMonitor monitor) {
         DataType stringType = GhidraTypeUtilities.findGhidraType("string");
         Data stringData;
@@ -150,7 +129,7 @@ public interface DisasmStrategy extends KaijuLogger {
             final Address maxAddr = stringData.getMaxAddress();
             final AddressRange range = new AddressRangeImpl(minAddr, maxAddr);
             debug(this, "Created string at: " + range);
-            currentProgram.getBookmarkManager().setBookmark(address, "string", "KaijuDiasmImprovements", "created a string at this address");
+            currentProgram.getBookmarkManager().setBookmark(address, "string", "KaijuDisasmImprovements", "created a string at this address");
             //stringAddresses.add(range);
             return new Pair<AddressRange, Integer>(range, 1);
         } catch (final CodeUnitInsertionException e) {

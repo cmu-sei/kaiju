@@ -77,6 +77,10 @@ else {
 
 OperatingSystem os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem;
 
+// Technically we probably should not be doing this, but we need to know which platform we're on.
+apply from: new File(ghidraInstallDir).getCanonicalPath() + "/GPL/nativePlatforms.gradle"
+def ghidraPlatformName = getCurrentPlatformName()
+
 // change this to set the version of Z3 we're using
 String z3Version = "4.12.1"
 
@@ -151,7 +155,6 @@ task printGhidraDir {
     println 'Using Ghidra install directory ' + ghidraInstallDir
     println 'Using Java ' + targetCompatibility + ' for Ghidra ' + ghidraVersion
     println 'Using AUTOCATS test directory ' + autocatsDir
-    println 'Targeting '+ os.getDisplayName() + ' (' + System.properties['os.name'].toLowerCase() + '-' + System.getProperty('os.arch') + ')'
 }
 
 task copyToLib(type: Copy) {
@@ -284,11 +287,16 @@ tasks.clean.dependsOn(tasks.cmakeClean)
 // slow because LTO. So we dynamically decide whether to set tasks.cmakeBuild as
 // a dependency depending on whether z3 appears to be built.
 task buildZ3 {
-    if (!(file('build/cmake/z3/linux-amd64/libz3.so').exists() ||
-          file('build/cmake/z3/windows-amd64/libz3.dll').exists() ||
-          file('build/cmake/z3/osx-amd64/libz3.dylib').exists())) {
+    if (fileTree("build/cmake/z3").matching {
+        include "*-*/libz3.so"
+        include "*-*/libz3.dll"
+        include "*-*/libz3.dylib"
+        include "*-*/libz3java.so"
+        include "*-*/libz3java.dll"
+        include "*-*/libz3java.dylib"
+    }.isEmpty()) {
         dependsOn(tasks.cmakeBuild)
-    } 
+    }
 }
 
 tasks.build.dependsOn(tasks.buildZ3)
@@ -305,37 +313,31 @@ project.getTasks().matching(
     }
 );
 
-if (os.isLinux()) {
-    task copyZ3toOsLinux(type: Copy) {
-        from ("build/cmake/z3/linux-amd64/libz3.so")
-        from ("build/cmake/z3/linux-amd64/libz3java.so")
-        into "os/linux_x86_64"
-    }
-    
-    copyZ3toOsLinux.dependsOn(tasks.buildZ3)
-    copyToLib.dependsOn(copyZ3toOsLinux)
-}
+task copyZ3(type: Copy) {
+    from ("build/cmake/z3") {
+        include "*-*/libz3.so"
+        include "*-*/libz3.dll"
+        include "*-*/libz3.dylib"
+        include "*-*/libz3java.so"
+        include "*-*/libz3java.dll"
+        include "*-*/libz3java.dylib"
 
-if (os.isWindows()) {
-    task copyZ3toOsWin(type: Copy) {
-        from ("build/cmake/z3/windows-amd64/libz3.dll")
-        from ("build/cmake/z3/windows-amd64/libz3java.dll")
-        into "os/win_x86_64"
     }
-    
-    copyZ3toOsWin.dependsOn(tasks.buildZ3)
-    copyToLib.dependsOn(copyZ3toOsWin)
-}
+    into "os/${ghidraPlatformName}"
 
-if (os.isMacOsX()) {
-    task copyZ3toOsMac(type: Copy) {
-        from ("build/cmake/z3/osx-amd64/libz3.dylib")
-        from ("build/cmake/z3/osx-amd64/libz3java.dylib")
-        into "os/mac_x86_64"
+    // https://stackoverflow.com/a/45635959
+    // Flatten the hierarchy by setting the path
+    // of all files to their respective basename
+    eachFile {
+      path = name
     }
-    
-    copyZ3toOsMac.dependsOn(tasks.buildZ3)
-    copyToLib.dependsOn(copyZ3toOsMac)
+
+    // Flattening the hierarchy leaves empty directories,
+    // do not copy those
+    includeEmptyDirs = false
+
+    copyZ3.dependsOn(tasks.buildZ3)
+    copyToLib.dependsOn(copyZ3)
 }
 
 // END: cmake z3 build section
@@ -453,12 +455,20 @@ testlogger {
 
 test {
 
+    def osDir = file("${ghidraInstallDir}/Ghidra/Extensions/kaiju/os/")
+
+    // Automatically find the os dir names.
+    def osDirNames =
+        osDir.listFiles()
+        .findAll { it.isDirectory() }
+        .collect { file(osDir.name + "/" + it.name )}
+        .join(':')
+
     jvmArgs = ['-Djava.awt.headless=true',
                 // add-exports needed prior to Ghidra 10.3 to address sun.awt not exported in JDK 17+
                 '--add-exports=java.desktop/sun.awt=ALL-UNNAMED',
                 // add the kaiju os directories to load z3 library to run tests
-                '-Djava.library.path=' + ghidraInstallDir + '/Ghidra/Extensions/kaiju/lib/:'+ ghidraInstallDir + '/Ghidra/Extensions/kaiju/os/linux_x86_64/:' + ghidraInstallDir + '/Ghidra/Extensions/kaiju/os/mac_x86_64/:' + ghidraInstallDir + '/Ghidra/Extensions/kaiju/os/win_x86_64/']
-
+                '-Djava.library.path=' + ghidraInstallDir + '/Ghidra/Extensions/kaiju/lib/:' + osDirNames]
     useJUnitPlatform()
     
     maxHeapSize = '2G'

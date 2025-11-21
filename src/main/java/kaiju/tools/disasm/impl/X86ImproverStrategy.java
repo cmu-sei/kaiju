@@ -31,13 +31,18 @@
  */
 package kaiju.tools.disasm.impl;
 
+import java.util.Arrays;
+
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressRange;
+import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.listing.Bookmark;
+import ghidra.program.model.listing.BookmarkManager;
 import ghidra.util.task.TaskMonitor;
 
 import kaiju.tools.disasm.DisasmStrategy;
@@ -56,47 +61,116 @@ public class X86ImproverStrategy implements DisasmStrategy {
     private TaskMonitor monitor;
     private Memory memory;
     private Listing listing;
-    
+    private BookmarkManager bookmarkManager;
+
     public X86ImproverStrategy(Program currentProgram, TaskMonitor monitor) {
         this.currentProgram = currentProgram;
         this.monitor = monitor;
         memory = currentProgram.getMemory();
         listing = currentProgram.getListing();
+        bookmarkManager = currentProgram.getBookmarkManager();
     }
 
-    public Pair<AddressRange, Integer> analyzeGap(final AddressRange range) {
+    private Pair<AddressRange, Integer>
+        makeX86Alignment(Listing listing, final AddressRange range, TaskMonitor monitor) {
+        // Length is the length of the gap, not necessarily the length that we want to
+        // turn into alignment.  We should only make alignment from matching CC or zero
+        // bytes.
+
+        // Get the initial byte and ensure that it is 0x00 or 0xCC.
+        final Address minAddr = range.getMinAddress();
+        int initialByte = 0;
+        try {
+            initialByte = memory.getByte(minAddr) & 0xFF;
+        }
+        catch (final MemoryAccessException e) {
+            return new Pair<AddressRange, Integer>(range, 0);
+        }
+        if (initialByte != 0x00 && initialByte != 0xCC) {
+            return new Pair<AddressRange, Integer>(range, 0);
+        }
+
+        // Count how many adjacent bytes are also 0x00 or 0xCC.
+        Address nextAddr;
+        int alignLength = 0;
+        while (alignLength < range.getLength()) {
+            try {
+                nextAddr = minAddr.add(alignLength);
+                if ((memory.getByte(nextAddr) & 0xFF) != initialByte) break;
+            }
+            catch (final MemoryAccessException e) {
+                // If we run past the end of memory,
+                break;
+            }
+            alignLength += 1;
+        }
+
+        // Make alignment just for the bytes that are 0x00 or 0xCC.
+        return makeAlignment(listing, range, alignLength, monitor);
+    }
+
+    // Returns addresses handled (min, max) and whether anything was changed.
+    public Pair<AddressRange, Integer> analyzePartialGap(final AddressRange range) {
         // debug(this, "Undefined bytes at " + range);
         final Address minAddr = range.getMinAddress();
-        
+
         // If we've already processed this address, don't try again.
         //if (skippedAddresses.contains(minAddr))
         //    return 0;
-        
+
         // debug(this, "Analyzing gap: " + range + " with block type " + getBlockType(minAddr));
 
-        // Upgrade the byte to an integer because types are signed in Java.
-        int b = 0;
+        // Look at the next byte.
+        int byteLookAhead = 0;
         try {
-            b = memory.getByte(minAddr) & 0xFF;
+            byteLookAhead = memory.getByte(minAddr) & 0xFF;
         } catch (final MemoryAccessException e) {
             e.printStackTrace();
-            //return 0;
             return new Pair<AddressRange, Integer>(range, 0);
         }
-        
+
+        // Look at the next four bytes.
+        int wordLookAhead = 0xFF;
+        try {
+            wordLookAhead = memory.getInt(minAddr) & 0xFFFFFFF;
+        } catch (final MemoryAccessException e) {
+            wordLookAhead = 0xFF;
+        }
+
         // Address previous = minAddr.subtract(1);
 
-        final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(listing, minAddr);
+        final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(currentProgram, minAddr);
+        //debug(this, "Previous type was " +  previousBlockType);
         switch (previousBlockType) {
             case CODE:
-                if (b == 0xCC) {
-                    return makeAlignment(listing, minAddr, monitor);
-                } else {
-                    return makeCode(currentProgram, listing, minAddr, monitor);
+                if (byteLookAhead == 0xCC) {
+                    return makeX86Alignment(listing, range, monitor);
+                }
+                else if (wordLookAhead == 0) {
+                    return makeX86Alignment(listing, range, monitor);
+                }
+                else {
+                    // Make sure the previous block did not end with a disassembly
+                    // failure.  If it did, we probably do not want to make more code at
+                    // that location.
+                    Bookmark[] bookmarks = bookmarkManager.getBookmarks(minAddr);
+
+                    boolean hasDisassemblyError = Arrays.stream(bookmarks)
+                        .anyMatch(bookmark -> bookmark.getCategory().equals("Bad Instruction") && bookmark.getTypeString().equals("Error"));
+
+                    if (hasDisassemblyError) {
+                        //debug(this, "Disassembly error at " + minAddr + "; making alignment instead of code.");
+                        return makeX86Alignment(listing, range, monitor);
+                    }
+                    else {
+                        debug(this, "Calling make code at " + range);
+                        return makeCode(currentProgram, listing, range, monitor);
+                    }
                 }
             case DATA:
-                if (b == 0x00)
-                    return makeAlignment(listing, minAddr, monitor);
+                // BUG! If there's a reference to this address, it is probably NOT alignment!
+                if (byteLookAhead == 0)
+                    return makeX86Alignment(listing, range, monitor);
                 break;
             case ALIGNMENT:
                 debug(this, "I'm a little surprised to find alignment at " + minAddr);
@@ -106,10 +180,38 @@ public class X86ImproverStrategy implements DisasmStrategy {
                 break;
         }
 
-        debug(this, "Skipping address: " + minAddr);
-        //skippedAddresses.add(minAddr);
-        //return 0;
+        //debug(this, "Skipping address: " + minAddr);
         return new Pair<AddressRange, Integer>(range, 0);
+    }
+
+    public Pair<AddressRange, Integer> analyzeGap(final AddressRange range) {
+        AddressRangeImpl newRange = new AddressRangeImpl(range);
+        Integer changed = 0;
+        while (true) {
+            Pair<AddressRange, Integer> completed = analyzePartialGap(newRange);
+            // If we changed something, remember that.
+            if (completed.second == 1) {
+                changed = 1;
+            }
+            else {
+                break;
+            }
+
+            // If this action consumed the entire gap, we're done.
+            Address maxCompleted = completed.first.getMaxAddress();
+            Address maxGap = range.getMaxAddress();
+            if (maxCompleted.equals(maxGap)) {
+                break;
+            }
+            // Otherwise, try again after whatever we just created.
+            else {
+                Address nextAddr = maxCompleted.add(1);
+                newRange = new AddressRangeImpl(nextAddr, maxGap);
+                final BlockType previousBlockType = GhidraTypeUtilities.getPreviousBlockType(currentProgram, nextAddr);
+                debug(this, "Trying again at " + newRange + ", previous type is " + previousBlockType);
+            }
+        }
+        return new Pair<AddressRange, Integer>(range, changed);
     }
 
 }

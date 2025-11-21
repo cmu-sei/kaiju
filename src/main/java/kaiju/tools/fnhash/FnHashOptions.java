@@ -33,8 +33,8 @@ package kaiju.tools.fnhash;
 
 public class FnHashOptions {
 
-    public final static String NAME = "Kaiju Function Hashing";
-    public final static String DESCRIPTION = "Kaiju function hashing algorithms for use in identifying shared code.";
+    public final static String NAME = "CERT Kaiju Function Hashing";
+    public final static String DESCRIPTION = "CERT Kaiju function hashing algorithms for use in identifying shared code.";
     public static final String OPTION_NAME_MA_FILE = "Run Kaiju Fn2Hash";
     
     public static final String MIN_INSNS_OPTION_NAME = "Minimum Instruction Count";

@@ -1,5 +1,43 @@
 # Current Release
 
+## 250828
+- Improvements:
+* Support for Ghidra 11.4.1 and 11.4.2
+
+## 250709
+- Improvements:
+* Support for Ghidra 11.4
+
+## 250610
+- Improvements:
+* kaijuRun script now uses unique temporary directories to prevent conflicts
+* Added automatic cleanup of temporary directories on kaijuRun exit
+
+## 250417
+- Improvements:
+* Support for Ghidra 11.3.2
+
+## 250220
+- Improvements:
+* Support for Ghidra 11.3.1
+
+## 250110
+
+- Improvements:
+* Support for Ghidra 11.3
+
+## 241204
+- Improvements:
+* Include Z3 for ARM Macs
+* Stream-line build system a bit
+
+## 241119
+- Bugfixes:
+* Fix bad performance of Disassembly Improvements in specific situations (#81)
+- Improvements:
+* Use "CERT Kaiju" more consistently
+* Enable Disassembly Improvements for x86-64
+
 ## 241107
 - Improvements:
 * Support for Ghidra 11.2.1

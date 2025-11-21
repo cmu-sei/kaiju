@@ -58,9 +58,9 @@ The general syntax for the Headless analyzer is:
 
 `analyzeHeadless PROJECT_DIRECTORY PROJECT_NAME [options...]`
 
-When using the Kaiju Function Hashing plugin there are two steps that need to be accomplished in addition to the usual import and analyze steps:
+When using the CERT Kaiju Function Hashing plugin there are two steps that need to be accomplished in addition to the usual import and analyze steps:
 
-- enabling the Kaiju Function Hashing plugin before analysis (using the `-preScript` option)
+- enabling the CERT Kaiju Function Hashing plugin before analysis (using the `-preScript` option)
 - extracting the function hashing artifacts after analysis (using the `-postScript` option)
 
 We have provided scripts to perform these actions including:
@@ -74,7 +74,7 @@ Extracts the function hashing artifacts and outputs them to the specified file i
 - _KaijuExportYaraHeadless.java_  
 Extracts the function hashing artifacts and outputs them to the specified file as YARA rules.
 
-- _GhihornHeadlessTool.java_  
+- _GhiHornHeadlessTool.java_  
 Runs Ghihorn and outputs results to a file.
 
 ---

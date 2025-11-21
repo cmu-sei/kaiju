@@ -70,7 +70,7 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
     // can access these values for working with the Ghidra database
 
     private Integer min_insns;
-    
+
     private boolean include_basic_blocks;
 
     /**
@@ -122,14 +122,14 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
             null,
             "Set the minimum number of instructions needed to output data for a function"
         );
-        
+
         options.registerOption(
             FnHashOptions.BASIC_BLOCK_OPTION_NAME,
             FnHashOptions.BASIC_BLOCK_OPTION_DEFAULT,
             null,
             "Check if optional basic block level data should be included in output data"
         );
-        
+
         options.registerOption(
             FnHashOptions.LOG_LEVEL_OPTION_NAME,
             OptionType.ENUM_TYPE,
@@ -138,7 +138,7 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
             "Set the minimum log level to be displayed in GUI messages, console, and application log"
         );
     }
-    
+
     /**
      * Handle user changes of options.
      */
@@ -148,11 +148,11 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
         if (options.contains(FnHashOptions.MIN_INSNS_OPTION_NAME)) {
             min_insns = options.getInt(FnHashOptions.MIN_INSNS_OPTION_NAME, FnHashOptions.MIN_INSNS_OPTION_DEFAULT);
         }
-        
+
         if (options.contains(FnHashOptions.BASIC_BLOCK_OPTION_NAME)) {
             include_basic_blocks = options.getBoolean(FnHashOptions.BASIC_BLOCK_OPTION_NAME, FnHashOptions.BASIC_BLOCK_OPTION_DEFAULT);
         }
-        
+
         if (options.contains(FnHashOptions.LOG_LEVEL_OPTION_NAME)) {
             setLogLevel(options.getEnum(FnHashOptions.LOG_LEVEL_OPTION_NAME, MultiLogLevel.WARN));
         }
@@ -161,17 +161,17 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
     @Override
     public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
             throws CancelledException {
-            
+
         // try to get FnHashAnalyzer properties, if analyzer has been run
         Options options = program.getOptions(Program.ANALYSIS_PROPERTIES);
-        
+
         // set up property maps to store hash data in ghidra program database
         ObjectPropertyMap<FnHashSaveable> fnhashobjmap = KaijuPropertyManager.getOrCreateObjectPropertyMap(program, "FnHash", FnHashSaveable.class);
-        
+
         // start analyzing functions
         // iterate over all functions (if not currently in a function or if running headless):
         FunctionIterator fiter = program.getFunctionManager().getFunctions(true);
-            
+
         int fncount = 0;
         if (fiter == null) {
             warn(this, "No functions found?");
@@ -199,25 +199,25 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
                 }
             }
         }
-        
+
         info(this, "Fn2Hash analysis complete: Found hashes for " + fncount + " functions.");
         //debug(this, ManualViewerCommandWrappedOption().getCommandString);
-        
+
         // return true if analysis succeeded
         return true;
     }
-    
+
     private FnHashSaveable runOneFn(Function function, Program program, TaskMonitor monitor) throws Exception {
-        
+
         Address fn_ep = function.getEntryPoint();
-        String msg = ">>> " + function.getName() + " @ 0x" + fn_ep;
+        String msg = "CERT Kaiju function hashing " + function.getName() + " @ 0x" + fn_ep;
         monitor.setMessage(msg);
         debug(this, msg);
-        
+
         // TODO: gets null pointer here if no program is open
         // in headless mode
         String fmd5 = program.getExecutableMD5();
-        
+
         // TODO: catch UsrException here and dummy up missing fields in fnu
         FnUtils fnu = null;
         try {
@@ -233,7 +233,7 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
             return new FnHashSaveable();
         }
         //fnu.dumpFn(false); // turn off dumping BB's for now
-        
+
         // now output hash data, CSV format sort of matching fn2hash:
         //   filemd5,fnaddr,numbb,numinsn,numbytes,ehash,phash
         // eventually add:
@@ -259,7 +259,7 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
         // TODO: refactor so either code_units.size() or basic_blocks.size() works here
         // Oddly, when just basic_blocks.size() in CodeUnit mode I seemed to be getting silent errors
         // /exceptions at runtime that caused the program execution to stop for no apparent reason...
-        
+
         // REGRESSION TESTING
         // form instruction and category counts as CSV string
         // using StringJoiner solves the extra ';' at the end problem
@@ -269,22 +269,22 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
         StringJoiner fn_insncatcnt_joined = new StringJoiner(";");
         for (String key : fnu.fn_insncnt.keySet()) {
             //fn_insncnt_string += key.toLowerCase() + ":" + fnu.fn_insncnt.get(key);
-            fn_insncnt_joined.add(key.toLowerCase() + ":" + fnu.fn_insncnt.get(key)); 
+            fn_insncnt_joined.add(key.toLowerCase() + ":" + fnu.fn_insncnt.get(key));
         }
-        
+
         for (String key : fnu.fn_insncatcnt.keySet()) {
             //fn_insncatcnt_string += key + ":" + fnu.fn_insncatcnt.get(key);
-            fn_insncatcnt_joined.add(key + ":" + fnu.fn_insncatcnt.get(key)); 
+            fn_insncatcnt_joined.add(key + ":" + fnu.fn_insncatcnt.get(key));
         }
-        
+
         // compute mnemonic_count_hash
         MessageDigest mcntmd5 = MessageDigest.getInstance("MD5");
         byte[] mcnthash = mcntmd5.digest(fn_insncnt_joined.toString().getBytes(StandardCharsets.UTF_8));
-        
+
         // compute mnemonic_category_counts_hash
         MessageDigest mccntmd5 = MessageDigest.getInstance("MD5");
         byte[] mccnthash = mccntmd5.digest(fn_insncatcnt_joined.toString().getBytes(StandardCharsets.UTF_8));
-        
+
         return new FnHashSaveable(fmd5.toUpperCase(),
                                   fn_ep.toString().toUpperCase(),
                                   fnu.code_units.size(),
@@ -302,6 +302,6 @@ public class FnHashAnalyzer extends AbstractAnalyzer implements KaijuLogger {
                                   HexUtils.byteArrayToHexString(mcnthash,""),
                                   HexUtils.byteArrayToHexString(fnu.mchash,""),
                                   HexUtils.byteArrayToHexString(mccnthash,""));
-        
+
     }
 }

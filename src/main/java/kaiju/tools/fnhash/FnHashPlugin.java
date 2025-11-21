@@ -85,7 +85,7 @@ import resources.ResourceManager;
     status = PluginStatus.RELEASED,
     packageName = KaijuPluginPackage.NAME,
     category = PluginCategoryNames.ANALYSIS,
-    shortDescription = "CERT Function Hashing",
+    shortDescription = "CERT Kaiju Function Hashing",
     description = "Function hashing tools and visualizations.",
     servicesRequired = { GoToService.class }
 )

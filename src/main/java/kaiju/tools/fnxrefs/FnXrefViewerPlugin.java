@@ -83,7 +83,7 @@ import resources.ResourceManager;
     status = PluginStatus.RELEASED,
     packageName = KaijuPluginPackage.NAME,
     category = PluginCategoryNames.ANALYSIS,
-    shortDescription = "CERT Program Function Xref Viewer",
+    shortDescription = "CERT Kaiju Program Function Xref Viewer",
     description = "View function data and instruction cross-references (X-Refs) for a single program.",
     servicesRequired = { GoToService.class }
 )

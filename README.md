@@ -44,7 +44,7 @@ Ghidra's graphical interface, but it is also possible to manually
 unzip into the appropriate directory to install.
 
 CERT Kaiju requires the following runtime dependencies:
-- [Ghidra](https://ghidra-sre.org) 10.3.x, 10.4.x, 11.0.x, 11.1.x, or 11.2.x
+- [Ghidra](https://ghidra-sre.org) 10.3.x, 10.4.x, 11.0.x, 11.1.x, 11.2.x, 11.3.x, or 11.4.x
 - JDK 21 (or 17 for older Ghidra releases)
 - [Z3](https://github.com/Z3Prover/z3) including Z3 Java bindings .jar
 
@@ -131,7 +131,7 @@ control flow graphs, utilizing Z3.
 - **Function Hash Viewer** = a plugin that displays an interactive list
 of functions in a program and several types of hashes. Analysts can use this
 to export one or more functions from a program into YARA signatures.
-    - Select `Window > CERT Function Hash Viewer` from the menu to get started
+    - Select `Window > CERT Kaiju Function Hash Viewer` from the menu to get started
     with this tool if it is not already visible. A new window will appear
     displaying a table of hashes and other data. Buttons along the top
     of the window can refresh the table or export data to file or

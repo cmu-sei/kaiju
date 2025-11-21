@@ -60,12 +60,14 @@ import kaiju.util.Pair;
  * docs/api/ghidra/app/services/AbstractAnalyzer.html
  */
 public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements KaijuLogger {
+
+    public final static int ITERATION_LIMIT = 30;
+
     public static final boolean doingdebug = true;
-    
-    private final static String NAME = "Kaiju Disassembly Improvements";
+    private final static String NAME = "CERT Kaiju Disassembly Improvements";
     private final static String DESCRIPTION = "Improved program partitioning and disassembly algorithm.";
     protected static final String OPTION_NAME_MA_FILE = "Run Kaiju Disassembly Improvements";
-    
+
     public DisasmImprovementsAnalyzer() {
 
         super(NAME, DESCRIPTION, AnalyzerType.DATA_ANALYZER);
@@ -98,7 +100,7 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
     private AddressSet stringAddresses;
     private HashSet<Address> skippedAddresses;
 
-    /** 
+    /**
      * This analyzer is selected by default to run in the Auto-Analyze feature.
      */
     @Override
@@ -107,7 +109,7 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
         return true;
     }
 
-    /** 
+    /**
      * Checks if the program is X86 architecture before running this analyzer.
      * This tool makes some assumptions that are only valid for X86,
      * therefore we do not apply it to any program that is not this architecture.
@@ -118,17 +120,14 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
         // Only analyze 32-bit X86 programs. OOAnalyzer can handle nothing else.
         // TODO: is this restriction an unnecessary holdover from pharos?
         final Processor processor = program.getLanguage().getProcessor();
-        if (program.getLanguage().getDefaultSpace().getSize() != 32) {
-            return false;
-        }
+        // Only analyze X86 programs
         return processor.equals(Processor.findOrPossiblyCreateProcessor("x86"));
     }
 
     @Override
-    public boolean added(final Program program, final AddressSetView set, final TaskMonitor monitor,
-            final MessageLog log) throws CancelledException {
-
-
+    public boolean added(final Program program, final AddressSetView set,
+                         final TaskMonitor monitor, final MessageLog log)
+        throws CancelledException {
         debug(this, "Running the Disassembly Improvements analyzer!");
         this.currentProgram = program;
         this.monitor = monitor;
@@ -161,7 +160,7 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
             debug(this, "Unable to find builtin string type! Aborting.");
             return false;
         }
-        
+
         improver = new DisasmImprover(currentProgram, monitor);
         // TODO: should we check arch here or inside the improver?
         // can we share code with the canAnalyze() function?
@@ -186,9 +185,9 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
         // or there's no heuristics left to run.
         // CancelledListener cancelledListener
         //GProgressBar progress = new GProgressBar​(null, true, true, true, 12);
-        
-        undefinedAddresses = this.listing.getUndefinedRanges(allAddresses, false, monitor);
-        
+
+        undefinedAddresses = this.listing.getUndefinedRanges(set, false, monitor);
+
         long iteration = 0;
 
         while (true) {
@@ -199,6 +198,10 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
 
             monitor.initialize(undefinedAddresses.getNumAddressRanges());
             for (final AddressRange range : undefinedAddresses) {
+                String msg = "Analyzing gap " + range + " (iteration " + iteration + ")";
+                monitor.setMessage(msg);
+                // This message can overwhelm logging...
+                //debug(this, msg);
                 monitor.checkCancelled();
                 //long range_change = improver.analyzeGap(range);
                 Pair<AddressRange, Integer> range_pair = improver.analyzeGap(range);
@@ -210,6 +213,11 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
                 break;
             // set up for next loop
             undefinedAddresses = this.listing.getUndefinedRanges(allAddresses, false, monitor);
+            // Arbitrary and stupid, but prevents endless loops and eases debugging.
+            if (iteration > ITERATION_LIMIT) {
+                warn(this, "Too many iterations in DisasmImprovementsAnalyzer.");
+                break;
+            }
         }
 
         // Report what we've done (in "ranges" where we can)...
@@ -220,12 +228,10 @@ public class DisasmImprovementsAnalyzer extends AbstractAnalyzer implements Kaij
 
         return false;
     }
-    
+
     // Outstanding bugs in ooex7:
     // 0x0041e4a1 -> 0x004302a0 (but latter was already made into alignment. :-()
     // Lots of unmade functions around 0x417b50 - 0x417cb8
     // Problems with exception handler data structures not made correctly around 0x412a1e
     // Next on todo list is to handle the very-large-gap bug I just fixed in ROSE.
-
-
 }
